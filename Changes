@@ -1,0 +1,74 @@
+Revision history for Perl extension RiveScript.
+
+0.12 Tue Mar 14 16:32:00 2006
+	- Module moved to namespace of RiveScript::
+
+0.11 Sun Mar 12 11:19:00 2006
+	- When calling loadDirectory, a "begin.rs" file is always loaded first
+		(provided the file exists, of course!)
+	- Added support for "include"ing libraries and packages (see "INCLUDED FILES")
+
+0.10 Sat Mar  4 12:49:30 2006
+	- The getUservars() method now returns a hashref of hashrefs if you want the
+		vars of all users. Makes it a little easier to label each set of variables
+		with the particular user involved. ;)
+	- Cleaned up some leftover print statements from my debugging in version 0.09
+		(sorry about that--again!)
+	- Made some revisions to the POD, fixed some typo's, added {weight} and {ok}
+		to the TAGS section.
+
+0.09 Thu Mar  2 18:43:00 2006
+	- $1 to $100+ are now done using an array rather than a hash. Theoretically
+		this allows any number of stars, even greater than 100.
+	- Arrays in triggers have been modified. An array in parenthesis (the former
+		requirement) will make the array matchable in <star#> tags. An array outside
+		of parenthesis makes it NOT matchable.
+	- Minor code improvements for readibility purposes.
+
+0.08 Thu Feb 16 17:37:00 2006
+	- Added <add>, <sub>, <mult>, and <div> tags.
+	- Added environmental variable support.
+	- Extended *CONDITION to support inequalities
+	- Botvars in conditions must be explicitely specified with # before the varname.
+	- Added "! person" substitutions
+	- Added {person} tag
+
+0.07  Wed Feb 15 22:15:00 2006
+	- Added write() method
+	- reply() method now can take tags to force scalar return or to ignore
+		sentence-splitting.
+	- loadDirectory() method can now take a list of specific file extensions
+		to look for.
+	- Cleaned up some leftover debug prints from last release (sorry about that!)
+
+0.06  Mon Feb 13 06:56:00 2006
+	- Extended ^CONTINUE to cover more commands
+	- Revised POD
+
+0.05  Mon Jan  9 18:24:00 2006
+	- Fixed a bug with optionals. If they were used at the start or end
+		of a trigger, the trigger became unmatchable. This has been fixed
+		by changing ' ' into '\s*'
+
+0.04  Wed Jan  4 17:00:00 2006
+	- Added support for optional parts of the trigger.
+	- Begun support for inline objects to be created.
+
+0.03  Tue Jan  3 18:33:00 2006
+	- Added search() method.
+	- <bot> variables can be inserted into triggers now (for example having
+		the bot reply to its name no matter what its name is)
+
+0.02	Thu Dec 22 11:28:00 2005
+	- Fixed a regexp bug; now it stops searching when it finds a match
+		(it would cause errors with $1 to $100)
+	- Fixed an inconsistency that didn't allow uservars to work in
+		conditionals.
+	- Added <id> tag, useful for objects that need a unique user to work
+		with.
+	- Fixed bug that warned about comments that began with more than
+		one set of //
+
+0.01	Tue Dec 20 14:51:39 2005
+	- Initial release
+

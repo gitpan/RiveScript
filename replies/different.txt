@@ -1,0 +1,6 @@
+/*
+	RiveScript // Testing the loading of a file with different extention
+*/
+
++ test different
+- The file "different.txt" was loaded successfully.

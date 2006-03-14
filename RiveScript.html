@@ -1,0 +1,1346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>RiveScript - Rendering Intelligence Very Easily</title>
+<link rev="made" href="mailto:" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#public_methods">PUBLIC METHODS</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+		<li><a href="#setsubroutine__object_name____coderef_">setSubroutine (OBJECT_NAME =&gt; CODEREF)</a></li>
+		<li><a href="#loaddirectory___directory____exts__">loadDirectory ($DIRECTORY[, @EXTS])</a></li>
+		<li><a href="#loadfile___filepath____stream__">loadFile ($FILEPATH[, $STREAM])</a></li>
+		<li><a href="#stream___code_">stream ($CODE)</a></li>
+		<li><a href="#sortreplies">sortReplies</a></li>
+		<li><a href="#reply___user_id___message____tags__">reply ($USER_ID, $MESSAGE[, %TAGS])</a></li>
+		<li><a href="#search___string_">search ($STRING)</a></li>
+		<li><a href="#write____filepath__">write ([$FILEPATH])</a></li>
+		<li><a href="#setglobal__variable____value______">setGlobal (VARIABLE =&gt; VALUE, ...)</a></li>
+		<li><a href="#setvariable__variable____value______">setVariable (VARIABLE =&gt; VALUE, ...)</a></li>
+		<li><a href="#setsubstitution__before____after______">setSubstitution (BEFORE =&gt; AFTER, ...)</a></li>
+		<li><a href="#setuservar___user_id__variable____value______">setUservar ($USER_ID, VARIABLE =&gt; VALUE, ...)</a></li>
+		<li><a href="#getuservars____user_id__">getUservars ([$USER_ID])</a></li>
+	</ul>
+
+	<li><a href="#private_methods">PRIVATE METHODS</a></li>
+	<ul>
+
+		<li><a href="#debug___message_">debug ($MESSAGE)</a></li>
+		<li><a href="#intreply___user_id___message_">intReply ($USER_ID, $MESSAGE)</a></li>
+		<li><a href="#splitsentences___string_">splitSentences ($STRING)</a></li>
+		<li><a href="#formatmessage___string_">formatMessage ($STRING)</a></li>
+		<li><a href="#mergewildcards___string___array_">mergeWildcards ($STRING, $ARRAY)</a></li>
+		<li><a href="#stringutil___type___string_">stringUtil ($TYPE, $STRING)</a></li>
+	</ul>
+
+	<li><a href="#format">FORMAT</a></li>
+	<li><a href="#rivescript_commands">RIVESCRIPT COMMANDS</a></li>
+	<li><a href="#rivescript_holds_the_keys">RIVESCRIPT HOLDS THE KEYS</a></li>
+	<li><a href="#complexities_of_the_trigger">COMPLEXITIES OF THE TRIGGER</a></li>
+	<li><a href="#complexities_of_the_response">COMPLEXITIES OF THE RESPONSE</a></li>
+	<li><a href="#begin_statement">BEGIN STATEMENT</a></li>
+	<li><a href="#topics">TOPICS</a></li>
+	<li><a href="#object_macros">OBJECT MACROS</a></li>
+	<ul>
+
+		<li><a href="#inline_objects">Inline Objects</a></li>
+		<li><a href="#define_an_object_from_perl">Define an Object from Perl</a></li>
+		<li><a href="#call_an_object">Call an Object</a></li>
+	</ul>
+
+	<li><a href="#tags">TAGS</a></li>
+	<ul>
+
+		<li><a href="#_star____star1____star100_">&lt;star&gt;, &lt;star1&gt; - &lt;star100&gt;</a></li>
+		<li><a href="#_input1____input9____reply1____reply9_">&lt;input1&gt; - &lt;input9&gt;; &lt;reply1&gt; - &lt;reply9&gt;</a></li>
+		<li><a href="#_id_">&lt;id&gt;</a></li>
+		<li><a href="#_bot_">&lt;bot&gt;</a></li>
+		<li><a href="#_get____set_">&lt;get&gt;, &lt;set&gt;</a></li>
+		<li><a href="#_add____sub____mult____div_">&lt;add&gt;, &lt;sub&gt;, &lt;mult&gt;, &lt;div&gt;</a></li>
+		<li><a href="#_topic_____">{topic=...}</a></li>
+		<li><a href="#_nextreply_">{nextreply}</a></li>
+		<li><a href="#_weight_____">{weight=...}</a></li>
+		<li><a href="#______">{@...}</a></li>
+		<li><a href="#______">{!...}</a></li>
+		<li><a href="#_random______random_">{random}...{/random}</a></li>
+		<li><a href="#_person______person_">{person}...{/person}</a></li>
+		<li><a href="#_formal______formal_">{formal}...{/formal}</a></li>
+		<li><a href="#_sentence______sentence_">{sentence}...{/sentence}</a></li>
+		<li><a href="#_uppercase______uppercase_">{uppercase}...{/uppercase}</a></li>
+		<li><a href="#_lowercase______lowercase_">{lowercase}...{/lowercase}</a></li>
+		<li><a href="#_ok_">{ok}</a></li>
+		<li><a href="#_s">\s</a></li>
+		<li><a href="#_n">\n</a></li>
+	</ul>
+
+	<li><a href="#environmental_variables">ENVIRONMENTAL VARIABLES</a></li>
+	<ul>
+
+		<li><a href="#rivescript_environment_variables">RiveScript Environment Variables</a></li>
+		<li><a href="#perl_environment_variables">Perl Environment Variables</a></li>
+		<li><a href="#set_environment_variables">Set Environment Variables</a></li>
+	</ul>
+
+	<li><a href="#person_substitution">PERSON SUBSTITUTION</a></li>
+	<li><a href="#dynamic_replies">DYNAMIC REPLIES</a></li>
+	<ul>
+
+		<li><a href="#_rs__replies_">$rs-&gt;{replies}</a></li>
+		<li><a href="#trigger_keys">Trigger Keys</a></li>
+		<li><a href="#sorted_arrays">Sorted Arrays</a></li>
+		<li><a href="#examples">Examples</a></li>
+	</ul>
+
+	<li><a href="#included_files">INCLUDED FILES</a></li>
+	<ul>
+
+		<li><a href="#rivescript_libraries">RiveScript Libraries</a></li>
+		<li><a href="#rivescript_packages">RiveScript Packages</a></li>
+		<li><a href="#rivescript_include_search_path">RiveScript Include Search Path</a></li>
+	</ul>
+
+	<li><a href="#reserved_variables">RESERVED VARIABLES</a></li>
+	<ul>
+
+		<li><a href="#reserved_global_variables">Reserved Global Variables</a></li>
+		<li><a href="#reserved_topic_names">Reserved Topic Names</a></li>
+		<li><a href="#reserved_user_id_s">Reserved User_ID's</a></li>
+	</ul>
+
+	<li><a href="#a_good_brain">A GOOD BRAIN</a></li>
+	<li><a href="#see_other">SEE OTHER</a></li>
+	<li><a href="#known_bugs">KNOWN BUGS</a></li>
+	<li><a href="#changes">CHANGES</a></li>
+	<li><a href="#todo_list">TO-DO LIST</a></li>
+	<li><a href="#special_thanks">SPECIAL THANKS</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#copyright_and_license">COPYRIGHT AND LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>RiveScript - Rendering Intelligence Very Easily</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use RiveScript;</pre>
+<pre>
+  # Create a new RiveScript interpreter.
+  my $rs = new RiveScript;</pre>
+<pre>
+  # Define a macro.
+  $rs-&gt;setSubroutine (weather =&gt; \&amp;weather);</pre>
+<pre>
+  # Load in some RiveScript documents.
+  $rs-&gt;loadDirectory (&quot;./replies&quot;);</pre>
+<pre>
+  # Load in another file.
+  $rs-&gt;loadFile (&quot;./more_replies.rs&quot;);</pre>
+<pre>
+  # Stream in yet more replies.
+  $rs-&gt;stream ('! global split_sentences = 1');</pre>
+<pre>
+  # Sort them.
+  $rs-&gt;sortReplies;</pre>
+<pre>
+  # Grab a response.
+  my @reply = $rs-&gt;reply ('localhost','Hello RiveScript!');
+  print join (&quot;\n&quot;,@reply) . &quot;\n&quot;;</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>RiveScript is a simple input/response language. It is simple, easy to learn,
+and mimics and perhaps even surpasses the power of AIML (Artificial Intelligence
+Markup Language). RiveScript was initially created as a reply language for
+chatterbots, but it has also been used for more complex things above and beyond
+that.</p>
+<p>RiveScript was originally known as Alpha but was reprogrammed to
+add more flexibility and power to it. While their syntaces are similar,
+Alpha code is not entirely compatible with RiveScript.</p>
+<p>
+</p>
+<hr />
+<h1><a name="public_methods">PUBLIC METHODS</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<p>Creates a new RiveScript instance. Pass in any defaults here.</p>
+<p>
+</p>
+<h2><a name="setsubroutine__object_name____coderef_">setSubroutine (OBJECT_NAME =&gt; CODEREF)</a></h2>
+<p>Define a macro (see Object Macros)</p>
+<p>
+</p>
+<h2><a name="loaddirectory___directory____exts__">loadDirectory ($DIRECTORY[, @EXTS])</a></h2>
+<p>Load a directory of RiveScript files. EXTS is optionally an array of file
+extensions to load, in the format <strong>(.rs .txt .etc)</strong>. Default is just ``.rs''</p>
+<p>
+</p>
+<h2><a name="loadfile___filepath____stream__">loadFile ($FILEPATH[, $STREAM])</a></h2>
+<p>Load a single file. Don't worry about the STREAM argument, it is handled
+in the <code>stream()</code> method.</p>
+<p>
+</p>
+<h2><a name="stream___code_">stream ($CODE)</a></h2>
+<p>Stream RiveScript code directly into the module.</p>
+<p>
+</p>
+<h2><a name="sortreplies">sortReplies</a></h2>
+<p>Sorts the replies. This is ideal for matching purposes. If you fail to
+do so and just go ahead and call reply(), you'll get a nasty Perl warning.
+It will sort them for you anyway, but it's always recommended to sort them
+yourself. For example, if you sort them and then load new replies, the new
+replies will not be matchable because the sort cache hasn't updated.</p>
+<p>
+</p>
+<h2><a name="reply___user_id___message____tags__">reply ($USER_ID, $MESSAGE[, %TAGS])</a></h2>
+<p>Get a reply from the bot. This will return an array. The values of this
+array would be all the replies (i.e. if you use {nextreply} in a response
+to return multiple).</p>
+<p><strong>%TAGS</strong> is optionally a string of special reply tags, each value is a
+boolean (1 or 0, all default to 0):</p>
+<pre>
+  scalar   -- Forces a scalar return of all replies found. The method
+              will return a scalar rather than an array.
+  no_split -- Ignore sentence-splitting when going into the reply.
+              This is for special cases such as &quot;;-)&quot; (winking emoticon)
+              where it is unmatchable because ; is a sentence-splitter.</pre>
+<pre>
+  retry    -- You should NEVER set this argument. This is used internally
+              so the module knows it's on a retry run (if a reply isn't
+              found, it tries again but sets no_split to true).</pre>
+<p>
+</p>
+<h2><a name="search___string_">search ($STRING)</a></h2>
+<p>Search all loaded replies for every trigger that STRING matches. Returns an
+array of results, containing the trigger, what topic it was under, and the
+reference to its file and line number.</p>
+<p>
+</p>
+<h2><a name="write____filepath__">write ([$FILEPATH])</a></h2>
+<p>Outputs the current contents of the loaded replies into a single file. This
+is useful for if your application dynamically learns replies by editing the
+loaded hashrefs. It will write all replies to the file under their own topics...
+i.e. perfectly functional code. Comments and other unnessecary formatting is
+ignored, because the module doesn't pay attention to them at loading time anyway.</p>
+<p>The default path is to ``written.rs''</p>
+<p>See <a href="#dynamic_replies">DYNAMIC REPLIES</a>.</p>
+<p>
+</p>
+<h2><a name="setglobal__variable____value______">setGlobal (VARIABLE =&gt; VALUE, ...)</a></h2>
+<p>Set a global variable directly from Perl (alias for <strong>! global</strong>)</p>
+<p>
+</p>
+<h2><a name="setvariable__variable____value______">setVariable (VARIABLE =&gt; VALUE, ...)</a></h2>
+<p>Set a botvariable (alias for <strong>! var</strong>)</p>
+<p>
+</p>
+<h2><a name="setsubstitution__before____after______">setSubstitution (BEFORE =&gt; AFTER, ...)</a></h2>
+<p>Set a substitution setting (alias for <strong>! sub</strong>)</p>
+<p>
+</p>
+<h2><a name="setuservar___user_id__variable____value______">setUservar ($USER_ID, VARIABLE =&gt; VALUE, ...)</a></h2>
+<p>Set a user variable (alias for &lt;set var=value&gt;)</p>
+<p>
+</p>
+<h2><a name="getuservars____user_id__">getUservars ([$USER_ID])</a></h2>
+<p>Get all uservars for a user. Returns a hashref of the variables. If you don't
+pass in a $USER_ID, it will return a hashref of hashrefs for each user (first
+level being their ID, second level being their variables).</p>
+<p>
+</p>
+<hr />
+<h1><a name="private_methods">PRIVATE METHODS</a></h1>
+<p>These methods are called on internally and should not be called by you.</p>
+<p>
+</p>
+<h2><a name="debug___message_">debug ($MESSAGE)</a></h2>
+<p>Print a debug message.</p>
+<p>
+</p>
+<h2><a name="intreply___user_id___message_">intReply ($USER_ID, $MESSAGE)</a></h2>
+<p>This should not be called. Call <strong>reply</strong> instead. This method assumes
+that the variables are neatly formatted and may cause serious consequences
+for passing in badly formatted data.</p>
+<p>
+</p>
+<h2><a name="splitsentences___string_">splitSentences ($STRING)</a></h2>
+<p>Splits string at the sentence-splitters and returns an array.</p>
+<p>
+</p>
+<h2><a name="formatmessage___string_">formatMessage ($STRING)</a></h2>
+<p>Formats the message (runs substitutions, removes punctuation, etc)</p>
+<p>
+</p>
+<h2><a name="mergewildcards___string___array_">mergeWildcards ($STRING, $ARRAY)</a></h2>
+<p>Merges the values from ARRAY into STRING, where the items in ARRAY
+correspond to a captured value from $1 to $100+. The first item in the
+array should be blank; there is no such thing as a &lt;star0&gt;.</p>
+<p>
+</p>
+<h2><a name="stringutil___type___string_">stringUtil ($TYPE, $STRING)</a></h2>
+<p>Called on for string format tags (uppercase, lowercase, formal, sentence).</p>
+<p>
+</p>
+<hr />
+<h1><a name="format">FORMAT</a></h1>
+<p>RiveScript documents have a simple format: they're a line-by-line
+language. The first <code>symbol(s)</code> are the commands, and the following text
+is typically the command's data.</p>
+<p>In its most simple form, a valid RiveScript entry looks like this:</p>
+<pre>
+  + hello bot
+  - Hello human.</pre>
+<p>
+</p>
+<hr />
+<h1><a name="rivescript_commands">RIVESCRIPT COMMANDS</a></h1>
+<p>The following are the commands that RiveScript supports.</p>
+<dl>
+<dt><strong><a name="item__21__28definition_29"><strong>! (Definition)</strong></a></strong><br />
+</dt>
+<dd>
+The ! command is for definitions. These are one of the few stand-alone
+commands (ones that needn't be part of a bigger reply group). They are
+to define variables and arrays. Their format is as follows:
+</dd>
+<dd>
+<pre>
+  ! type variable = value</pre>
+</dd>
+<dd>
+<pre>
+  type     = the variable type
+  variable = the name of the variable
+  value    = the variable's value</pre>
+</dd>
+<dd>
+<p>The supported types are as follows:</p>
+</dd>
+<dd>
+<pre>
+  global  - Global settings (top-level things)
+  var     - BotVariables (i.e. the bot's name, age, etc)
+  array   - An array
+  sub     - A substitution pattern
+  person  - A person substitution.
+  addpath - Add an include path
+  include - An include method</pre>
+</dd>
+<dd>
+<p>Some examples:</p>
+</dd>
+<dd>
+<pre>
+  // Set global vars
+  ! global debug = 1
+  ! global split_sentences = 1
+  ! global sentence_splitters = . ! ; ?</pre>
+</dd>
+<dd>
+<pre>
+  // Setup a handler for macro failures.
+  ! global macro_failure = &lt;b&gt;ERROR: Macro Failure&lt;/b&gt;</pre>
+</dd>
+<dd>
+<pre>
+  // Set bot vars
+  ! var botname   = Casey Rive
+  ! var botage    = 14
+  ! var botgender = male</pre>
+</dd>
+<dd>
+<pre>
+  // Some substitutions
+  ! sub can't = can not
+  ! sub i'm   = i am</pre>
+</dd>
+<dd>
+<pre>
+  // Person substitutions
+  ! person i   = you
+  ! person you = me
+  ! person am  = are
+  ! person are = am</pre>
+</dd>
+<dd>
+<pre>
+  // Add a path to find libraries.
+  ! addpath C:/MyRsLibraries</pre>
+</dd>
+<dd>
+<pre>
+  // Include a library of arrays
+  ! include English/EngVerbs.rsl</pre>
+</dd>
+<dd>
+<pre>
+  // Include a package of objects
+  ! include DateTime.rsp</pre>
+</dd>
+<dd>
+<p><strong>Note:</strong> For arrays, you can have multi-word items if you separate the entries
+with a pipe (``|'') symbol rather than a space.</p>
+</dd>
+<dd>
+<p><strong>Note:</strong> To delete a variable, set its value to ``undef'' and its internal hashref
+key will be deleted altogether.</p>
+</dd>
+<dd>
+<p>See also: <a href="#environmental_variables">ENVIRONMENTAL VARIABLES</a> and <a href="#person_substitution">PERSON SUBSTITUTION</a>.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item__3c_and__3e__28label_29"><strong>&lt; and &gt; (Label)</strong></a></strong><br />
+</dt>
+<dd>
+The &lt; and &gt; commands are for defining labels. A label is used to treat
+a part of code differently. Currently there are three uses for labels:
+<strong>begin</strong>, <strong>topic</strong>, and <strong>object</strong>. Example usage:
+</dd>
+<dd>
+<pre>
+  // Define a topic
+  &gt; topic some_topic_name</pre>
+</dd>
+<dd>
+<pre>
+    // there'd be some triggers here</pre>
+</dd>
+<dd>
+<pre>
+  &lt; topic
+  // close the topic</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item__2b__28trigger_29"><strong>+ (Trigger)</strong></a></strong><br />
+</dt>
+<dd>
+The + command is the basis for all triggers. The + command is what the
+user has to say to activate the reply set. In the example,
+</dd>
+<dd>
+<pre>
+  + hello bot
+  - Hello human.</pre>
+</dd>
+<dd>
+<p>The user would say ``hello bot'' only to get a ``Hello human.'' back.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item__25__28previous_29"><strong>% (Previous)</strong></a></strong><br />
+</dt>
+<dd>
+The % command is for drawing a user back to complete a thought. You
+might say it's sort of like &lt;that&gt; in AIML. Example:
+</dd>
+<dd>
+<pre>
+  + ask me a question
+  - Do you have any pets?</pre>
+</dd>
+<dd>
+<pre>
+  + yes
+  % do you have any pets
+  - What kind of pet?</pre>
+</dd>
+<dd>
+<pre>
+  // and so-on...</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item__2d__28response_29"><strong>- (Response)</strong></a></strong><br />
+</dt>
+<dd>
+The - command is the response. The - command has several uses, depending
+on its context. For example, in the ``hello bot/hello human'' example, one
++ with one - gets a one-way question/answer scenario. If more than one -
+is used, a random one is chosen (and some may be weighted). There are many
+other uses that we'll get into later.
+</dd>
+<p></p>
+<dt><strong><a name="item__5e__28continue_29"><strong>^ (Continue)</strong></a></strong><br />
+</dt>
+<dd>
+The ^Continue command is for extending the previous command down a line.
+</dd>
+<dd>
+<p>The commands that can be continued with ^Continue:</p>
+</dd>
+<dd>
+<pre>
+  ! global
+  ! var
+  ! array
+  + trigger
+  % previous
+  - response
+  @ redirection</pre>
+</dd>
+<dd>
+<p>Sometimes your -REPLY is too long to fit on one line, and you don't like
+the idea of having a horizontal scrollbar on your text editor.
+The ^ command will continue on from the last -REPLY. For example:</p>
+</dd>
+<dd>
+<pre>
+  + tell me a poem
+  - Little Miss Muffit sat on her tuffet\s
+  ^ in a nonchalant sort of way.\s
+  ^ With her forcefield around her,\s
+  ^ the Spider, the bounder,\s
+  ^ is not in the picture today.</pre>
+</dd>
+<dd>
+<p>Here are some examples of the other uses of ^Continue:</p>
+</dd>
+<dd>
+<pre>
+  ! array colors  = red blue green yellow cyan fuchsia
+  ^ white black gray grey orange pink
+  ^ turqoise magenta gold silver</pre>
+</dd>
+<dd>
+<pre>
+  ! var quote = How much wood would a woodchuck
+  ^ chuck if a woodchuck could chuck wood?</pre>
+</dd>
+<dd>
+<pre>
+  + how much wood would a woodchuck\s
+  ^ chuck if a woodchuck could chuck wood
+  - A whole forest. ;)</pre>
+</dd>
+<dd>
+<pre>
+  + how much wood
+  @ how much wood would a woodchuck\s
+  ^ chuck if a woodchuck could chuck wood</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item__40__28redirect_29"><strong>@ (Redirect)</strong></a></strong><br />
+</dt>
+<dd>
+The @ command is for directing one trigger to another. For example, there
+may be complicated ways people have of asking the same thing, and you don't
+feel like making your main trigger handle all of them.
+</dd>
+<dd>
+<pre>
+  + my name is *
+  - Nice to meet you, {formal}&lt;star1&gt;{/formal}.</pre>
+</dd>
+<dd>
+<pre>
+  + people around here call me *
+  @ my name is &lt;star1&gt;</pre>
+</dd>
+<dd>
+<p>Redirections can also be used inline. See the <a href="#tags">TAGS</a> section for more details.</p>
+</dd>
+<p></p>
+<li><strong><a name="item__28conditions_29"><strong>* (Conditions)</strong></a></strong><br />
+</li>
+The * command is used for checking conditionals. The format is:
+<pre>
+  * variable = value =&gt; say this</pre>
+<p>For example, you might want to make a condition to differentiate male from
+female users.</p>
+<pre>
+  + am i a guy or a girl
+  * gender=male =&gt; You're a guy.
+  * gender=female =&gt; You're a girl.
+  - I don't think you ever told me what you are.</pre>
+<p>You can perform the following operations on variable checks:</p>
+<pre>
+  =  equal to
+  != not equal to
+  &lt;  less than
+  &lt;= less than or equal to
+  &gt;  greater than
+  &gt;= greater than or equal to
+  ?  returns true if the var is even defined</pre>
+<p><strong>Note:</strong> If you want a condition to check the value of a bot variable, you must
+prepend a # sign on the variable name. For instance:</p>
+<pre>
+  + is your name still soandso
+  * #name = Soandso =&gt; That's still my name.
+  - No, I changed it.</pre>
+<p>That would check the <strong>botvar</strong> ``name'', not the <strong>uservar</strong>, because of the
+supplied # sign.</p>
+<p></p>
+<dt><strong><a name="item__26__28perl_29"><strong>&amp; (Perl)</strong></a></strong><br />
+</dt>
+<dd>
+Sometimes RiveScript isn't powerful enough to do what you want. The &amp; command
+will execute Perl codes to handle these cases. Be sure to read through this
+whole manpage before resorting to Perl, though. RiveScript has come a long way
+since it was known as Alpha.
+</dd>
+<dd>
+<pre>
+  + what is 2 plus 2
+  - 500 Internal Error.
+  &amp; $reply = '2 + 2 = 4';</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item__2f_2f__28comments_29"><strong>// (Comments)</strong></a></strong><br />
+</dt>
+<dd>
+The comment syntax is //, as it is in other programming languages. Also,
+/* */ comments may be used to span over multiple lines.
+</dd>
+<dd>
+<pre>
+  // A one-line comment</pre>
+</dd>
+<dd>
+<pre>
+  /*
+    this comment spans
+    across multiple lines
+  */</pre>
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="rivescript_holds_the_keys">RIVESCRIPT HOLDS THE KEYS</a></h1>
+<p>The RiveScript engine was designed for your RiveScript brain to hold most of the
+control. As little programming on the Perl side as possible has made it so that
+your RiveScript can define its own variables and handle what it wants to. See
+<a href="#a_good_brain">A GOOD BRAIN</a> for tips on how to approach this.</p>
+<p>
+</p>
+<hr />
+<h1><a name="complexities_of_the_trigger">COMPLEXITIES OF THE TRIGGER</a></h1>
+<p>The + command can be used for more complex things as a simple, 100% dead-on
+trigger. This part is passed through a regexp. Therefore, any regexp things
+can be used in the trigger.</p>
+<p><strong>Note:</strong> an asterisk * is always converted into (.*?) regardless of its context.
+Keep this in mind.</p>
+<p><strong>Alternations:</strong> You can use alternations in the triggers like so:</p>
+<pre>
+  + what (s|is) your (home|office|cell) phone number</pre>
+<p>Anything inside of parenthesis, or anything matched by asterisks, can be
+obtained through the tags &lt;star1&gt; to &lt;star100&gt;. For example (keeping in mind
+that * equals (.*?):</p>
+<pre>
+  + my name is *
+  - Nice to meet you, &lt;star1&gt;.</pre>
+<p><strong>Optionals:</strong> You can use optional words in a trigger. These words don't have
+to exist in the user's message but they <em>can</em>. Example:</p>
+<pre>
+  + what is your [home] phone number
+  - You can call me at 555-5555.</pre>
+<p>So that would match ``<em>what is your phone number</em>'' as well as
+``<em>what is your home phone number</em>''</p>
+<p>Optionals can have alternations in them too.</p>
+<pre>
+  + what (s|is) your [home|office|cell] phone number</pre>
+<p><strong>Arrays:</strong> This is why it's good to define arrays using the !define tag. The
+best way to explain how this works is by example.</p>
+<pre>
+  // Make an array of color names
+  ! array colors = red blue green yellow white black orange</pre>
+<pre>
+  // Now the user can tell us their favorite color from the array
+  + my favorite color is (@colors)
+  - Really! Mine is &lt;star1&gt; too!</pre>
+<p>If you want an array to be matchable, enclose it in parenthesis. This will allow
+its value to be put into a &lt;star&gt; tag, as in the above example. If you
+don't include the parenthesis, its value won't be matchable. For an example of
+the difference:</p>
+<pre>
+  If the input is &quot;sometimes I am a tool&quot;...</pre>
+<pre>
+  ! array be = am are is was were</pre>
+<pre>
+  + *\bi @be *
+      &lt;star1&gt; = ''
+      &lt;star2&gt; = 'a tool'</pre>
+<pre>
+  + *\bi (@be) *
+      &lt;star1&gt; = 'sometimes'
+      &lt;star2&gt; = 'am'
+      &lt;star3&gt; = 'a tool'</pre>
+<p>It turns your array into regexp form, <strong>(?:red|blue|green|yellow|...)</strong> before matching
+so it saves you a lot of work there. Not to mention arrays can be used in any number
+of triggers! Just imagine how many triggers you can come up with where a color name
+would be needed...</p>
+<p>
+</p>
+<hr />
+<h1><a name="complexities_of_the_response">COMPLEXITIES OF THE RESPONSE</a></h1>
+<p>As mentioned above, the - command has many many uses.</p>
+<p><strong>One-way question/answer:</strong> A single + and a single - will lead to a dead-on
+question and answer reply.</p>
+<p><strong>Random Replies:</strong> A single + with multiple -'s will yield random results
+from among the responses. For example:</p>
+<pre>
+  + hello
+  - Hey.
+  - Hi.
+  - Hello.</pre>
+<p>Would randomly return any of those three responses.</p>
+<p><strong>Conditional Fallback:</strong> When using conditionals, you should always provide
+at least one response to fall back on, in case every conditional returns false.</p>
+<p><strong>Perl Code Fallback:</strong> When executing Perl code, you should always have a response
+to fall back on [even if the Perl is going to redefine $reply for itself]. This is
+in case of an eval error and the Perl couldn't do its thing.</p>
+<p><strong>Weighted Responses:</strong> Yes, with random responses you can weight them! Responses
+with higher weight will have a better chance of being chosen over ones with a low
+weight. For example:</p>
+<pre>
+  + hello
+  - Hello, how are you?{weight=49}
+  - Yo, wazzup dawg?{weight=1}</pre>
+<p>In this case, ``Hello, how are you?'' will almost always be sent back. A 1 in 50
+chance would return ``Yo, wazzup dawg?'' instead.</p>
+<p>(as a side note: you don't need to set a weight to 1; 1 is implied for any
+response without weight. Weights of less than 1 aren't acceptable)</p>
+<p>
+</p>
+<hr />
+<h1><a name="begin_statement">BEGIN STATEMENT</a></h1>
+<p><strong>The BEGIN file is the first reply file loaded in a loadDirectory call.</strong>
+If a ``begin.rs'' file exists in the directory being loaded, it is included first.</p>
+<p><strong>Note:</strong> BEGIN statements are not required. That being said, begin statements
+are executed before any request.</p>
+<p><strong>How to define a BEGIN statement</strong></p>
+<pre>
+  &gt; begin
+    + request
+    - {ok}
+  &lt; begin</pre>
+<p>Begin statements are sort of like topics, but are always called first. If the response
+given contains {ok} in it, then the module knows it's allowed to get a reply.
+Also note that {ok} is replaced with the response. In this way, <strong>begin</strong> might be
+useful to format all responses in one way. For a good example:</p>
+<pre>
+  &gt; begin</pre>
+<pre>
+    // Don't give a reply if the bot is down for maintenance.
+    + request
+    * down=yes =&gt; The bot is currently deactivated for maintenance.
+    - &lt;font color=&quot;red&quot;&gt;&lt;b&gt;{ok}&lt;/b&gt;&lt;/font&gt;</pre>
+<pre>
+  &lt; begin</pre>
+<p>That would give the reply about the bot being under maintenance if the variable
+``down'' equals ``yes.'' Else, it would give a response in red bold font.</p>
+<p><strong>Note:</strong> At the time being, the only trigger that BEGIN ever receives is ``request''</p>
+<p>The ``begin.rs'' file is also where you would place your <strong>!include</strong> statements to
+make sure that they're included before any other files.</p>
+<p>
+</p>
+<hr />
+<h1><a name="topics">TOPICS</a></h1>
+<p>Topics are declared in a way similar to the BEGIN statement. The way to declare
+and close a topic is generally as follows:</p>
+<pre>
+  &gt; topic TOPICNAME
+    ...
+  &lt; topic</pre>
+<p>The topic name should be unique, and only one word.</p>
+<p><strong>The Default Topic:</strong> The default topic name is ``random''</p>
+<p><strong>Setting a Topic:</strong> To set a topic, use the {topic} tag (see <a href="#tags">TAGS</a> below). Example:</p>
+<pre>
+  + i hate you
+  - You're not very nice. I'm going to make you apologize.{topic=apology}</pre>
+<pre>
+  &gt; topic apology
+    + *
+    - Not until you admit that you're sorry.</pre>
+<pre>
+    + sorry
+    - Okay, I'll forgive you.{topic=random}
+  &lt; topic</pre>
+<p>Always set topic back to ``random'' to break out of a topic.</p>
+<p>
+</p>
+<hr />
+<h1><a name="object_macros">OBJECT MACROS</a></h1>
+<p>Special macros (Perl routines) can be defined and then utilized in your RiveScript
+code.</p>
+<p>
+</p>
+<h2><a name="inline_objects">Inline Objects</a></h2>
+<p>New with version 0.04 is the ability to define objects directly within the RiveScript code. Keep in mind
+that the code for your object is evaluated local to RiveScript. That being said, basic tips to
+follow to make an object work:</p>
+<pre>
+  1) If it uses any module besides strict and warnings, that module must be explicitely
+     declared within your object with a 'use' statement.
+  2) If your object refers to any variables global to your main program, 'main::' must
+     be prepended (i.e. '$main::hashref-&gt;{key}')
+  3) If your object refers to a subroutine of your main program, 'main::' must be prepended
+     (i.e. '&amp;main::reload()')</pre>
+<p>The basic way is to do it like this:</p>
+<pre>
+  &gt; object fortune
+    my ($method,$msg) = @_;</pre>
+<pre>
+    my @fortunes = (
+       'You will be rich and famous',
+       'You will meet a celebrity',
+       'You will go to the moon',
+    );</pre>
+<pre>
+    return $fortunes [ int(rand(scalar(@fortunes))) ];
+  &lt; object</pre>
+<p>Note: the <strong>closing tag</strong> (last line in the above example) is required for objects. An object isn't included until the closing tag
+is found.</p>
+<p>
+</p>
+<h2><a name="define_an_object_from_perl">Define an Object from Perl</a></h2>
+<p>This is done like so:</p>
+<pre>
+  # Define a weather lookup macro.
+  $rs-&gt;setSubroutine (weather =&gt; \&amp;weather_lookup);</pre>
+<p>The code of the subroutine would be basically the same as it would be in the example for Inline Objects.
+Basically, think of the ``&gt; object fortune'' as ``sub fortune {'' and the ``&lt; object'' as ``}'' and it's a little
+easier to visualize. ;)</p>
+<p>
+</p>
+<h2><a name="call_an_object">Call an Object</a></h2>
+<p>You can use a macro within a reply such as this example:</p>
+<pre>
+  + give me the local weather for *
+  - Weather for &amp;weather.cityname(&lt;star1&gt;):\n\n
+  ^ Temperature: &amp;weather.temp(&lt;star1&gt;)\n
+  ^ Feels Like: &amp;weather.feelslike(&lt;star1&gt;)</pre>
+<p>The subroutine ``weather_lookup'' will receive two variables: the method and the
+arguments. The method would be the bit following the dot (i.e. ``cityname'',
+``temp'', or ``feelslike'' in this example). The arguments would be the value of
+&lt;star1&gt;.</p>
+<p>Whatever weather_lookup would return is inserted into the reply in place of the
+macro call.</p>
+<p><strong>Note:</strong> If a macro does not exist, has faulty code, or does not return a reply,
+the contents of global ``macro_failure'' will be inserted instead. At this time the
+module is unable to tell you which of the three errors is the cause.</p>
+<p>
+</p>
+<hr />
+<h1><a name="tags">TAGS</a></h1>
+<p>Special tags can be inserted into replies and redirections. Tags either have
+&lt;angle brackets&gt; or {curly brackets}. The &lt;angle brackets&gt; are
+generally for things that insert something back into the message, such as
+&lt;star&gt;, &lt;id&gt;, or &LT;input5&gt;. The {curly brackets} are
+generally for things that operate in silence and don't output anything, such
+as {topic} which modifies the topic, or they're modifiers of text, such as
+{random} and {uppercase}.</p>
+<p>Also, tags closely tied to others in function will have the same symbols as
+them. For instance, &lt;set&gt; doesn't output anything but is close in
+function to &lt;get&gt;. This is just an explanation of my choice of symbols.
+That being said, you can ignore these two paragraphs. ;)</p>
+<p>The supported tags are as follows:</p>
+<p>
+</p>
+<h2><a name="_star____star1____star100_">&lt;star&gt;, &lt;star1&gt; - &lt;star100&gt;</a></h2>
+<p>These tags will insert the values of $1 to $100, as matched in the regexp, into
+the reply. They go in order from left to right. &lt;star&gt; is an alias for &lt;star1&gt;.</p>
+<p>
+</p>
+<h2><a name="_input1____input9____reply1____reply9_">&lt;input1&gt; - &lt;input9&gt;; &lt;reply1&gt; - &lt;reply9&gt;</a></h2>
+<p>Inserts the last 1 to 9 things the user said, and the last 1 to 9 things the bot
+said, respectively. Good for things like ``You said hello and then I said hi and then
+you said what's up and then I said not much''</p>
+<p>
+</p>
+<h2><a name="_id_">&lt;id&gt;</a></h2>
+<p>Inserts the user's ID.</p>
+<p>
+</p>
+<h2><a name="_bot_">&lt;bot&gt;</a></h2>
+<p>Insert a bot variable (defined with <strong>! var</strong>).</p>
+<pre>
+  + what is your name
+  - I am &lt;bot name&gt;, created by &lt;bot companyname&gt;.</pre>
+<p>This variable can also be used in triggers.</p>
+<pre>
+  + my name is &lt;bot name&gt;
+  - &lt;set name=&lt;bot name&gt;&gt;What a coincidence, that's my name too!</pre>
+<p>
+</p>
+<h2><a name="_get____set_">&lt;get&gt;, &lt;set&gt;</a></h2>
+<p>Get and set a user variable. These are local variables for each user.</p>
+<pre>
+  + my name is *
+  - &lt;set name={formal}&lt;star1&gt;{/formal}&gt;Nice to meet you, &lt;get name&gt;!</pre>
+<pre>
+  + who am i
+  - You are &lt;get name&gt; aren't you?</pre>
+<p>
+</p>
+<h2><a name="_add____sub____mult____div_">&lt;add&gt;, &lt;sub&gt;, &lt;mult&gt;, &lt;div&gt;</a></h2>
+<p>Add, subtract, multiply and divide numeric variables, respectively.</p>
+<pre>
+  + give me 5 points
+  - &lt;add points=5&gt;You have received 5 points and now have &lt;get points&gt; total.</pre>
+<p>If the variable is undefined, it is set to 0 before the math is done on it.
+If you try to modify a non-numerical variable, the operation will fail and a
+little note of <strong>(Var=NaN)</strong> will appear in place of the tag.</p>
+<p>Likewise, if you try to modify a variable by inputting a non-numerical value
+into the tag, <strong>(Value=NaN)</strong> would be returned instead. Two examples of how
+to trigger these:</p>
+<pre>
+  + add 5 to my name
+  - &lt;add name=5&gt;Tried.</pre>
+<pre>
+  + add hello to my age
+  - &lt;add age=hello&gt;Tried.</pre>
+<p>Where ``name'' would be the user's name and ``age'' is their (numerical) age.</p>
+<p>
+</p>
+<h2><a name="_topic_____">{topic=...}</a></h2>
+<p>The topic tag. This will set the user's topic to something else (see <a href="#topics">TOPICS</a>). Only
+one of these should be in a response, and in the case of duplicates only the first
+one is evaluated.</p>
+<p>
+</p>
+<h2><a name="_nextreply_">{nextreply}</a></h2>
+<p>Breaks the reply into two (or more) parts there. Will cause the <strong>reply</strong> method
+to return multiple responses.</p>
+<p>
+</p>
+<h2><a name="_weight_____">{weight=...}</a></h2>
+<p>A -REPLY can have a weight tag applied to it to change the probability of it being
+chosen (when there is more than one reply that could be randomly chosen).
+See <a href="#complexities_of_the_response">COMPLEXITIES OF THE RESPONSE</a>.</p>
+<p>
+</p>
+<h2><a name="______">{@...}</a></h2>
+<p>An inline redirection. These work like normal redirections, except are inserted
+inline into a reply.</p>
+<pre>
+  + * or something
+  - Or something. {@&lt;star1&gt;}</pre>
+<p>
+</p>
+<h2><a name="______">{!...}</a></h2>
+<p>An inline definition. These can be used to (re)set variables. This tag is invisible
+in the final response of the bot; the changes are made silently.</p>
+<p>
+</p>
+<h2><a name="_random______random_">{random}...{/random}</a></h2>
+<p>Will insert a bit of random text. This has two syntaxes:</p>
+<pre>
+  Insert a random word (separate by spaces)
+  {random}red blue green yellow{/random}</pre>
+<pre>
+  Insert a random phrase (separate by pipes)
+  {random}Yes sir.|No sir.{/random}</pre>
+<p>
+</p>
+<h2><a name="_person______person_">{person}...{/person}</a></h2>
+<p>Will take the enclosed text and run person substitutions on them (see
+<a href="#person_substitution">PERSON SUBSTITUTION</a>).</p>
+<p>
+</p>
+<h2><a name="_formal______formal_">{formal}...{/formal}</a></h2>
+<p>Will Make Your Text Formal</p>
+<p>
+</p>
+<h2><a name="_sentence______sentence_">{sentence}...{/sentence}</a></h2>
+<p>Will make your text sentence-cased.</p>
+<p>
+</p>
+<h2><a name="_uppercase______uppercase_">{uppercase}...{/uppercase}</a></h2>
+<p>WILL MAKE THE TEXT UPPERCASE.</p>
+<p>
+</p>
+<h2><a name="_lowercase______lowercase_">{lowercase}...{/lowercase}</a></h2>
+<p>will make the text lowercase.</p>
+<p>
+</p>
+<h2><a name="_ok_">{ok}</a></h2>
+<p>This tag is used only with the <a href="#begin_statement">BEGIN STATEMENT</a>. It tells the interpreter
+that it's okay to go and get a reply.</p>
+<p>
+</p>
+<h2><a name="_s">\s</a></h2>
+<p>Inserts a white space. Simple as that. This is needed if you use the -^ combo
+for continuing a reply. RiveScript does not assume a space between the texts
+of the two tags.</p>
+<p>
+</p>
+<h2><a name="_n">\n</a></h2>
+<p>Inserts a newline. Note that this tag is interpreted at the time of grabbing
+a reply(). Other than that, it exists in memory as a literal '\n' (or ``\\n'')</p>
+<p>
+</p>
+<hr />
+<h1><a name="environmental_variables">ENVIRONMENTAL VARIABLES</a></h1>
+<p>Environmental variables are kept as ``botvariables'' (i.e. they can be retrieved with
+the &lt;bot&gt; tag). The variable names all begin with ``ENV_'' and are in uppercase.</p>
+<p>
+</p>
+<h2><a name="rivescript_environment_variables">RiveScript Environment Variables</a></h2>
+<pre>
+  ENV_OS         = The operating system RiveScript is running on.
+  ENV_APPVERSION = The version of RiveScript used.
+  ENV_APPNAME    = A user-agent style string that looks like &quot;RiveScript/0.08&quot;</pre>
+<p>
+</p>
+<h2><a name="perl_environment_variables">Perl Environment Variables</a></h2>
+<p>All the environment variables available to your Perl script are kept under <strong>ENV_SYS_</strong>
+with their original names following. For example, <strong>ENV_SYS_PATH</strong> would be the %PATH%
+variable on Windows.</p>
+<p>
+</p>
+<h2><a name="set_environment_variables">Set Environment Variables</a></h2>
+<p>Currently, RiveScript's syntax does not allow the modification of any variable
+beginning with ``env_''. If you absolutely must override one of these variables for
+any reason at all, you can call the <strong>setVariable()</strong> method to do so.</p>
+<p>
+</p>
+<hr />
+<h1><a name="person_substitution">PERSON SUBSTITUTION</a></h1>
+<p>The {person} tag can be used to perform substitutions between 1st- and 2nd-person
+adjectives (see <a href="#tags">TAGS</a>).</p>
+<p>You define these with the !define tag in a similar fashion as how you define
+substitution data. For example:</p>
+<pre>
+  ! person i     = you
+  ! person my    = your
+  ! person mine  = yours
+  ! person me    = you
+  ! person am    = are
+  ! person you   = I
+  ! person your  = my
+  ! person yours = mine
+  ! person are   = am</pre>
+<p>Then use the {person} tag in a response. The enclosed text will swap the words
+listed with the !person tags. For instance:</p>
+<pre>
+  + do you think *
+  - What if I do think {person}&lt;star&gt;{/person}?</pre>
+<pre>
+  &quot;Do you think I am a bad person?&quot;
+  &quot;What if I do think you are a bad person?&quot;</pre>
+<p>See, that's the use of this tag. Otherwise the bot would have replied ``What if I
+do think <strong>I am</strong> a bad person?'' and not make very much sense.</p>
+<p><strong>Note:</strong> RiveScript does NOT assume any person substitutions. Your RiveScript
+code must define them as exampled above.</p>
+<p>
+</p>
+<hr />
+<h1><a name="dynamic_replies">DYNAMIC REPLIES</a></h1>
+<p>A function added in version 0.07 is to <strong>write()</strong> the loaded replies into a
+single RS file. This is useful for if your program dynamically learns new
+replies.</p>
+<p>This section of the POD is devoted to explaining the setup of the internal
+hashrefs of the RiveScript instance.</p>
+<p>
+</p>
+<h2><a name="_rs__replies_">$rs-&gt;{replies}</a></h2>
+<p>This hashref contains the meat of the loaded replies. The first keys here
+are the topics (keep in mind that 'random' is the default topic). For replies
+that had %PREVIOUS in them, their topics are '__that__(bots last message, lowercase
+and without punctuation)' and that the data from BEGIN is in '__begin__'</p>
+<p>So for example, <strong>$rs-&gt;{replies}-&gt;{random}</strong> is where replies under the default
+topic are, while <strong>$rs-&gt;{replies}-&gt;{apology}</strong> is where replies under the
+'apology' topic are, et cetera.</p>
+<p>The sub-keys under a topic are the triggers. These are literally the strings
+you'd find in the file at the + command.</p>
+<p>For example, <strong>$rs-&gt;{replies}-&gt;{random}-&gt;{'my favorite color is (@colors)'}</strong></p>
+<p>
+</p>
+<h2><a name="trigger_keys">Trigger Keys</a></h2>
+<p>The following keys are used under trigger hashrefs ($rs-&gt;{replies}-&gt;{$topic}-&gt;{$trigger})</p>
+<p><strong>1..n</strong> - The -REPLIES under the trigger. The first - is position 1, and they increment
+from there.</p>
+<p><strong>redirect</strong> - The data from the @redirect command. Since RiveScript only supports a single
+@redirect in a message, this always has a single value.</p>
+<p><strong>conditions-&gt;{1..n}</strong> - The data from the *condition commands. This is in similar format
+to the -replies, where 1 is the first condition.</p>
+<p><strong>system-&gt;{codes}</strong> - The contents of any system codes provided by &amp;perl commands.</p>
+<p>
+</p>
+<h2><a name="sorted_arrays">Sorted Arrays</a></h2>
+<p>The first keys under <strong>$rs-&gt;{array}</strong> are the topic names, as they are in $rs-&gt;{replies}.
+But the contents of each topic key is an array ref of the sorted triggers.</p>
+<p>Generally, you shouldn't have to worry about modifying this variable directly--just
+call <code>sortReplies()</code> and it will manage it automatically.</p>
+<p>
+</p>
+<h2><a name="examples">Examples</a></h2>
+<pre>
+  // RiveScript Code
+  + my name is *
+  - &lt;star&gt;, nice to meet you!
+  - Nice to meet you, &lt;star&gt;.</pre>
+<pre>
+  # Perl code. Get the value of the second reply.
+  $rs-&gt;{replies}-&gt;{random}-&gt;{'my name is *'}-&gt;{2}</pre>
+<pre>
+  // RiveScript Code
+  &gt; topic favorites
+    + *(@colors)*
+    - I like &lt;star2&gt; too. :-)
+    &amp; &amp;main::log('&lt;id&gt; likes &lt;star2&gt;')
+  &lt; topic</pre>
+<pre>
+  # Perl code. Get the perl data from that trigger.
+  $rs-&gt;{replies}-&gt;{favorites}-&gt;{'*(@colors)*'}-&gt;{system}-&gt;{codes}</pre>
+<pre>
+  // RiveScript Code
+  + *
+  % whos there
+  - &lt;star&gt; who?</pre>
+<pre>
+  # Perl code. Access this one's reply.
+  $rs-&gt;{replies}-&gt;{'__that__whos there'}-&gt;{1}</pre>
+<p>
+</p>
+<hr />
+<h1><a name="included_files">INCLUDED FILES</a></h1>
+<p><strong>Recommended Practice</strong> is to put all your <strong>!include</strong> statements inside your ``begin.rs''
+file, as this file is loaded in first. The ``include'' statement is for including common
+libraries or packages.</p>
+<p>
+</p>
+<h2><a name="rivescript_libraries">RiveScript Libraries</a></h2>
+<p>RiveScript Libraries (<strong>.rsl</strong> extention) are special RiveScript documents which contain
+nothing but <strong>!arrays</strong> and <strong>!substitutions</strong> and the like. For instance, you could make
+a language library which could contain arrays of verbs and their conjugations.</p>
+<p>
+</p>
+<h2><a name="rivescript_packages">RiveScript Packages</a></h2>
+<p>RiveScript Packages (<strong>.rsp</strong> extension) are special RiveScript documents which contain
+one (or more) objects. For example, you might create a RiveScript package full of objects
+for returning the date and time in different formats.</p>
+<p>
+</p>
+<h2><a name="rivescript_include_search_path">RiveScript Include Search Path</a></h2>
+<p>The current RiveScript Includes search path is an array of Perl's @INC, with ``/RiveScript''
+tacked on the end of it. Also ``.'' is an include path (the working directory of the script
+running RiveScript).</p>
+<p>You can use the <strong>!addpath</strong> directive to add new search paths.</p>
+<p>
+</p>
+<hr />
+<h1><a name="reserved_variables">RESERVED VARIABLES</a></h1>
+<p>The following are all the reserved variables and values within RiveScript's
+processor.</p>
+<p>
+</p>
+<h2><a name="reserved_global_variables">Reserved Global Variables</a></h2>
+<p>These variables cannot be overwritten with the <strong>! global</strong> command:</p>
+<pre>
+  reserved replies array syntax streamcache botvars uservars
+  botarrays sort users substitutions</pre>
+<p>
+</p>
+<h2><a name="reserved_topic_names">Reserved Topic Names</a></h2>
+<p>The following topic names are reserved and should never be (re)created in
+your RiveScript files:</p>
+<pre>
+  __begin__   (used for the BEGIN method)
+  __that__*   (used for the %PREVIOUS command)</pre>
+<p>
+</p>
+<h2><a name="reserved_user_id_s">Reserved User_ID's</a></h2>
+<p>These are the reserved User ID's that you should not pass in to the <strong>reply</strong>
+method when getting a reply.</p>
+<pre>
+  __rivescript__   (to query the BEGIN method)</pre>
+<p>
+</p>
+<hr />
+<h1><a name="a_good_brain">A GOOD BRAIN</a></h1>
+<p>Since RiveScript leaves a lot of control up to the brain and not the Perl code,
+here are some general tips to follow when writing your own brain:</p>
+<p><strong>Make a config file.</strong> This would probably be named ``config.rs'' and it would
+handle all your definitions. For example it might look like this:</p>
+<pre>
+  // Set up globals
+  ! global debug = 0
+  ! global split_sentences = 1
+  ! global sentence_splitters = . ! ; ?</pre>
+<pre>
+  // Set a variable to say that we're active.
+  ! var active = yes</pre>
+<pre>
+  // Set up botvariables
+  ! var botname = Rive
+  ! var botage = 5
+  ! var company = AiChaos Inc.
+  // note that &quot;bot&quot; isn't required in these variables,
+  // it's only there for readibility</pre>
+<pre>
+  // Set up substitutions
+  ! sub won't = will not
+  ! sub i'm = i am
+  // etc</pre>
+<pre>
+  // Set up arrays
+  ! array colors = red green blue yellow cyan fuchsia ...</pre>
+<p>Here are a list of all the globals you might want to configure.</p>
+<pre>
+  split_sentences    - Whether to do sentence-splitting (1 or 0, default 1)
+  sentence_splitters - Where to split sentences at. Separate items with a single
+                       space. The defaults are:   ! . ? ;
+  macro_failure      - Text to be inserted into a bot's reply when a macro fails
+                       to run (or return a reply).
+  debug              - Debug mode (1 or 0, default 0)</pre>
+<p><strong>Make a begin file.</strong> Create a file called ``begin.rs'' -- there are several reasons
+for doing so.</p>
+<p>For one, you should use this file for <strong>!include</strong> statements if you want your brain
+to use some common libraries or packages. Secondly, you can use the <strong>&gt;BEGIN</strong>
+statement to setup a handler for incoming messages.</p>
+<p>Your begin file could check the ``active'' variable we set in the config file to
+decide if it should give a reply.</p>
+<pre>
+  &gt; begin
+    + request
+    * active=no =&gt; Sorry but I'm deactivated right now!
+    - {ok}
+  &lt; begin</pre>
+<p>These are the basic tips, just for organizational purposes.</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_other">SEE OTHER</a></h1>
+<p>You might want to take a look at <a href="/Chatbot/Alpha.html">the Chatbot::Alpha manpage</a>, this module's predecessor.</p>
+<p>
+</p>
+<hr />
+<h1><a name="known_bugs">KNOWN BUGS</a></h1>
+<p>None yet known.</p>
+<p>
+</p>
+<hr />
+<h1><a name="changes">CHANGES</a></h1>
+<pre>
+  Version 0.12
+  - Migrated to RiveScript:: namespace.</pre>
+<pre>
+  Version 0.11
+  - When calling loadDirectory, a &quot;begin.rs&quot; file is always loaded first
+    (provided the file exists, of course!)
+  - Added support for &quot;include&quot;ing libraries and packages (see &quot;INCLUDED FILES&quot;)</pre>
+<pre>
+  Version 0.10
+  - The getUservars() method now returns a hashref of hashrefs if you want the
+    vars of all users. Makes it a little easier to label each set of variables
+    with the particular user involved. ;)
+  - Cleaned up some leftover print statements from my debugging in version 0.09
+    (sorry about that--again!)
+  - Made some revisions to the POD, fixed some typo's, added {weight} and {ok}
+    to the TAGS section.</pre>
+<pre>
+  Version 0.09
+  - $1 to $100+ are now done using an array rather than a hash. Theoretically
+    this allows any number of stars, even greater than 100.
+  - Arrays in triggers have been modified. An array in parenthesis (the former
+    requirement) will make the array matchable in &lt;star#&gt; tags. An array outside
+    of parenthesis makes it NOT matchable.
+  - Minor code improvements for readibility purposes.</pre>
+<pre>
+  Version 0.08
+  - Added &lt;add&gt;, &lt;sub&gt;, &lt;mult&gt;, and &lt;div&gt; tags.
+  - Added environmental variable support.
+  - Extended *CONDITION to support inequalities
+  - Botvars in conditions must be explicitely specified with # before the varname.
+  - Added &quot;! person&quot; substitutions
+  - Added {person} tag</pre>
+<pre>
+  Version 0.07
+  - Added write() method
+  - reply() method now can take tags to force scalar return or to ignore
+    sentence-splitting.
+  - loadDirectory() method can now take a list of specific file extensions
+    to look for.
+  - Cleaned up some leftover debug prints from last release (sorry about that!)</pre>
+<pre>
+  Version 0.06
+  - Extended ^CONTINUE to cover more commands
+  - Added \s and \n tags
+  - Revised POD</pre>
+<pre>
+  Version 0.05
+  - Fixed a bug with optionals. If they were used at the start or end
+    of a trigger, the trigger became unmatchable. This has been fixed
+    by changing ' ' into '\s*'</pre>
+<pre>
+  Version 0.04
+  - Added support for optional parts of the trigger.
+  - Begun support for inline objects to be created.</pre>
+<pre>
+  Version 0.03
+  - Added search() method.
+  - &lt;bot&gt; variables can be inserted into triggers now (for example having
+    the bot reply to its name no matter what its name is)</pre>
+<pre>
+  Version 0.02
+  - Fixed a regexp bug; now it stops searching when it finds a match
+    (it would cause errors with $1 to $100)
+  - Fixed an inconsistency that didn't allow uservars to work in
+    conditionals.
+  - Added &lt;id&gt; tag, useful for objects that need a unique user to work
+    with.
+  - Fixed bug that lets comments begin with more than one set of //</pre>
+<pre>
+  Version 0.01
+  - Initial Release</pre>
+<p>
+</p>
+<hr />
+<h1><a name="todo_list">TO-DO LIST</a></h1>
+<p>Feel free to offer any ideas. ;)</p>
+<p>
+</p>
+<hr />
+<h1><a name="special_thanks">SPECIAL THANKS</a></h1>
+<p>Special thanks goes out to <strong>jeffohrt</strong> and <strong>harleypig</strong> of the AiChaos
+Forum for helping so much with the development of RiveScript.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<pre>
+  Cerone Kirsle, kirsle --at-- rainbowboi.com</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright_and_license">COPYRIGHT AND LICENSE</a></h1>
+<pre>
+    RiveScript - Rendering Intelligence Very Easily
+    Copyright (C) 2006  Cerone J. Kirsle</pre>
+<pre>
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.</pre>
+<pre>
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.</pre>
+<pre>
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA</pre>
+
+</body>
+
+</html>

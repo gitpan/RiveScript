@@ -1,0 +1,16 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+RiveScript.pl
+RiveScript.html
+t/RiveScript.t
+lib/RiveScript.pm
+lib/RiveScript/English.rsl
+lib/RiveScript/English/EnglishAdj.rsl
+lib/RiveScript/English/EnglishNouns.rsl
+lib/RiveScript/English/EnglishVerbs.rsl
+replies/begin.rs
+replies/config.rs
+replies/hello.rs
+replies/tests.rs

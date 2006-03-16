@@ -22,7 +22,7 @@
    ############################## */
 
 + test variables
-- My name is {^name}. I am {^age} years old.
+- My name is <bot name>. I am <bot age> years old.
 
 // Test setting and getting a user variable
 + set name to *

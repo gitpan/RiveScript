@@ -4,7 +4,7 @@ use strict;
 no strict 'refs';
 use warnings;
 
-our $VERSION = '0.11';
+our $VERSION = '0.13';
 
 sub new {
 	my $proto = shift;
@@ -51,7 +51,7 @@ sub new {
 
 	# Include Libraries.
 	foreach my $inc (@INC) {
-		push (@{$self->{library}}, "$inc/RiveScript");
+		push (@{$self->{library}}, "$inc/RiveScript/RSLIBS");
 	}
 
 	bless ($self,$class);
@@ -390,7 +390,8 @@ sub loadFile {
 
 			my ($type,$details) = split(/\s+/, $data, 2);
 			my ($what,$is) = split(/=/, $details, 2);
-			$what =~ s/\s//g; $is =~ s/^\s//g;
+			$what =~ s/\s//g if defined $what;
+			$is =~ s/^\s//g if defined $is;
 			$type =~ s/\s//g;
 			$type = lc($type);
 
@@ -617,7 +618,7 @@ sub loadFile {
 			$self->{syntax}->{$topic}->{$trigger}->{system}->{codes}->{ref} = "$file line $num";
 		}
 		else {
-			warn "Unknown command $command";
+			warn "Unknown command $command at $file line $num;";
 		}
 	}
 }
@@ -730,13 +731,14 @@ sub reply {
 
 	# print "reply called\n";
 
-	# Check a global begin set first.
-	if (!exists $self->{users}->{'__rivescript__'}) {
-		$self->{users}->{__rivescript__}->{topic} = '__begin__';
+	# Send this through the "BEGIN" reply first.
+	my $begin = '{ok}';
+	if (exists $self->{replies}->{__begin__}->{request}) {
+		my $userTopic = $self->{users}->{$id}->{topic} || 'random';
+		$self->{users}->{$id}->{topic} = '__begin__';
+		$begin = $self->intReply ($id,'request', tags => 0);
+		$self->{users}->{$id}->{topic} = $userTopic;
 	}
-
-	my $begin = $self->intReply ('__rivescript__', 'request');
-	$begin = '{ok}' if $begin =~ /^ERR: No Reply/;
 
 	my @out = ();
 	if ($begin =~ /\{ok\}/i) {
@@ -759,14 +761,18 @@ sub reply {
 
 		my @final = ();
 
+		my $reply = $begin;
 		foreach (@out) {
-			my $reply = $begin;
 			$reply =~ s/\{ok\}/$_/ig;
+			$reply = $self->tagFilter ($reply,$id,$msg);
 			push (@final,$reply);
 		}
 
 		# Get it in scalar form.
 		my $scalar = join (" ", @final);
+
+		# Run final filters on it (for begin statement's sake).
+		# $scalar = $self->tagFilter ($scalar,$id,$msg);
 
 		# If no reply, try again without sentence-splitting.
 		if (($scalar =~ /^ERR: No Reply/ || length $scalar == 0) && $args{retry} != 1) {
@@ -782,12 +788,18 @@ sub reply {
 		return @final;
 	}
 	else {
+		# Run tag filters anyway.
+		my $userTopic = $self->{users}->{$id}->{topic} || 'random';
+		$self->{users}->{$id}->{topic} = '__begin__';
+		$begin = $self->tagFilter ($begin,$id,$msg);
+		$self->{users}->{$id}->{topic} = $userTopic;
 		return $begin;
 	}
 }
 
 sub intReply {
-	my ($self,$id,$msg) = @_;
+	my ($self,$id,$msg,%inArgs) = @_;
+	$inArgs{tags} = 1 unless exists $inArgs{tags};
 
 	# Sort replies if they haven't been yet.
 	if (!(scalar(keys %{$self->{array}}))) {
@@ -955,16 +967,8 @@ sub intReply {
 								# ?  defined
 
 								if ($type eq '?') {
-									if (defined $botVar || defined $usrVar) {
-										if (defined $botVar) {
-											$reply = $happens;
-											$checkUser = 0;
-										}
-
-										if ($checkUser && !$isBotVar && defined $usrVar) {
-											$reply = $happens;
-											$checkUser = 0;
-										}
+									if (defined $usrVar) {
+										$reply = $happens;
 									}
 								}
 								elsif ($type eq '=') {
@@ -1104,6 +1108,179 @@ sub intReply {
 			$reply = "ERR: No Reply Found";
 		}
 	}
+
+	# Filter tags in.
+	$reply = $self->tagFilter ($reply,$id,$msg) if $inArgs{tags};
+
+	# Update history.
+	shift (@{$self->{users}->{$id}->{history}->{input}});
+	shift (@{$self->{users}->{$id}->{history}->{reply}});
+	unshift (@{$self->{users}->{$id}->{history}->{input}}, $msg);
+	unshift (@{$self->{users}->{$id}->{history}->{reply}}, $reply);
+	unshift (@{$self->{users}->{$id}->{history}->{input}}, '');
+	unshift (@{$self->{users}->{$id}->{history}->{reply}}, '');
+	pop (@{$self->{users}->{$id}->{history}->{input}});
+	pop (@{$self->{users}->{$id}->{history}->{reply}});
+
+	# Format the bot's reply.
+	my $simple = lc($reply);
+	$simple =~ s/[^A-Za-z0-9 ]//g;
+	$simple =~ s/^\s+//g;
+	$simple =~ s/\s$//g;
+
+	# Save this message.
+	$self->{users}->{$id}->{that} = $simple;
+	$self->{users}->{$id}->{last} = $msg;
+	$self->{users}->{$id}->{hold} ||= 0;
+
+	# Reset the loop timer.
+	$self->{loops} = 0;
+
+	# There SHOULD be a reply now.
+	# Return it in pairs at {nextreply}
+	if ($reply =~ /\{nextreply\}/i) {
+		my @returned = split(/\{nextreply\}/i, $reply);
+		return @returned;
+	}
+
+	# Filter in line breaks.
+	$reply =~ s/\\n/\n/g;
+
+	return $reply;
+}
+
+sub search {
+	my ($self,$string) = @_;
+
+	# Search for this string.
+	$string = $self->formatMessage ($string);
+
+	my @result = ();
+	foreach my $topic (keys %{$self->{array}}) {
+		foreach my $trigger (@{$self->{array}->{$topic}}) {
+			my $regexp = $trigger;
+			$regexp =~ s~\*~\(\.\*\?\)~g;
+
+			# Run optional modifiers.
+			while ($regexp =~ /\[(.*?)\]/i) {
+				my $o = $1;
+				my @parts = split(/\|/, $o);
+				my @new = ();
+
+				foreach my $word (@parts) {
+					$word = ' ' . $word . ' ';
+					push (@new,$word);
+				}
+
+				push (@new,' ');
+				my $rep = '(' . join ('|',@new) . ')';
+
+				$regexp =~ s/\s*\[(.*?)\]\s*/$rep/g;
+			}
+
+			# Filter in arrays.
+			while ($regexp =~ /\(\@(.*?)\)/i) {
+				my $o = $1;
+				my $name = $o;
+				my $rep = '';
+				if (exists $self->{botarrays}->{$name}) {
+					$rep = '(' . join ('|', @{$self->{botarrays}->{$name}}) . ')';
+				}
+				$regexp =~ s/\(\@$o\)/$rep/ig;
+			}
+
+			# Filter in botvariables.
+			while ($regexp =~ /<bot (.*?)>/i) {
+				my $o = $1;
+				my $value = $self->{botvars}->{$o};
+				$value =~ s/[^A-Za-z0-9 ]//g;
+				$value = lc($value);
+				$regexp =~ s/<bot $o>/$value/ig;
+			}
+
+			# Match?
+			if ($string =~ /^$regexp$/i) {
+				push (@result, "$trigger (topic: $topic) at $self->{syntax}->{$topic}->{$trigger}->{ref}");
+			}
+		}
+	}
+
+	return @result;
+}
+
+sub splitSentences {
+	my ($self,$msg) = @_;
+
+	# Split at sentence-splitters?
+	if ($self->{split_sentences}) {
+		my @syms = ();
+		my @splitters = split(/\s+/, $self->{sentence_splitters});
+		foreach my $item (@splitters) {
+			$item =~ s/([^A-Za-z0-9 ])/\\$1/g;
+			push (@syms,$item);
+		}
+
+		my $regexp = join ('|',@syms);
+
+		my @sentences = split(/($regexp)/, $msg);
+		return @sentences;
+	}
+	else {
+		return $msg;
+	}
+}
+
+sub formatMessage {
+	my ($self,$msg) = @_;
+
+	# Lowercase the string.
+	$msg = lc($msg);
+
+	# Get the words and run substitutions.
+	my @words = split(/\s+/, $msg);
+	my @new = ();
+	foreach my $word (@words) {
+		if (exists $self->{substitutions}->{$word}) {
+			$word = $self->{substitutions}->{$word};
+		}
+		push (@new, $word);
+	}
+
+	# Reconstruct the message.
+	$msg = join (' ',@new);
+
+	# Remove punctuation and such.
+	$msg =~ s/[^A-Za-z0-9 ]//g;
+	$msg =~ s/^\s//g;
+	$msg =~ s/\s$//g;
+
+	return $msg;
+}
+
+sub person {
+	my ($self,$msg) = @_;
+
+	# Lowercase the string.
+	$msg = lc($msg);
+
+	# Get the words and run substitutions.
+	my @words = split(/\s+/, $msg);
+	my @new = ();
+	foreach my $word (@words) {
+		if (exists $self->{person}->{$word}) {
+			$word = $self->{person}->{$word};
+		}
+		push (@new, $word);
+	}
+
+	# Reconstruct the message.
+	$msg = join (' ',@new);
+
+	return $msg;
+}
+
+sub tagFilter {
+	my ($self,$reply,$id,$msg) = @_;
 
 	# History tags.
 	$reply =~ s/<input(\d)>/$self->{users}->{$id}->{history}->{input}->[$1]/g;
@@ -1278,171 +1455,7 @@ sub intReply {
 		$reply =~ s/\{person\}(.*?)\{\/person\}/$new/i;
 	}
 
-	# Update history.
-	shift (@{$self->{users}->{$id}->{history}->{input}});
-	shift (@{$self->{users}->{$id}->{history}->{reply}});
-	unshift (@{$self->{users}->{$id}->{history}->{input}}, $msg);
-	unshift (@{$self->{users}->{$id}->{history}->{reply}}, $reply);
-	unshift (@{$self->{users}->{$id}->{history}->{input}}, '');
-	unshift (@{$self->{users}->{$id}->{history}->{reply}}, '');
-	pop (@{$self->{users}->{$id}->{history}->{input}});
-	pop (@{$self->{users}->{$id}->{history}->{reply}});
-
-	# Format the bot's reply.
-	my $simple = lc($reply);
-	$simple =~ s/[^A-Za-z0-9 ]//g;
-	$simple =~ s/^\s+//g;
-	$simple =~ s/\s$//g;
-
-	# Save this message.
-	$self->{users}->{$id}->{that} = $simple;
-	$self->{users}->{$id}->{last} = $msg;
-	$self->{users}->{$id}->{hold} ||= 0;
-
-	# Reset the loop timer.
-	$self->{loops} = 0;
-
-	# There SHOULD be a reply now.
-	# Return it in pairs at {nextreply}
-	if ($reply =~ /\{nextreply\}/i) {
-		my @returned = split(/\{nextreply\}/i, $reply);
-		return @returned;
-	}
-
-	# Filter in line breaks.
-	$reply =~ s/\\n/\n/g;
-
 	return $reply;
-}
-
-sub search {
-	my ($self,$string) = @_;
-
-	# Search for this string.
-	$string = $self->formatMessage ($string);
-
-	my @result = ();
-	foreach my $topic (keys %{$self->{array}}) {
-		foreach my $trigger (@{$self->{array}->{$topic}}) {
-			my $regexp = $trigger;
-			$regexp =~ s~\*~\(\.\*\?\)~g;
-
-			# Run optional modifiers.
-			while ($regexp =~ /\[(.*?)\]/i) {
-				my $o = $1;
-				my @parts = split(/\|/, $o);
-				my @new = ();
-
-				foreach my $word (@parts) {
-					$word = ' ' . $word . ' ';
-					push (@new,$word);
-				}
-
-				push (@new,' ');
-				my $rep = '(' . join ('|',@new) . ')';
-
-				$regexp =~ s/\s*\[(.*?)\]\s*/$rep/g;
-			}
-
-			# Filter in arrays.
-			while ($regexp =~ /\(\@(.*?)\)/i) {
-				my $o = $1;
-				my $name = $o;
-				my $rep = '';
-				if (exists $self->{botarrays}->{$name}) {
-					$rep = '(' . join ('|', @{$self->{botarrays}->{$name}}) . ')';
-				}
-				$regexp =~ s/\(\@$o\)/$rep/ig;
-			}
-
-			# Filter in botvariables.
-			while ($regexp =~ /<bot (.*?)>/i) {
-				my $o = $1;
-				my $value = $self->{botvars}->{$o};
-				$value =~ s/[^A-Za-z0-9 ]//g;
-				$value = lc($value);
-				$regexp =~ s/<bot $o>/$value/ig;
-			}
-
-			# Match?
-			if ($string =~ /^$regexp$/i) {
-				push (@result, "$trigger (topic: $topic) at $self->{syntax}->{$topic}->{$trigger}->{ref}");
-			}
-		}
-	}
-
-	return @result;
-}
-
-sub splitSentences {
-	my ($self,$msg) = @_;
-
-	# Split at sentence-splitters?
-	if ($self->{split_sentences}) {
-		my @syms = ();
-		my @splitters = split(/\s+/, $self->{sentence_splitters});
-		foreach my $item (@splitters) {
-			$item =~ s/([^A-Za-z0-9 ])/\\$1/g;
-			push (@syms,$item);
-		}
-
-		my $regexp = join ('|',@syms);
-
-		my @sentences = split(/($regexp)/, $msg);
-		return @sentences;
-	}
-	else {
-		return $msg;
-	}
-}
-
-sub formatMessage {
-	my ($self,$msg) = @_;
-
-	# Lowercase the string.
-	$msg = lc($msg);
-
-	# Get the words and run substitutions.
-	my @words = split(/\s+/, $msg);
-	my @new = ();
-	foreach my $word (@words) {
-		if (exists $self->{substitutions}->{$word}) {
-			$word = $self->{substitutions}->{$word};
-		}
-		push (@new, $word);
-	}
-
-	# Reconstruct the message.
-	$msg = join (' ',@new);
-
-	# Remove punctuation and such.
-	$msg =~ s/[^A-Za-z0-9 ]//g;
-	$msg =~ s/^\s//g;
-	$msg =~ s/\s$//g;
-
-	return $msg;
-}
-
-sub person {
-	my ($self,$msg) = @_;
-
-	# Lowercase the string.
-	$msg = lc($msg);
-
-	# Get the words and run substitutions.
-	my @words = split(/\s+/, $msg);
-	my @new = ();
-	foreach my $word (@words) {
-		if (exists $self->{person}->{$word}) {
-			$word = $self->{person}->{$word};
-		}
-		push (@new, $word);
-	}
-
-	# Reconstruct the message.
-	$msg = join (' ',@new);
-
-	return $msg;
 }
 
 sub mergeWildcards {
@@ -2103,6 +2116,23 @@ useful to format all responses in one way. For a good example:
 That would give the reply about the bot being under maintenance if the variable
 "down" equals "yes." Else, it would give a response in red bold font.
 
+You can also put tags in to modify the returned responses of the bot. For example,
+the bot can "type" differently depending on a variable "mood" (see L<"TAGS">)
+
+  > begin
+    + request
+    * mood = happy  => {ok}
+    * mood = sad    => {lowercase}{ok}{/lowercase}
+    * mood = angry  => {uppercase}{ok}{/uppercase}
+    * mood = pissed => {@not talking}
+    - {ok}
+
+    + not talking
+    - I'm not in a talkative mood.
+    - I'm not too happy right now.
+    - I don't want to talk right now.
+  < begin
+
 B<Note:> At the time being, the only trigger that BEGIN ever receives is "request"
 
 The "begin.rs" file is also where you would place your B<!include> statements to
@@ -2535,13 +2565,6 @@ your RiveScript files:
   __begin__   (used for the BEGIN method)
   __that__*   (used for the %PREVIOUS command)
 
-=head2 Reserved User_ID's
-
-These are the reserved User ID's that you should not pass in to the B<reply>
-method when getting a reply.
-
-  __rivescript__   (to query the BEGIN method)
-
 =head1 A GOOD BRAIN
 
 Since RiveScript leaves a lot of control up to the brain and not the Perl code,
@@ -2609,6 +2632,12 @@ You might want to take a look at L<Chatbot::Alpha>, this module's predecessor.
 None yet known.
 
 =head1 CHANGES
+
+  Version 0.13
+  - The BEGIN/request statement has been changed. The user that makes the "request"
+    is the actual user--no longer "__rivescript__", so user-based conditionals can
+    work too. Also, request tags are not processed until the reply-getting process
+    is completed. So tags like {uppercase} can modify the final returned reply.
 
   Version 0.12
   - Migrated to RiveScript:: namespace.

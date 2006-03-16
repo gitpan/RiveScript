@@ -209,7 +209,7 @@
 ! array nCookie = cookie|cookies|cooky|cookys
 ! array nCopy = copy|copies
 ! array nCopyright = copyright|copyrite|copywrite|copyrights|copyrites|copywrites|
-  ^ copy right|rite|write|rights|rites|writes
+^ copy right|rite|write|rights|rites|writes
 
 ! array nCorrection = correction|corrections
 ! array nCost = cost|costs

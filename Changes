@@ -1,5 +1,11 @@
 Revision history for Perl extension RiveScript.
 
+0.13 Thu Mar 16 15:13:00 2006
+	- The BEGIN/request statement has been changed. The user that makes the "request"
+		is the actual user--no longer "__rivescript__", so user-based conditionals can
+		work too. Also, request tags are not processed until the reply-getting process
+		is completed. So tags like {uppercase} can modify the final returned reply.
+
 0.12 Tue Mar 14 16:32:00 2006
 	- Module moved to namespace of RiveScript::
 

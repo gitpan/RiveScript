@@ -116,7 +116,6 @@
 
 		<li><a href="#reserved_global_variables">Reserved Global Variables</a></li>
 		<li><a href="#reserved_topic_names">Reserved Topic Names</a></li>
-		<li><a href="#reserved_user_id_s">Reserved User_ID's</a></li>
 	</ul>
 
 	<li><a href="#a_good_brain">A GOOD BRAIN</a></li>
@@ -746,6 +745,22 @@ useful to format all responses in one way. For a good example:</p>
   &lt; begin</pre>
 <p>That would give the reply about the bot being under maintenance if the variable
 ``down'' equals ``yes.'' Else, it would give a response in red bold font.</p>
+<p>You can also put tags in to modify the returned responses of the bot. For example,
+the bot can ``type'' differently depending on a variable ``mood'' (see <a href="#tags">TAGS</a>)</p>
+<pre>
+  &gt; begin
+    + request
+    * mood = happy  =&gt; {ok}
+    * mood = sad    =&gt; {lowercase}{ok}{/lowercase}
+    * mood = angry  =&gt; {uppercase}{ok}{/uppercase}
+    * mood = pissed =&gt; {@not talking}
+    - {ok}</pre>
+<pre>
+    + not talking
+    - I'm not in a talkative mood.
+    - I'm not too happy right now.
+    - I don't want to talk right now.
+  &lt; begin</pre>
 <p><strong>Note:</strong> At the time being, the only trigger that BEGIN ever receives is ``request''</p>
 <p>The ``begin.rs'' file is also where you would place your <strong>!include</strong> statements to
 make sure that they're included before any other files.</p>
@@ -1158,13 +1173,6 @@ your RiveScript files:</p>
   __that__*   (used for the %PREVIOUS command)</pre>
 <p>
 </p>
-<h2><a name="reserved_user_id_s">Reserved User_ID's</a></h2>
-<p>These are the reserved User ID's that you should not pass in to the <strong>reply</strong>
-method when getting a reply.</p>
-<pre>
-  __rivescript__   (to query the BEGIN method)</pre>
-<p>
-</p>
 <hr />
 <h1><a name="a_good_brain">A GOOD BRAIN</a></h1>
 <p>Since RiveScript leaves a lot of control up to the brain and not the Perl code,
@@ -1230,6 +1238,12 @@ decide if it should give a reply.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  Version 0.13
+  - The BEGIN/request statement has been changed. The user that makes the &quot;request&quot;
+    is the actual user--no longer &quot;__rivescript__&quot;, so user-based conditionals can
+    work too. Also, request tags are not processed until the reply-getting process
+    is completed. So tags like {uppercase} can modify the final returned reply.</pre>
 <pre>
   Version 0.12
   - Migrated to RiveScript:: namespace.</pre>

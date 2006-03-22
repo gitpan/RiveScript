@@ -3,8 +3,10 @@ Makefile.PL
 MANIFEST
 README
 RiveScript.html
+Tutorial.html
 t/RiveScript.t
 lib/RiveScript.pm
+lib/RiveScript/Tutorial.pod
 lib/RiveScript/RSLIB/English.rsl
 lib/RiveScript/RSLIB/English/EnglishAdj.rsl
 lib/RiveScript/RSLIB/English/EnglishNouns.rsl

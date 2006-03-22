@@ -4,7 +4,7 @@ use strict;
 no strict 'refs';
 use warnings;
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 sub new {
 	my $proto = shift;
@@ -51,7 +51,7 @@ sub new {
 
 	# Include Libraries.
 	foreach my $inc (@INC) {
-		push (@{$self->{library}}, "$inc/RiveScript/RSLIBS");
+		push (@{$self->{library}}, "$inc/RiveScript/RSLIB");
 	}
 
 	bless ($self,$class);
@@ -269,8 +269,12 @@ sub loadFile {
 		# Format the line.
 		$self->debug ("Line $num ($inCom): $line");
 		next if length $line == 0; # Skip blank lines
-		$line =~ s/^[\s\t]//g;     # Remove prepent whitepaces
-		$line =~ s/[\s\t]$//g;     # Remove appent whitespaces
+		$line =~ s/^[\s\t]*//ig;     # Remove prepent whitepaces
+		$line =~ s/[\s\t]*$//ig;     # Remove appent whitespaces
+
+		if ($line =~ /^\s/) {
+			print "Line: $line\n";
+		}
 
 		# Separate the command from its data.
 		my ($command,$data) = split(/\s+/, $line, 2);
@@ -298,6 +302,8 @@ sub loadFile {
 
 		# Skip comments.
 		next if $inCom;
+
+		next unless length $command;
 
 		# Concatenate previous commands.
 		if ($command eq '^') {
@@ -738,6 +744,13 @@ sub reply {
 		$self->{users}->{$id}->{topic} = '__begin__';
 		$begin = $self->intReply ($id,'request', tags => 0);
 		$self->{users}->{$id}->{topic} = $userTopic;
+
+		# Prerun any topic tags present.
+		if ($begin =~ /\{topic=(.*?)\}/i) {
+			my $to = $1;
+			$self->{users}->{$id}->{topic} = $to;
+			$begin =~ s/\{topic=(.*?)\}//g;
+		}
 	}
 
 	my @out = ();
@@ -1476,17 +1489,12 @@ sub stringUtil {
 		return lc($string);
 	}
 	elsif ($type eq 'sentence') {
-		$string = lc($string);
-		return ucfirst($string);
+		$string =~ s~\b(\w)(.*?)(\.|\?|\!|$)~\u$1\L$2$3\E~ig;
+		return $string;
 	}
 	elsif ($type eq 'formal') {
-		$string = lc($string);
-		my @words = split(/ /, $string);
-		my @out = ();
-		foreach my $word (@words) {
-			push (@out, ucfirst($word));
-		}
-		return join (" ", @out);
+		$string =~ s~\b(\w+)\b~\L\u$1\E~ig;
+		return $string;
 	}
 	else {
 		return $string;
@@ -2632,6 +2640,14 @@ You might want to take a look at L<Chatbot::Alpha>, this module's predecessor.
 None yet known.
 
 =head1 CHANGES
+
+  Version 0.14
+  - {formal} and {sentence} tags fixed. They both use regexp's now. {sentence} can
+    take multiple sentences with no problem.
+  - In a BEGIN statement, {topic} tags are handled first. In this way, the BEGIN
+    statement can force a topic before getting a reply under the user's current topic.
+  - Fixed a bug with "blank" commands while reading in a file.
+  - Fixed a bug with the RiveScriptLib Search Paths.
 
   Version 0.13
   - The BEGIN/request statement has been changed. The user that makes the "request"

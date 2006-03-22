@@ -1239,6 +1239,14 @@ decide if it should give a reply.</p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
 <pre>
+  Version 0.14
+  - {formal} and {sentence} tags fixed. They both use regexp's now. {sentence} can
+    take multiple sentences with no problem.
+  - In a BEGIN statement, {topic} tags are handled first. In this way, the BEGIN
+    statement can force a topic before getting a reply under the user's current topic.
+  - Fixed a bug with &quot;blank&quot; commands while reading in a file.
+  - Fixed a bug with the RiveScriptLib Search Paths.</pre>
+<pre>
   Version 0.13
   - The BEGIN/request statement has been changed. The user that makes the &quot;request&quot;
     is the actual user--no longer &quot;__rivescript__&quot;, so user-based conditionals can

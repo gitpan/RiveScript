@@ -1,5 +1,13 @@
 Revision history for Perl extension RiveScript.
 
+0.14 Wed Mar 22 16:51:00 2006
+	- {formal} and {sentence} tags fixed. They both use regexp's now. {sentence} can
+		take multiple sentences with no problem.
+	- In a BEGIN statement, {topic} tags are handled first. In this way, the BEGIN
+		statement can force a topic before getting a reply under the user's current topic.
+	- Fixed a bug with "blank" commands while reading in a file.
+	- Fixed a bug with the RiveScriptLib Search Paths.
+
 0.13 Thu Mar 16 15:13:00 2006
 	- The BEGIN/request statement has been changed. The user that makes the "request"
 		is the actual user--no longer "__rivescript__", so user-based conditionals can

@@ -3,18 +3,23 @@ package RiveScript;
 use strict;
 no strict 'refs';
 use warnings;
+use RiveScript::Brain;
+use RiveScript::Parser;
+use RiveScript::Util;
+use Data::Dumper;
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto || 'RiveScript';
 
 	my $self = {
-		debug   => 0,
+		debug       => 0,
+		parser      => undef, # RiveScript::Parser Object
 		reserved    => [      # Array of reserved (unmodifiable) keys.
 			qw (reserved replies array syntax streamcache botvars uservars botarrays
-			sort users substitutions library),
+			sort users substitutions library parser),
 		],
 		replies     => {},    # Replies
 		array       => {},    # Sorted replies array
@@ -30,6 +35,7 @@ sub new {
 		loops       => {},    # Reply recursion
 		macros      => {},    # Subroutine macro objects
 		library     => ['.'], # Include Libraries
+		evals       => undef, # Needed by RiveScript::Parser
 
 		# Some editable globals.
 		split_sentences    => 1,                    # Perform sentence-splitting.
@@ -62,6 +68,21 @@ sub debug {
 	my ($self,$msg) = @_;
 
 	print "RiveScript // $msg\n" if $self->{debug} == 1;
+}
+
+sub makeParser {
+	my $self = shift;
+
+	$self->{parser} = undef;
+	$self->{parser} = new RiveScript::Parser (
+		reserved => $self->{reserved},
+		debug    => $self->{debug},
+	);
+
+	# Transfer all RS variables.
+	foreach my $key (keys %{$self}) {
+		$self->{parser}->{$key} = $self->{$key};
+	}
 }
 
 sub setSubroutine {
@@ -184,7 +205,6 @@ sub loadDirectory {
 	if (-d $dir) {
 		# Include "begin.rs" first.
 		if (-e "$dir/begin.rs") {
-			print "Loading begin.rs first!\n";
 			$self->loadFile ("$dir/begin.rs");
 		}
 
@@ -218,1025 +238,72 @@ sub stream {
 }
 
 sub loadFile {
-	my $self = shift;
-	my $file = shift || '(Streamed)';
-	my $stream = shift || 0;
+	my $self   = shift;
+	my $file   = $_[0] || '(Streamed)';
+	my $stream = $_[1] || 0;
 
-	# Prepare to load the file.
-	my @data = ();
+	# Create a parser for this file.
+	$self->makeParser;
 
-	# Streaming in replies?
+	# Streamed Replies?
 	if ($stream) {
-		@data = split(/\n/, $self->{streamcache});
-		chomp @data;
-	}
-	else {
-		open (FILE, $file);
-		@data = <FILE>;
-		close (FILE);
-		chomp @data;
+		$self->{parser}->{streamcache} = $self->{streamcache};
 	}
 
-	$self->debug ("Parsing in file $file");
+	# Read in this file.
+	$self->{parser}->loadFile (@_);
 
-	# Set up parser variables.
-	my $started = 0;        # Haven't found a trigger yet
-	my $inReply = 0;        # Not in a reply yet
-	my $inCom   = 0;        # Not in commented code
-	my $inObj   = 0;        # In an object.
-	my $objName = '';       # Object's name
-	my $objCode = '';       # Object's source.
-	my $topic   = 'random'; # Default topic
-	my $trigger = '';       # The trigger we're on
-	my $replies = 0;        # -REPLY counter
-	my $conds   = 0;        # *CONDITION counter
-	my $num     = 0;        # Line numbers.
-	my $conc    = 0;        # Concetanate the last command (0.06)
-	my $lastCmd = '';       # The last command used (0.06)
-
-	# Go through the file.
-	foreach my $line (@data) {
-		$num++;
-
-		# If in an object...
-		if ($inObj == 1) {
-			if ($line !~ /< object/i) {
-				$objCode .= "$line\n";
-				next;
-			}
-		}
-
-		# Format the line.
-		$self->debug ("Line $num ($inCom): $line");
-		next if length $line == 0; # Skip blank lines
-		$line =~ s/^[\s\t]*//ig;     # Remove prepent whitepaces
-		$line =~ s/[\s\t]*$//ig;     # Remove appent whitespaces
-
-		if ($line =~ /^\s/) {
-			print "Line: $line\n";
-		}
-
-		# Separate the command from its data.
-		my ($command,$data) = split(/\s+/, $line, 2);
-
-		# Filter in hard spaces.
-		$data =~ s/\\s/ /g if defined $data;
-
-		# Check for comment commands...
-		if ($command =~ /^\/\//) {
-			# Single comment. Skip it.
-			next;
-		}
-		if ($command eq '/*') {
-			# We're starting a comment section.
-			if (defined $data && $data =~ /\*\//) {
-				# The section was ended here too.
-				next;
-			}
-			$inCom = 1;
-		}
-		if ($command eq '*/' || (defined $data && $data =~ /\*\//)) {
-			$inCom = 0;
-			next;
-		}
-
-		# Skip comments.
-		next if $inCom;
-
-		next unless length $command;
-
-		# Concatenate previous commands.
-		if ($command eq '^') {
-			$self->debug ("^ Command - Command Continuation");
-
-			if ($lastCmd =~ /^\! global (.*?)$/i) {
-				my $var = $1;
-				$self->{$var} .= $data;
-			}
-			elsif ($lastCmd =~ /^\! var (.*?)$/i) {
-				my $var = $1;
-				$self->{botvars}->{$var} .= $data;
-			}
-			elsif ($lastCmd =~ /^\! array (.*?)$/i) {
-				my $var = $1;
-				if ($data =~ /\|/) {
-					my @words = split(/\|/, $data);
-					push (@{$self->{botarrays}->{$var}}, @words);
-				}
-				else {
-					my @words = split(/\s+/, $data);
-					push (@{$self->{botarrays}->{$var}}, @words);
-				}
-			}
-			elsif ($lastCmd =~ /^\+ (.*?)$/i) {
-				my $tr = $1;
-				$trigger = $tr . $data;
-			}
-			elsif ($lastCmd =~ /^\% (.*?)$/i) {
-				my $that = $1;
-				$topic .= $data;
-			}
-			elsif ($lastCmd =~ /^\@ (.*?)$/i) {
-				my $at = $1;
-				$self->{replies}->{$topic}->{$trigger}->{redirect} .= $data;
-			}
-			else {
-				# Normal behavior
-				$self->{replies}->{$topic}->{$trigger}->{$replies} .= $data;
-			}
-
-			next;
-		}
-
-		# Go through actual commands.
-		if ($command eq '>') {
-			$self->debug ("> Command - Label Begin!");
-			my ($type,$text) = split(/\s+/, $data, 2);
-			if ($type eq 'topic') {
-				$self->debug ("\tTopic set to $text");
-				$topic = $text;
-			}
-			elsif ($type eq 'begin') {
-				$self->debug ("\tA begin handler");
-				$topic = '__begin__';
-			}
-			elsif ($type eq 'object') {
-				$self->debug ("\tAn object");
-				$objName = $text || 'unknown';
-				$inObj = 1;
-			}
-			else {
-				warn "Unknown label type at $file line $num";
-			}
-		}
-		elsif ($command eq '<') {
-			$self->debug ("< Command - Label End!");
-			if ($data eq 'topic' || $data eq '/topic' || $data eq 'begin' || $data eq '/begin') {
-				$self->debug ("\tTopic reset!");
-				$topic = 'random';
-			}
-			elsif ($data eq 'object') {
-				# Save the object.
-				my $code = "\$self->setSubroutine ($objName => \\&rscode_$objName);\n\n"
-					. "sub rscode_$objName {\n"
-					. "$objCode\n"
-					. "}\n";
-
-				my $eval = eval $code;
-				$inObj = 0;
-				$objName = '';
-				$objCode = '';
-			}
-			else {
-				warn "Unknown label ender at $file line $num";
-			}
-		}
-		elsif ($command eq '!') {
-			$self->debug ("! Command - Definition");
-
-			my ($type,$details) = split(/\s+/, $data, 2);
-			my ($what,$is) = split(/=/, $details, 2);
-			$what =~ s/\s//g if defined $what;
-			$is =~ s/^\s//g if defined $is;
-			$type =~ s/\s//g;
-			$type = lc($type);
-
-			# Globals?
-			if ($type eq 'global') {
-				my $err = 0;
-				foreach my $reserved (@{$self->{reserved}}) {
-					if ($what eq $reserved) {
-						$err = 1;
-						last;
-					}
-				}
-
-				# Skip if there was a problem.
-				if ($err) {
-					warn "Can't modify reserved global $what";
-					next;
-				}
-
-				$lastCmd = "! global $what";
-
-				# Set this top-level global.
-				if ($is ne 'undef') {
-					$self->debug ("\tSet global $what = $is");
-					$self->{$what} = $is;
-				}
-				else {
-					$self->debug ("\tDeleting global $what");
-					delete $self->{$what};
-				}
-			}
-			elsif ($type eq 'var') {
-				# Can't overwrite reserved variables.
-				my $err = undef;
-				if ($what =~ /^env_/i) {
-					$err = "Can't modify an environmental variable!";
-				}
-
-				if ($err) {
-					warn "$err";
-					next;
-				}
-
-				# Set a botvariable.
-				$lastCmd = "! var $what";
-				if ($is ne 'undef') {
-					$self->debug ("\tSet botvar $what = $is");
-					$self->{botvars}->{$what} = $is;
-				}
-				else {
-					$self->debug ("\tDeleting botvar $what");
-					delete $self->{botvars}->{$what};
-				}
-			}
-			elsif ($type eq 'array') {
-				# An array.
-				$lastCmd = "! array $what";
-
-				# Delete the array?
-				if ($is eq 'undef') {
-					$self->debug ("\tDeleting array $what");
-					delete $self->{botarrays}->{$what};
-					next;
-				}
-
-				$self->debug ("\tSetting array $what = $is");
-				my @array = ();
-
-				# Does it contain pipes?
-				if ($is =~ /\|/) {
-					# Split at them.
-					@array = split(/\|/, $is);
-				}
-				else {
-					# Split at spaces.
-					@array = split(/\s+/, $is);
-				}
-
-				# Keep them.
-				$self->{botarrays}->{$what} = [ @array ];
-			}
-			elsif ($type eq 'sub') {
-				# Substitutions.
-
-				if ($is ne 'undef') {
-					$self->debug ("\tSet substitution $what = $is");
-					$self->{substitutions}->{$what} = $is;
-				}
-				else {
-					$self->debug ("\tDeleting substitution $what");
-					delete $self->{substitutions}->{$what};
-				}
-			}
-			elsif ($type eq 'person') {
-				# Person substitutions.
-
-				if ($is ne 'undef') {
-					$self->debug ("\tSet person $what = $is");
-					$self->{person}->{$what} = $is;
-				}
-				else {
-					$self->debug ("\tDeleting person $what");
-					delete $self->{person}->{$what};
-				}
-			}
-			elsif ($type eq 'addpath') {
-				# Add a search path.
-				if (defined $what) {
-					push (@{$self->{library}}, $what);
-				}
-			}
-			elsif ($type eq 'include') {
-				# An Include Directive
-
-				my $found = 0;
-				my $path = '';
-				foreach my $inc (@{$self->{library}}) {
-					if (-e "$inc/$what") {
-						$found = 1;
-						$path = "$inc/$what";
-						last;
-					}
-				}
-
-				$self->loadFile ("$path");
-			}
-			else {
-				warn "Unsupported type at $file line $num";
-			}
-		}
-		elsif ($command eq '+') {
-			$self->debug ("+ Command - Reply Trigger!");
-
-			if ($inReply == 1) {
-				# Reset the topics?
-				if ($topic =~ /^__that__/i) {
-					$topic = 'random';
-				}
-
-				# New reply.
-				$inReply = 0;
-				$trigger = '';
-				$replies = 0;
-				$conds = 0;
-			}
-
-			# Reply trigger.
-			$inReply = 1;
-			$trigger = $data;
-			$lastCmd = "+ $trigger";
-			$self->debug ("\tTrigger: $trigger");
-
-			# Set the trigger under its topic.
-			$self->{replies}->{$topic}->{$trigger}->{topic} = $topic;
-			$self->{syntax}->{$topic}->{$trigger}->{ref} = "$file line $num";
-		}
-		elsif ($command eq '%') {
-			$self->debug ("% Command - Previous!");
-
-			if ($inReply != 1) {
-				# Error.
-				warn "Syntax error at $file line $num";
-				next;
-			}
-
-			# Set the topic to "__that__$data"
-			$lastCmd = "\% $data";
-			$topic = "__that__$data";
-		}
-		elsif ($command eq '-') {
-			$self->debug ("- Command - Response!");
-
-			$lastCmd = ''; # -Reply is the default usage for ^Continue
-
-			if ($inReply != 1) {
-				# Error.
-				warn "Syntax error at $file line $num";
-				next;
-			}
-
-			# Reply response.
-			$replies++;
-
-			$self->{replies}->{$topic}->{$trigger}->{$replies} = $data;
-			$self->{syntax}->{$topic}->{$trigger}->{$replies}->{ref} = "$file line $num";
-		}
-		elsif ($command eq '@') {
-			$self->debug ("\@ Command - Redirect");
-
-			if ($inReply != 1) {
-				# Error.
-				warn "Syntax error at $file line $num";
-				next;
-			}
-
-			$lastCmd = "\@ $data";
-
-			$self->{replies}->{$topic}->{$trigger}->{redirect} = $data;
-			$self->{syntax}->{$topic}->{$trigger}->{redirect}->{ref} = "$file line $num";
-		}
-		elsif ($command eq '*') {
-			$self->debug ("* Command - Conditional");
-
-			if ($inReply != 1) {
-				# Error.
-				warn "Syntax error at $file line $num";
-				next;
-			}
-
-			$conds++;
-			$self->{replies}->{$topic}->{$trigger}->{conditions}->{$conds} = $data;
-			$self->{syntax}->{$topic}->{$trigger}->{conditions}->{$conds}->{ref} = "$file line $num";
-		}
-		elsif ($command eq '&') {
-			$self->debug ("\& Command - Perl Code");
-
-			if ($inReply != 1) {
-				# Error.
-				warn "Syntax error at $file line $num";
-				next;
-			}
-
-			$self->{replies}->{$topic}->{$trigger}->{system}->{codes} .= $data;
-			$self->{syntax}->{$topic}->{$trigger}->{system}->{codes}->{ref} = "$file line $num";
-		}
-		else {
-			warn "Unknown command $command at $file line $num;";
-		}
+	# Eval codes?
+	if (length $self->{parser}->{evals}) {
+		my $eval = eval ($self->{parser}->{evals}) || $@;
+		delete $self->{parser}->{evals};
 	}
+
+	# Copy variables over.
+	foreach my $key (keys %{$self->{parser}}) {
+		$self->{$key} = $self->{parser}->{$key};
+	}
+
+	# Undefine the object.
+	$self->{parser} = undef;
+	return 1;
 }
 
 sub sortReplies {
 	my ($self) = @_;
 
-	# Reset defaults.
-	$self->{sort}->{replycount} = 0;
+	# Create the parser.
+	$self->makeParser;
 
-	# Fail if replies hadn't been loaded.
-	return 0 unless (scalar (keys %{$self->{replies}}));
+	# Sort the replies.
+	$self->{parser}->sortReplies();
 
-	# Delete the replies array if it exists.
-	if (exists $self->{array}) {
-		delete $self->{array};
+	# Save variables.
+	foreach my $key (keys %{$self->{parser}}) {
+		$self->{$key} = $self->{parser}->{$key};
 	}
 
-	$self->debug ("Sorting the replies...");
-
-	# Count them while we're at it.
-	my $count = 0;
-
-	# Go through each reply.
-	foreach my $topic (keys %{$self->{replies}}) {
-		# print "Sorting replies under topic $topic...\n";
-
-		# Sort by number of whole words (or, not wildcards).
-		my $sort = {
-			def => [],
-			unknown => [],
-		};
-		for (my $i = 0; $i <= 50; $i++) {
-			$sort->{$i} = [];
-		}
-
-		# Set trigger arrays.
-		my @trigNorm = ();
-		my @trigWild = ();
-
-		# Go through each item.
-		foreach my $key (keys %{$self->{replies}->{$topic}}) {
-			$count++;
-
-			# print "\tSorting $key\n";
-
-			# If this has wildcards...
-			if ($key =~ /\*/) {
-				# See how many full words it has.
-				my @words = split(/\s/, $key);
-				my $cnt = 0;
-				foreach my $word (@words) {
-					$word =~ s/\s//g;
-					next unless length $word;
-					if ($word !~ /\*/) {
-						# A whole word.
-						$cnt++;
-					}
-				}
-
-				# What did we get?
-				$cnt = 50 if $cnt > 50;
-
-				# print "\t\tWildcard with $cnt words\n";
-
-				if (exists $sort->{$cnt}) {
-					push (@{$sort->{$cnt}}, $key);
-				}
-				else {
-					push (@{$sort->{unknown}}, $key);
-				}
-			}
-			else {
-				# Save to normal array.
-				# print "\t\tNormal trigger\n";
-				push (@{$sort->{def}}, $key);
-			}
-		}
-
-		# Merge all the arrays.
-		$self->{array}->{$topic} = [
-			@{$sort->{def}},
-		];
-		for (my $i = 50; $i >= 1; $i--) {
-			push (@{$self->{array}->{$topic}}, @{$sort->{$i}});
-		}
-		push (@{$self->{array}->{$topic}}, @{$sort->{unknown}});
-		push (@{$self->{array}->{$topic}}, @{$sort->{0}});
-	}
-
-	# Save the count.
-	$self->{sort}->{replycount} = $count;
+	$self->{parser} = undef;
 	return 1;
 }
 
 sub reply {
-	my $self = shift;
-	my $id = shift;
-	my $msg = shift;
-
-	my %args = (
-		scalar   => 0, # Force scalar return
-		no_split => 0, # No sentence-splitting
-		retry    => 0, # DO NOT RECONFIGURE THIS
-		@_,
-	);
-
-	# Reset loops.
-	$self->{loops} = 0;
-
-	# print "reply called\n";
-
-	# Send this through the "BEGIN" reply first.
-	my $begin = '{ok}';
-	if (exists $self->{replies}->{__begin__}->{request}) {
-		my $userTopic = $self->{users}->{$id}->{topic} || 'random';
-		$self->{users}->{$id}->{topic} = '__begin__';
-		$begin = $self->intReply ($id,'request', tags => 0);
-		$self->{users}->{$id}->{topic} = $userTopic;
-
-		# Prerun any topic tags present.
-		if ($begin =~ /\{topic=(.*?)\}/i) {
-			my $to = $1;
-			$self->{users}->{$id}->{topic} = $to;
-			$begin =~ s/\{topic=(.*?)\}//g;
-		}
-	}
-
-	my @out = ();
-	if ($begin =~ /\{ok\}/i) {
-		# Format their message.
-		unless ($args{no_split}) {
-			my @sentences = $self->splitSentences ($msg);
-			foreach my $in (@sentences) {
-				$in = $self->formatMessage ($in);
-				next unless length $in > 0;
-				# print "Sending sentence \"$in\" in...\n";
-				my @returned = $self->intReply ($id,$in);
-				push (@out,@returned);
-			}
-		}
-		else {
-			$msg = $self->formatMessage ($msg);
-			my @returned = $self->intReply ($id,$msg);
-			push (@out,@returned);
-		}
-
-		my @final = ();
-
-		my $reply = $begin;
-		foreach (@out) {
-			$reply =~ s/\{ok\}/$_/ig;
-			$reply = $self->tagFilter ($reply,$id,$msg);
-			push (@final,$reply);
-		}
-
-		# Get it in scalar form.
-		my $scalar = join (" ", @final);
-
-		# Run final filters on it (for begin statement's sake).
-		# $scalar = $self->tagFilter ($scalar,$id,$msg);
-
-		# If no reply, try again without sentence-splitting.
-		if (($scalar =~ /^ERR: No Reply/ || length $scalar == 0) && $args{retry} != 1) {
-			my @array = $self->reply ($id,$msg, no_split => 1, retry => 1, scalar => 0);
-			(@final) = (@array);
-		}
-
-		# Return in scalar form?
-		if ($args{scalar}) {
-			return join (" ", @final);
-		}
-
-		return @final;
-	}
-	else {
-		# Run tag filters anyway.
-		my $userTopic = $self->{users}->{$id}->{topic} || 'random';
-		$self->{users}->{$id}->{topic} = '__begin__';
-		$begin = $self->tagFilter ($begin,$id,$msg);
-		$self->{users}->{$id}->{topic} = $userTopic;
-		return $begin;
-	}
+	return RiveScript::Brain::reply (@_);
 }
 
 sub intReply {
-	my ($self,$id,$msg,%inArgs) = @_;
-	$inArgs{tags} = 1 unless exists $inArgs{tags};
-
-	# Sort replies if they haven't been yet.
-	if (!(scalar(keys %{$self->{array}}))) {
-		warn "You should sort replies BEFORE calling reply()!";
-		$self->sortReplies;
-	}
-
-	# Create this user's history.
-	if (!exists $self->{users}->{$id}->{history}) {
-		$self->{users}->{$id}->{history}->{input} = ['', 'undefined', 'undefined', 'undefined', 'undefined',
-			'undefined', 'undefined', 'undefined', 'undefined', 'undefined' ];
-		$self->{users}->{$id}->{history}->{reply} = ['', 'undefined', 'undefined', 'undefined', 'undefined',
-			'undefined', 'undefined', 'undefined', 'undefined', 'undefined' ];
-		# print "\tCreated user history\n";
-	}
-
-	# Too many loops?
-	if ($self->{loops} >= 15) {
-		$self->{loops} = 0;
-		my $topic = $self->{users}->{$id}->{topic} || 'random';
-		return "ERR: Deep Recursion (15+ loops in reply set) at $self->{syntax}->{$topic}->{$msg}->{redirect}->{ref}";
-	}
-
-	# Create variables.
-	my @stars = (); # Wildcard captors
-	my $reply; # The final reply.
-
-	# Topics?
-	$self->{users}->{$id}->{topic} ||= 'random';
-
-	# Setup the user's temporary history.
-	$self->{users}->{$id}->{last} = '' unless exists $self->{users}->{$id}->{last}; # Last Msg
-	$self->{users}->{$id}->{that} = '' unless exists $self->{users}->{$id}->{that}; # Bot Last Reply
-
-	# Make sure some replies are loaded.
-	if (!exists $self->{replies}) {
-		return "ERR: No replies have been loaded!";
-	}
-
-	# See if this topic has any "that's" associated with it.
-	my $thatTopic = "__that__$self->{users}->{$id}->{that}";
-	my $lastSent = $self->{users}->{$id}->{that};
-	my $isThat = 0;
-	my $keepTopic = '';
-
-	# Go through each reply.
-	# print "Scanning through topics...\n";
-	foreach my $topic (keys %{$self->{array}}) {
-		# print "\tOn Topic: $topic\n";
-		if ($isThat != 1 && length $lastSent > 0 && exists $self->{replies}->{$thatTopic}->{$msg}) {
-			# It does exist. Set this as the topic so this reply should be matched.
-			$isThat = 1;
-			$keepTopic = $self->{users}->{$id}->{topic};
-			$self->{users}->{$id}->{topic} = $thatTopic;
-		}
-
-		# Don't look at topics that aren't ours.
-		next unless $topic eq $self->{users}->{$id}->{topic};
-
-		# print "\tThis is our topic!\n";
-
-		# Check the inputs.
-		foreach my $in (@{$self->{array}->{$topic}}) {
-			last if defined $reply;
-			# Slightly format the trigger to be regexp friendly.
-			my $regexp = $in;
-			$regexp =~ s~\*~(.*?)~g;
-
-			# Run optional modifiers.
-			while ($regexp =~ /\[(.*?)\]/i) {
-				my $o = $1;
-				my @parts = split(/\|/, $o);
-				my @new = ();
-
-				foreach my $word (@parts) {
-					$word = '\s*' . $word . '\s*';
-					push (@new,$word);
-				}
-
-				push (@new,'\s*');
-				my $rep = '(' . join ('|',@new) . ')';
-
-				$regexp =~ s/\s*\[(.*?)\]\s*/$rep/i;
-			}
-
-			# Filter in arrays.
-			while ($regexp =~ /\@(.+?)\b/i) {
-				my $o = $1;
-				my $name = $o;
-				my $rep = '';
-				if (exists $self->{botarrays}->{$name}) {
-					$rep = '(?:' . join ('|', @{$self->{botarrays}->{$name}}) . ')';
-				}
-				$regexp =~ s/\@$o\b/$rep/ig;
-			}
-
-			# Filter in botvariables.
-			while ($regexp =~ /<bot (.*?)>/i) {
-				my $o = $1;
-				my $value = $self->{botvars}->{$o};
-				$value =~ s/[^A-Za-z0-9 ]//g;
-				$value = lc($value);
-				$regexp =~ s/<bot (.*?)>/$value/i;
-			}
-
-			# print "\tComparing $msg with $regexp\n";
-
-			# See if it's a match.
-			if ($msg =~ /^$regexp$/i) {
-				# Collect the stars.
-				@stars = $msg =~ /^$regexp$/i;
-				unshift (@stars, ''); # Make $stars[1] equal <star1>
-
-				# A solid redirect? (@ command)
-				if (exists $self->{replies}->{$topic}->{$in}->{redirect}) {
-					my $redirect = $self->{replies}->{$topic}->{$in}->{redirect};
-
-					# Filter wildcards into it.
-					$redirect = $self->mergeWildcards ($redirect,\@stars);
-
-					# Plus a loop.
-					$self->{loops}++;
-					$reply = $self->intReply ($id,$redirect);
-					return $reply;
-				}
-
-				# Check for conditionals.
-				if (exists $self->{replies}->{$topic}->{$in}->{conditions}) {
-					for (my $c = 1; exists $self->{replies}->{$topic}->{$in}->{conditions}->{$c}; $c++) {
-						last if defined $reply;
-
-						my $condition = $self->{replies}->{$topic}->{$in}->{conditions}->{$c};
-						my ($cond,$happens) = split(/=>/, $condition, 2);
-						$cond =~ s/\s$//g;
-						$happens =~ s/^\s//g;
-
-						# Find out what type of condition this is.
-						if ($cond =~ /^(.*?)(=|!=|<=|>=|<|>|\?)(.*?)$/i) {
-							my ($var,$type,$value) = ($1,$2,$3);
-
-							$var =~ s/\s+$//g; $var =~ s/^\s+//g;
-							$value =~ s/\s+$//g; $value =~ s/^\s+//g;
-
-							# If this is specifically a botvariable...
-							my $isBotVar = 0;
-							my $checkUser = 1;
-							if ($var =~ /^\#/) {
-								$isBotVar = 1;
-								$var =~ s/^\#//g;
-							}
-
-							# Get candidates for value matches.
-							my $botVar = $self->{botvars}->{$var};
-							my $usrVar = $self->{uservars}->{$id}->{$var};
-
-							if (defined $botVar || defined $usrVar) {
-
-								# Our check types:
-								# =  equal to
-								# != not equal
-								# <  less than
-								# <= less than or equal to
-								# >  greater than
-								# >= greater than or equal to
-								# ?  defined
-
-								if ($type eq '?') {
-									if (defined $usrVar) {
-										$reply = $happens;
-									}
-								}
-								elsif ($type eq '=') {
-									if (defined $botVar || defined $usrVar) {
-										if (defined $botVar && $botVar eq $value) {
-											$reply = $happens;
-											$checkUser = 0;
-										}
-
-										if ($checkUser && !$isBotVar && defined $usrVar && $usrVar eq $value) {
-											$reply = $happens;
-										}
-									}
-								}
-								elsif ($type eq '!=') {
-									if (defined $botVar || defined $usrVar) {
-										if (defined $botVar && $botVar ne $value) {
-											$reply = $happens;
-											$checkUser = 0;
-										}
-
-										if ($checkUser && !$isBotVar && defined $usrVar && $usrVar ne $value) {
-											$reply = $happens;
-										}
-									}
-								}
-								elsif ($type eq '<') {
-									if (defined $botVar || defined $usrVar) {
-										if (defined $botVar && $botVar !~ /[^0-9]/ && $botVar < $value) {
-											$reply = $happens;
-											$checkUser = 0;
-										}
-
-										if ($checkUser && !$isBotVar && defined $usrVar && $usrVar !~ /[^0-9]/ && $usrVar < $value) {
-											$reply = $happens;
-										}
-									}
-								}
-								elsif ($type eq '<=') {
-									if (defined $botVar || defined $usrVar) {
-										if (defined $botVar && $botVar !~ /[^0-9]/ && $botVar <= $value) {
-											$reply = $happens;
-											$checkUser = 0;
-										}
-
-										if ($checkUser && !$isBotVar && defined $usrVar && $usrVar !~ /[^0-9]/ && $usrVar <= $value) {
-											$reply = $happens;
-										}
-									}
-								}
-								elsif ($type eq '>') {
-									if (defined $botVar || defined $usrVar) {
-										if (defined $botVar && $botVar !~ /[^0-9]/ && $botVar > $value) {
-											$reply = $happens;
-											$checkUser = 0;
-										}
-
-										if ($checkUser && !$isBotVar && defined $usrVar && $usrVar !~ /[^0-9]/ && $usrVar > $value) {
-											$reply = $happens;
-										}
-									}
-								}
-								elsif ($type eq '>=') {
-									if (defined $botVar || defined $usrVar) {
-										if (defined $botVar && $botVar !~ /[^0-9]/ && $botVar >= $value) {
-											$reply = $happens;
-											$checkUser = 0;
-										}
-
-										if ($checkUser && !$isBotVar && defined $usrVar && $usrVar !~ /[^0-9]/ && $usrVar >= $value) {
-											$reply = $happens;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-
-				# If we have a reply, quit.
-				last if defined $reply;
-
-				# Get a random reply now.
-				my @random = ();
-				my $totweight = 0;
-				for (my $i = 1; exists $self->{replies}->{$topic}->{$in}->{$i}; $i++) {
-					my $item = $self->{replies}->{$topic}->{$in}->{$i};
-					if ($item =~ /\{weight=(.*?)\}/i) {
-						my $weight = $1;
-						$item =~ s/\{weight=(.*?)\}//g;
-						if ($weight !~ /[^0-9]/i) {
-							$totweight += $weight;
-
-							for (my $i = $weight; $i >= 0; $i--) {
-								push (@random,$item);
-							}
-						}
-						next;
-					}
-					push (@random, $self->{replies}->{$topic}->{$in}->{$i});
-				}
-
-				# print "\@random = " . scalar(@random) . "\n";
-				$reply = $random [ int(rand(scalar(@random))) ];
-
-				# Run system commands.
-				if (exists $self->{replies}->{$topic}->{$in}->{system}->{codes}) {
-					my $eval = eval ($self->{replies}->{$topic}->{$in}->{system}->{codes});
-				}
-			}
-		}
-	}
-
-	# Reset "that" topics.
-	if ($isThat == 1) {
-		$self->{users}->{$id}->{topic} = $keepTopic;
-		$self->{users}->{$id}->{that} = '<<undef>>';
-	}
-
-	# A reply?
-	if (defined $reply) {
-		# Filter in stars...
-		$reply = $self->mergeWildcards ($reply,\@stars);
-	}
-	else {
-		# Were they in a possibly broken topic?
-		if ($self->{users}->{$id}->{topic} ne 'random') {
-			if (exists $self->{array}->{$self->{users}->{$id}->{topic}}) {
-				$reply = "ERR: No Reply Matched in Topic $self->{users}->{$id}->{topic}";
-			}
-			else {
-				$self->{users}->{$id}->{topic} = 'random'; # Breakaway
-				$reply = "ERR: No Reply in Topic $self->{users}->{$id}->{topic} (possibly void topic?)";
-			}
-		}
-		else {
-			$reply = "ERR: No Reply Found";
-		}
-	}
-
-	# Filter tags in.
-	$reply = $self->tagFilter ($reply,$id,$msg) if $inArgs{tags};
-
-	# Update history.
-	shift (@{$self->{users}->{$id}->{history}->{input}});
-	shift (@{$self->{users}->{$id}->{history}->{reply}});
-	unshift (@{$self->{users}->{$id}->{history}->{input}}, $msg);
-	unshift (@{$self->{users}->{$id}->{history}->{reply}}, $reply);
-	unshift (@{$self->{users}->{$id}->{history}->{input}}, '');
-	unshift (@{$self->{users}->{$id}->{history}->{reply}}, '');
-	pop (@{$self->{users}->{$id}->{history}->{input}});
-	pop (@{$self->{users}->{$id}->{history}->{reply}});
-
-	# Format the bot's reply.
-	my $simple = lc($reply);
-	$simple =~ s/[^A-Za-z0-9 ]//g;
-	$simple =~ s/^\s+//g;
-	$simple =~ s/\s$//g;
-
-	# Save this message.
-	$self->{users}->{$id}->{that} = $simple;
-	$self->{users}->{$id}->{last} = $msg;
-	$self->{users}->{$id}->{hold} ||= 0;
-
-	# Reset the loop timer.
-	$self->{loops} = 0;
-
-	# There SHOULD be a reply now.
-	# Return it in pairs at {nextreply}
-	if ($reply =~ /\{nextreply\}/i) {
-		my @returned = split(/\{nextreply\}/i, $reply);
-		return @returned;
-	}
-
-	# Filter in line breaks.
-	$reply =~ s/\\n/\n/g;
-
-	return $reply;
+	return RiveScript::Brain::intReply (@_);
 }
 
 sub search {
-	my ($self,$string) = @_;
-
-	# Search for this string.
-	$string = $self->formatMessage ($string);
-
-	my @result = ();
-	foreach my $topic (keys %{$self->{array}}) {
-		foreach my $trigger (@{$self->{array}->{$topic}}) {
-			my $regexp = $trigger;
-			$regexp =~ s~\*~\(\.\*\?\)~g;
-
-			# Run optional modifiers.
-			while ($regexp =~ /\[(.*?)\]/i) {
-				my $o = $1;
-				my @parts = split(/\|/, $o);
-				my @new = ();
-
-				foreach my $word (@parts) {
-					$word = ' ' . $word . ' ';
-					push (@new,$word);
-				}
-
-				push (@new,' ');
-				my $rep = '(' . join ('|',@new) . ')';
-
-				$regexp =~ s/\s*\[(.*?)\]\s*/$rep/g;
-			}
-
-			# Filter in arrays.
-			while ($regexp =~ /\(\@(.*?)\)/i) {
-				my $o = $1;
-				my $name = $o;
-				my $rep = '';
-				if (exists $self->{botarrays}->{$name}) {
-					$rep = '(' . join ('|', @{$self->{botarrays}->{$name}}) . ')';
-				}
-				$regexp =~ s/\(\@$o\)/$rep/ig;
-			}
-
-			# Filter in botvariables.
-			while ($regexp =~ /<bot (.*?)>/i) {
-				my $o = $1;
-				my $value = $self->{botvars}->{$o};
-				$value =~ s/[^A-Za-z0-9 ]//g;
-				$value = lc($value);
-				$regexp =~ s/<bot $o>/$value/ig;
-			}
-
-			# Match?
-			if ($string =~ /^$regexp$/i) {
-				push (@result, "$trigger (topic: $topic) at $self->{syntax}->{$topic}->{$trigger}->{ref}");
-			}
-		}
-	}
-
-	return @result;
+	return RiveScript::Brain::search (@_);
 }
 
 sub splitSentences {
 	my ($self,$msg) = @_;
 
-	# Split at sentence-splitters?
 	if ($self->{split_sentences}) {
-		my @syms = ();
-		my @splitters = split(/\s+/, $self->{sentence_splitters});
-		foreach my $item (@splitters) {
-			$item =~ s/([^A-Za-z0-9 ])/\\$1/g;
-			push (@syms,$item);
-		}
-
-		my $regexp = join ('|',@syms);
-
-		my @sentences = split(/($regexp)/, $msg);
-		return @sentences;
+		return RiveScript::Util::splitSentences ($self->{sentence_splitters},$msg);
 	}
 	else {
 		return $msg;
@@ -1245,329 +312,40 @@ sub splitSentences {
 
 sub formatMessage {
 	my ($self,$msg) = @_;
-
-	# Lowercase the string.
-	$msg = lc($msg);
-
-	# Get the words and run substitutions.
-	my @words = split(/\s+/, $msg);
-	my @new = ();
-	foreach my $word (@words) {
-		if (exists $self->{substitutions}->{$word}) {
-			$word = $self->{substitutions}->{$word};
-		}
-		push (@new, $word);
-	}
-
-	# Reconstruct the message.
-	$msg = join (' ',@new);
-
-	# Remove punctuation and such.
-	$msg =~ s/[^A-Za-z0-9 ]//g;
-	$msg =~ s/^\s//g;
-	$msg =~ s/\s$//g;
-
-	return $msg;
+	return RiveScript::Util::formatMessage ($self->{substitutions},$msg);
 }
 
 sub person {
 	my ($self,$msg) = @_;
-
-	# Lowercase the string.
-	$msg = lc($msg);
-
-	# Get the words and run substitutions.
-	my @words = split(/\s+/, $msg);
-	my @new = ();
-	foreach my $word (@words) {
-		if (exists $self->{person}->{$word}) {
-			$word = $self->{person}->{$word};
-		}
-		push (@new, $word);
-	}
-
-	# Reconstruct the message.
-	$msg = join (' ',@new);
-
-	return $msg;
+	return RiveScript::Util::person ($self->{person},$msg);
 }
 
 sub tagFilter {
-	my ($self,$reply,$id,$msg) = @_;
-
-	# History tags.
-	$reply =~ s/<input(\d)>/$self->{users}->{$id}->{history}->{input}->[$1]/g;
-	$reply =~ s/<reply(\d)>/$self->{users}->{$id}->{history}->{reply}->[$1]/g;
-
-	# Insert variables.
-	$reply =~ s/<bot (.*?)>/$self->{botvars}->{$1}/g;
-	$reply =~ s/<id>/$id/ig;
-
-	# String modifiers.
-	while ($reply =~ /\{(formal|uppercase|lowercase|sentence)\}(.*?)\{\/(formal|uppercase|lowercase|sentence)\}/i) {
-		my ($type,$string) = ($1,$2);
-		$type = lc($type);
-		my $o = $string;
-		$string = $self->stringUtil ($type,$string);
-		$o =~ s/([^A-Za-z0-9 =<>])/\\$1/g;
-		$reply =~ s/\{$type\}$o\{\/$type\}/$string/ig;
-	}
-
-	# Topic setters.
-	if ($reply =~ /\{topic=(.*?)\}/i) {
-		my $to = $1;
-		$self->{users}->{$id}->{topic} = $to;
-		# print "Setting topic to $to\n";
-		$reply =~ s/\{topic=(.*?)\}//g;
-	}
-
-	# Variable setters?
-	while ($reply =~ /\{\!(.*?)\}/i) {
-		my $o = $1;
-		my $data = $o;
-		$data =~ s/^\s//g;
-		$data =~ s/\s$//g;
-
-		my ($type,$details) = split(/\s+/, $data, 2);
-		my ($what,$is) = split(/=/, $details, 2);
-		$what =~ s/\s//g; $is =~ s/^\s//g;
-		$type =~ s/\s//g;
-		$type = lc($type);
-
-		# Stream this in.
-		# print "Streaming in: ! $type $what = $is\n";
-		$self->stream ("! $type $what = $is");
-		$reply =~ s/\{\!$o\}//i;
-	}
-
-	# Sub-replies.
-	while ($reply =~ /\{\@(.*?)\}/i) {
-		my $o = $1;
-		my $trig = $o;
-		$trig =~ s/^\s//g;
-		$trig =~ s/\s$//g;
-
-		my $resp = $self->intReply ($id,$trig);
-
-		$reply =~ s/\{\@$o\}/$resp/i;
-	}
-
-	# Run macros.
-	while ($reply =~ /\&(.*?)\((.*?)\)/i) {
-		my $rel = $1;
-		my $data = $2;
-
-		my ($object,$method) = split(/\./, $rel, 2);
-		$method = 'default' unless defined $method;
-
-		my $returned = '';
-
-		if (defined $self->{macros}->{$object}) {
-			$returned = &{$self->{macros}->{$object}} ($method,$data);
-		}
-		else {
-			$returned = $self->{macro_failure} || 'ERR(Macro Failure!)';
-		}
-
-		$reply =~ s/\&(.*?)\((.*?)\)/$returned/i;
-	}
-
-	# Randomness.
-	while ($reply =~ /\{random\}(.*?)\{\/random\}/i) {
-		my $text = $1;
-		my @options = ();
-
-		# Pipes?
-		if ($text =~ /\|/) {
-			@options = split(/\|/, $text);
-		}
-		else {
-			@options = split(/\s+/, $text);
-		}
-
-		my $rep = $options [ int(rand(scalar(@options))) ];
-		$reply =~ s/\{random\}(.*?)\{\/random\}/$rep/i;
-	}
-
-	# Get/Set uservars?
-	while ($reply =~ /<set (.*?)>/i) {
-		my $o = $1;
-		my $data = $o;
-		my ($what,$is) = split(/=/, $data, 2);
-		$what =~ s/\s$//g;
-		$is =~ s/^\s//g;
-
-		# Set it.
-		if ($is eq 'undef') {
-			delete $self->{uservars}->{$id}->{$what};
-		}
-		else {
-			# print "Set $what to $is for $id\n";
-			$self->{uservars}->{$id}->{$what} = $is;
-		}
-
-		$reply =~ s/<set (.*?)>//i;
-	}
-	while ($reply =~ /<(add|sub|mult|div) (.*?)>/i) {
-		my $method = $1;
-		my $o = $2;
-		my $data = $o;
-		my ($what,$is) = split(/=/, $data, 2);
-
-		# See if this variable exists.
-		if (!exists $self->{uservars}->{$id}->{$what}) {
-			$self->{uservars}->{$id}->{$what} = 0; # Make it numeric
-		}
-
-		# Only accept numeric variables.
-		if ($self->{uservars}->{$id}->{$what} =~ /[^0-9]/) {
-			$reply =~ s/<$method $o>/(Var=NaN)/i;
-			next;
-		}
-		elsif ($is =~ /[^0-9]/) {
-			$reply =~ s/<$method $o>/(Value=NaN)/i;
-			next;
-		}
-
-		# Do the operation.
-		my $value = $self->{uservars}->{$id}->{$what} || 0;
-		if ($method =~ /add/i) {
-			$value += $is;
-		}
-		elsif ($method =~ /sub/i) {
-			$value -= $is;
-		}
-		elsif ($method =~ /mult/i) {
-			$value *= $is;
-		}
-		elsif ($method =~ /div/i) {
-			$value /= $is;
-		}
-
-		$self->{uservars}->{$id}->{$what} = $value;
-
-		$reply =~ s/<$method $o>//i;
-	}
-	while ($reply =~ /<get (.*?)>/i) {
-		my $o = $1;
-		my $data = $o;
-		my $value = 'undefined';
-		$value = $self->{uservars}->{$id}->{$data} if defined $self->{uservars}->{$id}->{$data};
-
-		# print "Inserting $data ($value)\n";
-
-		$reply =~ s/<get $o>/$value/i;
-	}
-
-	# Insert person tags.
-	while ($reply =~ /\{person\}(.*?)\{\/person\}/i) {
-		my $o = $1;
-		my $data = $o;
-		my $new = $self->person ($data);
-
-		$reply =~ s/\{person\}(.*?)\{\/person\}/$new/i;
-	}
-
-	return $reply;
+	return RiveScript::Util::tagFilter (@_);
 }
 
 sub mergeWildcards {
 	my ($self,$string,$stars) = @_;
-
-	$string =~ s/<star(\d+)?>/$$stars[$1?$1:1] || ''/eig;
-
-	return $string;
+	return RiveScript::Util::mergeWildcards ($string,$stars);
 }
 
 sub stringUtil {
 	my ($self,$type,$string) = @_;
-
-	if ($type eq 'uppercase') {
-		return uc($string);
-	}
-	elsif ($type eq 'lowercase') {
-		return lc($string);
-	}
-	elsif ($type eq 'sentence') {
-		$string =~ s~\b(\w)(.*?)(\.|\?|\!|$)~\u$1\L$2$3\E~ig;
-		return $string;
-	}
-	elsif ($type eq 'formal') {
-		$string =~ s~\b(\w+)\b~\L\u$1\E~ig;
-		return $string;
-	}
-	else {
-		return $string;
-	}
+	return RiveScript::Util::stringUtil ($type,$string);
 }
 
 sub write {
 	my $self = shift;
-	my $to = shift || 'written.rs';
+	my $to = $_[0] || 'written.rs';
 
-	my @file = ();
+	# Create the parser.
+	$self->makeParser;
 
-	# Write all replies to file.
-	foreach my $topic (keys %{$self->{replies}}) {
-		if ($topic eq 'random' || $topic =~ /^__that__/i) {
-			# Don't add this in.
-		}
-		elsif ($topic eq '__begin__') {
-			push (@file, "> begin");
-			push (@file, "");
-		}
-		else {
-			push (@file, "> topic $topic");
-			push (@file, "");
-		}
+	# Write.
+	$self->{parser}->write (@_);
 
-		# Get all triggers.
-		foreach my $t (keys %{$self->{replies}->{$topic}}) {
-			push (@file, "+ $t");
-
-			# Get conditions
-			for (my $i = 1; exists $self->{replies}->{$topic}->{$t}->{conditions}->{$i}; $i++) {
-				my $line = $self->{replies}->{$topic}->{$t}->{conditions}->{$i};
-				push (@file, "* $line");
-			}
-
-			# Get all the replies.
-			for (my $i = 1; exists $self->{replies}->{$topic}->{$t}->{$i}; $i++) {
-				push (@file, "- $self->{replies}->{$topic}->{$t}->{$i}");
-			}
-
-			# Get redirections.
-			if (exists $self->{replies}->{$topic}->{$t}->{redirect}) {
-				my $redir = $self->{replies}->{$topic}->{$t}->{redirect};
-				push (@file, "\@ $redir");
-			}
-
-			# Get sys codes.
-			if (exists $self->{replies}->{$topic}->{$t}->{system}->{codes}) {
-				my $sys = $self->{replies}->{$topic}->{$t}->{system}->{codes};
-				push (@file, "& $sys");
-			}
-
-			push (@file, "");
-		}
-
-		if ($topic eq 'random' || $topic =~ /^__that__/i) {
-			# Don't add this in.
-		}
-		elsif ($topic eq '__begin__') {
-			push (@file, "< begin");
-			push (@file, "");
-		}
-		else {
-			push (@file, "< topic");
-			push (@file, "");
-		}
-	}
-
-	open (OUT, ">$to") or return 0;
-	print OUT join ("\n", @file);
-	close (OUT);
-
+	# Destroy the parser.
+	$self->{parser} = undef;
 	return 1;
 }
 
@@ -1714,6 +492,12 @@ These methods are called on internally and should not be called by you.
 =head2 debug ($MESSAGE)
 
 Print a debug message.
+
+=head2 makeParser
+
+Creates a L<RiveScript::Parser> instance, passing in the current data held
+by B<RiveScript>. This call is made before using the parser, and the object
+is destroyed when it is no longer needed (to save on memory usage).
 
 =head2 intReply ($USER_ID, $MESSAGE)
 
@@ -2633,13 +1417,20 @@ These are the basic tips, just for organizational purposes.
 
 =head1 SEE OTHER
 
-You might want to take a look at L<Chatbot::Alpha>, this module's predecessor.
+L<RiveScript::Parser> - Reading and Writing of RiveScript Documents
+
+L<RiveScript::Brain> - The reply and search methods of RiveScript.
+
+L<RiveScript::Util> - String utilities for RiveScript.
 
 =head1 KNOWN BUGS
 
 None yet known.
 
 =head1 CHANGES
+
+  Version 0.15
+  - Broke RiveScript into multiple sub-modules.
 
   Version 0.14
   - {formal} and {sentence} tags fixed. They both use regexp's now. {sentence} can

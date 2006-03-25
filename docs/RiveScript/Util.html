@@ -1,0 +1,109 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>RiveScript::Util - Methods for the RiveScript brain.</title>
+<link rev="made" href="mailto:" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<ul>
+
+		<li><a href="#splitsentences___splitters___msg_">splitSentences ($splitters, $msg)</a></li>
+		<li><a href="#formatmessage___subs___msg_">formatMessage ($subs, $msg)</a></li>
+		<li><a href="#person___subs___text_">person ($subs, $text)</a></li>
+		<li><a href="#tagfilter___rivescript___reply___id___msg_">tagFilter ($RiveScript, $reply, $id, $msg)</a></li>
+		<li><a href="#mergewildcards___string___stars_">mergeWildcards ($string, $stars)</a></li>
+		<li><a href="#stringutil___type___string_">stringUtil ($type, $string)</a></li>
+	</ul>
+
+	<li><a href="#see_also">SEE ALSO</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#copyright_and_license">COPYRIGHT AND LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>RiveScript::Util - Methods for the RiveScript brain.</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This module is used by <strong>RiveScript</strong> for performing common tasks.</p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<p>
+</p>
+<h2><a name="splitsentences___splitters___msg_">splitSentences ($splitters, $msg)</a></h2>
+<p>Take <strong>$msg</strong> and split it at <strong>$splitters</strong>, where <strong>$splitters</strong> is formatted like
+``. ! ? ;''</p>
+<p>
+</p>
+<h2><a name="formatmessage___subs___msg_">formatMessage ($subs, $msg)</a></h2>
+<p>Format <strong>$msg</strong> using the substitutions defined in hashref <strong>$subs</strong>.</p>
+<p>
+</p>
+<h2><a name="person___subs___text_">person ($subs, $text)</a></h2>
+<p>Run person substitutions in hashref <strong>$subs</strong> on data <strong>$text</strong>.</p>
+<p>
+</p>
+<h2><a name="tagfilter___rivescript___reply___id___msg_">tagFilter ($RiveScript, $reply, $id, $msg)</a></h2>
+<p>Run tag filters on <strong>$reply</strong> using all the same arguments as <strong>RiveScript::tagFilter</strong>.</p>
+<p>
+</p>
+<h2><a name="mergewildcards___string___stars_">mergeWildcards ($string, $stars)</a></h2>
+<p>Merge wildcards from arrayref <strong>$stars</strong> into string <strong>$string</strong>.</p>
+<p>
+</p>
+<h2><a name="stringutil___type___string_">stringUtil ($type, $string)</a></h2>
+<p>Run a text modifier on <strong>$string</strong>, where <strong>$type</strong> is one of uppercase, lowercase, formal,
+or sentence.</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p>The <strong>RiveScript</strong> manpage.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<pre>
+  Cerone Kirsle, kirsle --at-- rainbowboi.com</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright_and_license">COPYRIGHT AND LICENSE</a></h1>
+<pre>
+    RiveScript - Rendering Intelligence Very Easily
+    Copyright (C) 2006  Cerone J. Kirsle</pre>
+<pre>
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.</pre>
+<pre>
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.</pre>
+<pre>
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA</pre>
+
+</body>
+
+</html>

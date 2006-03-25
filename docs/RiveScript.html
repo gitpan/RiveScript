@@ -38,6 +38,7 @@
 	<ul>
 
 		<li><a href="#debug___message_">debug ($MESSAGE)</a></li>
+		<li><a href="#makeparser">makeParser</a></li>
 		<li><a href="#intreply___user_id___message_">intReply ($USER_ID, $MESSAGE)</a></li>
 		<li><a href="#splitsentences___string_">splitSentences ($STRING)</a></li>
 		<li><a href="#formatmessage___string_">formatMessage ($STRING)</a></li>
@@ -273,6 +274,12 @@ level being their ID, second level being their variables).</p>
 </p>
 <h2><a name="debug___message_">debug ($MESSAGE)</a></h2>
 <p>Print a debug message.</p>
+<p>
+</p>
+<h2><a name="makeparser">makeParser</a></h2>
+<p>Creates a <a href="/RiveScript/Parser.html">the RiveScript::Parser manpage</a> instance, passing in the current data held
+by <strong>RiveScript</strong>. This call is made before using the parser, and the object
+is destroyed when it is no longer needed (to save on memory usage).</p>
 <p>
 </p>
 <h2><a name="intreply___user_id___message_">intReply ($USER_ID, $MESSAGE)</a></h2>
@@ -1228,7 +1235,9 @@ decide if it should give a reply.</p>
 </p>
 <hr />
 <h1><a name="see_other">SEE OTHER</a></h1>
-<p>You might want to take a look at <a href="/Chatbot/Alpha.html">the Chatbot::Alpha manpage</a>, this module's predecessor.</p>
+<p><a href="/RiveScript/Parser.html">the RiveScript::Parser manpage</a> - Reading and Writing of RiveScript Documents</p>
+<p><a href="/RiveScript/Brain.html">the RiveScript::Brain manpage</a> - The reply and search methods of RiveScript.</p>
+<p><a href="/RiveScript/Util.html">the RiveScript::Util manpage</a> - String utilities for RiveScript.</p>
 <p>
 </p>
 <hr />
@@ -1238,6 +1247,9 @@ decide if it should give a reply.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  Version 0.15
+  - Broke RiveScript into multiple sub-modules.</pre>
 <pre>
   Version 0.14
   - {formal} and {sentence} tags fixed. They both use regexp's now. {sentence} can

@@ -19,7 +19,7 @@
 	# Get uservars for 'localhost'
 	print "\nGetting uservars for localhost\n";
 
-	my $vars = $rs->getUservars ('localhost');
+	my $vars = $main::rs->getUservars ('localhost');
 
 	foreach my $key (keys %{$vars}) {
 		print "$key = $vars->{$key}\n";

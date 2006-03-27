@@ -1,5 +1,17 @@
 Revision history for Perl extension RiveScript.
 
+0.16 Mon Mar 27 16:58:00 2006
+	- Added "! syslib" directive for including Perl modules at the RiveScript:: level,
+		to save on memory usage when more than one object might want the same module.
+	- The "%PREVIOUS" directive now takes a regexp. The bot's last reply is saved as-is,
+		not formatted to lowercase. The % command now works like a +Trigger for the bot's
+		last reply.
+	- The "%PREVIOUS" directive check has been moved to another subroutine. In this way,
+		its priority is much higher. A trigger of * (catch-all) with a %PREVIOUS will always
+		match, for example.
+	- Fixed a bug with the BEGIN method. The bot's reply is no longer saved while the
+		topic is __begin__ - this messed up the %THAT directive.
+
 0.15 Sat Mar 25 14:26:00 2006
 	- Broke RiveScript into multiple sub-modules.
 

@@ -2,6 +2,7 @@ package RiveScript::Brain;
 
 use strict;
 use warnings;
+use RiveScript::Util;
 
 our $VERSION = '0.01';
 
@@ -147,17 +148,26 @@ sub intReply {
 	# print "Scanning through topics...\n";
 	foreach my $topic (keys %{$self->{array}}) {
 		# print "\tOn Topic: $topic\n";
-		if ($isThat != 1 && length $lastSent > 0 && exists $self->{replies}->{$thatTopic}->{$msg}) {
-			# It does exist. Set this as the topic so this reply should be matched.
-			$isThat = 1;
-			$keepTopic = $self->{users}->{$id}->{topic};
-			$self->{users}->{$id}->{topic} = $thatTopic;
+
+		# New code: check for "that's" against a regexp.
+		if ($isThat != 1 && length $lastSent > 0 && $self->{users}->{$id}->{topic} ne '__begin__') {
+			($isThat,$thatTopic) = RiveScript::Brain::checkThat ($self,$lastSent);
+
+			if ($isThat == 1) {
+				$keepTopic = $self->{users}->{$id}->{topic};
+				$self->{users}->{$id}->{topic} = $thatTopic;
+			}
 		}
+
+	#	if ($isThat != 1 && length $lastSent > 0 && exists $self->{replies}->{$thatTopic}->{$msg}) {
+	#		# It does exist. Set this as the topic so this reply should be matched.
+	#		$isThat = 1;
+	#		$keepTopic = $self->{users}->{$id}->{topic};
+	#		$self->{users}->{$id}->{topic} = $thatTopic;
+	#	}
 
 		# Don't look at topics that aren't ours.
 		next unless $topic eq $self->{users}->{$id}->{topic};
-
-		# print "\tThis is our topic!\n";
 
 		# Check the inputs.
 		foreach my $in (@{$self->{array}->{$topic}}) {
@@ -421,15 +431,12 @@ sub intReply {
 	pop (@{$self->{users}->{$id}->{history}->{reply}});
 
 	# Format the bot's reply.
-	my $simple = lc($reply);
-	$simple =~ s/[^A-Za-z0-9 ]//g;
-	$simple =~ s/^\s+//g;
-	$simple =~ s/\s$//g;
-
-	# Save this message.
-	$self->{users}->{$id}->{that} = $simple;
-	$self->{users}->{$id}->{last} = $msg;
-	$self->{users}->{$id}->{hold} ||= 0;
+	if ($self->{users}->{$id}->{topic} ne '__begin__') {
+		# Save this message.
+		$self->{users}->{$id}->{that} = $reply;
+		$self->{users}->{$id}->{last} = $msg;
+		$self->{users}->{$id}->{hold} ||= 0;
+	}
 
 	# Reset the loop timer.
 	$self->{loops} = 0;
@@ -504,6 +511,37 @@ sub search {
 	}
 
 	return @result;
+}
+
+sub checkThat {
+	my ($self,$lastSent) = @_;
+
+	# We're looking for any "that's" which match the regexp against $lastSent.
+	my $isThat    = 0;
+	my $thatTopic = undef;
+	$lastSent = RiveScript::Util::formatMessage ($self->{substitutions},$lastSent);
+
+	# Cycle through all '__that__*' topics.
+	foreach my $topic (keys %{$self->{replies}}) {
+		next unless $topic =~ /^__that__/i;
+		my $regexp = $topic;
+		$regexp =~ s/^__that__//i;
+
+		# Run substitutions.
+		$regexp =~ s~\*~__rivescript_wildcard__~g;
+		$regexp = RiveScript::Util::formatMessage ($self->{substitutions},$regexp);
+		$regexp =~ s~rivescriptwildcard~(.*?)~g;
+
+		# This is a "that" topic. Check it against the regexp.
+		if ($lastSent =~ /^$regexp$/i) {
+			# It's a match!
+			$isThat = 1;
+			$thatTopic = $topic;
+			last;
+		}
+	}
+
+	return ($isThat,$thatTopic);
 }
 
 =head1 NAME

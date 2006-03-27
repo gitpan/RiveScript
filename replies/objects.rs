@@ -4,6 +4,19 @@
 	This reply set declares two objects in-line.
 */
 
+// Test loading Digest-MD5 outside of an object
+! syslib Digest::MD5
+
+> object encode
+	my ($method,$data) = @_;
+
+	my $md5 = new Digest::MD5;
+	return $md5->md5_hex ($data);
+< object
+
++ encode *
+- Encoded: &encode.do(<star>)
+
 > object test
 	my ($method,$data) = @_;
 

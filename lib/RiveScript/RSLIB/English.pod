@@ -22,17 +22,45 @@ Nouns and verbs have a similar format but with lowercase B<n>'s and B<v>'s.
 
 =head1 SOURCE
 
-=head2 English Adjectives
+=head2 English.rsl
 
   /*
   ######################################################
+  ## RiveScript Library Suite                         ##
+  ##--------------------------------------------------##
+  ## English.rsl -- Library of English Verbs,         ##
+  ## Nouns, and Adjectives.                           ##
+  ##--------------------------------------------------##
+  ## Author: Cerone Kirsle <kirsle at rainbowboi.com> ##
+  ## Created: 10:41 AM 3/12/2006                      ##
+  ## Updated: 10:42 AM 3/12/2006                      ##
+  ##--------------------------------------------------##
+  ## Usage:                                           ##
+  ##   All adjective arrays begin with a lowercase a  ##
+  ##   and a formal word. For instance, "aAble" or    ##
+  ##   "aAcceptible"                                  ##
+  ##                                                  ##
+  ##   The nouns and verbs have similiar formats, eg. ##
+  ##   "nAbbreviation" or "vAbort"                    ##
+  ######################################################
+  */
+
+  // Include sub-libraries.
+  ! include English/EnglishAdj.rsl
+  ! include English/EnglishNouns.rsl
+  ! include English/EnglishVerbs.rsl
+
+=head2 English/EnglishAdj.rsl
+
+  /*
+  ########################################################
   ## RiveScript Library Suite                           ##
   ##--------------------------------------------------  ##
   ## English.rsl -- Library of English Verbs,           ##
   ## Nouns, and Adjectives.                             ##
   ##--------------------------------------------------  ##
   ## See "English.rsl" for usage instructions.          ##
-  ######################################################
+  ########################################################
   */
 
   ! array aAble = able
@@ -261,17 +289,17 @@ Nouns and verbs have a similar format but with lowercase B<n>'s and B<v>'s.
   ! array aNine = nine|9|ix
   ! array aTen = ten|10|x
 
-=head2 English Nouns
+=head2 English/EnglishNouns.rsl
 
   /*
-  ######################################################
+  ########################################################
   ## RiveScript Library Suite                           ##
   ##--------------------------------------------------  ##
   ## English.rsl -- Library of English Verbs,           ##
   ## Nouns, and Adjectives.                             ##
   ##--------------------------------------------------  ##
   ## See "English.rsl" for usage instructions.          ##
-  ######################################################
+  ########################################################
   */
 
   ! array nAbbreviation = abbreviation|abbreviations
@@ -474,7 +502,7 @@ Nouns and verbs have a similar format but with lowercase B<n>'s and B<v>'s.
   ! array nCookie = cookie|cookies|cooky|cookys
   ! array nCopy = copy|copies
   ! array nCopyright = copyright|copyrite|copywrite|copyrights|copyrites|copywrites|
-^ copy right|rite|write|rights|rites|writes
+  ^ copy right|rite|write|rights|rites|writes
 
   ! array nCorrection = correction|corrections
   ! array nCost = cost|costs
@@ -1153,17 +1181,17 @@ Nouns and verbs have a similar format but with lowercase B<n>'s and B<v>'s.
 
   ! array nUserName = username|usernames
 
-=head2 English Verbs
+=head2 English/EnglishVerbs.rsl
 
   /*
-  ######################################################
+  ########################################################
   ## RiveScript Library Suite                           ##
   ##--------------------------------------------------  ##
   ## English.rsl -- Library of English Verbs,           ##
   ## Nouns, and Adjectives.                             ##
   ##--------------------------------------------------  ##
   ## See "English.rsl" for usage instructions.          ##
-  ######################################################
+  ########################################################
   */
 
   ! array vAbort = abort|aborts|aborting|aborted

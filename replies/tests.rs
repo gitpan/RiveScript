@@ -164,12 +164,46 @@
 - You're really mean.
 
 + sorry
-% youre really mean
+% you are * mean
 - Don't worry--it's okay. ;-)
 
 // This one stands alone.
 + sorry
 - Why are you sorry?
+
++ michigan
+- Do you live in Michigan?
+
++ yes
+% do you live in *
+- How do you like it?
+
++ no
+% do you live in *
+- Oh? Where do you live?
+
++ *
+% how do you like it
+- That's a common opinion.
+
++ *
+% * where do you live
+- I know some people from out there.
+
+/* ##############################
+   ## Knock Knock              ##
+   ############################## */
+
++ knock knock
+- Who's there?
+
++ *
+% who is there
+- <star> who?
+
++ *
+% * who
+- Ha! <star>! That's hilarious!
 
 /* ##############################
    ## Strong Redirect Test     ##

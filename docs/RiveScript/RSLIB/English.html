@@ -19,9 +19,10 @@
 	<li><a href="#source">SOURCE</a></li>
 	<ul>
 
-		<li><a href="#english_adjectives">English Adjectives</a></li>
-		<li><a href="#english_nouns">English Nouns</a></li>
-		<li><a href="#english_verbs">English Verbs</a></li>
+		<li><a href="#english_rsl">English.rsl</a></li>
+		<li><a href="#english_englishadj_rsl">English/EnglishAdj.rsl</a></li>
+		<li><a href="#english_englishnouns_rsl">English/EnglishNouns.rsl</a></li>
+		<li><a href="#english_englishverbs_rsl">English/EnglishVerbs.rsl</a></li>
 	</ul>
 
 </ul>
@@ -59,17 +60,46 @@ varied forms.</p>
 <h1><a name="source">SOURCE</a></h1>
 <p>
 </p>
-<h2><a name="english_adjectives">English Adjectives</a></h2>
+<h2><a name="english_rsl">English.rsl</a></h2>
 <pre>
   /*
   ######################################################
+  ## RiveScript Library Suite                         ##
+  ##--------------------------------------------------##
+  ## English.rsl -- Library of English Verbs,         ##
+  ## Nouns, and Adjectives.                           ##
+  ##--------------------------------------------------##
+  ## Author: Cerone Kirsle &lt;kirsle at rainbowboi.com&gt; ##
+  ## Created: 10:41 AM 3/12/2006                      ##
+  ## Updated: 10:42 AM 3/12/2006                      ##
+  ##--------------------------------------------------##
+  ## Usage:                                           ##
+  ##   All adjective arrays begin with a lowercase a  ##
+  ##   and a formal word. For instance, &quot;aAble&quot; or    ##
+  ##   &quot;aAcceptible&quot;                                  ##
+  ##                                                  ##
+  ##   The nouns and verbs have similiar formats, eg. ##
+  ##   &quot;nAbbreviation&quot; or &quot;vAbort&quot;                    ##
+  ######################################################
+  */</pre>
+<pre>
+  // Include sub-libraries.
+  ! include English/EnglishAdj.rsl
+  ! include English/EnglishNouns.rsl
+  ! include English/EnglishVerbs.rsl</pre>
+<p>
+</p>
+<h2><a name="english_englishadj_rsl">English/EnglishAdj.rsl</a></h2>
+<pre>
+  /*
+  ########################################################
   ## RiveScript Library Suite                           ##
   ##--------------------------------------------------  ##
   ## English.rsl -- Library of English Verbs,           ##
   ## Nouns, and Adjectives.                             ##
   ##--------------------------------------------------  ##
   ## See &quot;English.rsl&quot; for usage instructions.          ##
-  ######################################################
+  ########################################################
   */</pre>
 <pre>
   ! array aAble = able
@@ -299,17 +329,17 @@ varied forms.</p>
   ! array aTen = ten|10|x</pre>
 <p>
 </p>
-<h2><a name="english_nouns">English Nouns</a></h2>
+<h2><a name="english_englishnouns_rsl">English/EnglishNouns.rsl</a></h2>
 <pre>
   /*
-  ######################################################
+  ########################################################
   ## RiveScript Library Suite                           ##
   ##--------------------------------------------------  ##
   ## English.rsl -- Library of English Verbs,           ##
   ## Nouns, and Adjectives.                             ##
   ##--------------------------------------------------  ##
   ## See &quot;English.rsl&quot; for usage instructions.          ##
-  ######################################################
+  ########################################################
   */</pre>
 <pre>
   ! array nAbbreviation = abbreviation|abbreviations
@@ -512,7 +542,7 @@ varied forms.</p>
   ! array nCookie = cookie|cookies|cooky|cookys
   ! array nCopy = copy|copies
   ! array nCopyright = copyright|copyrite|copywrite|copyrights|copyrites|copywrites|
-^ copy right|rite|write|rights|rites|writes</pre>
+  ^ copy right|rite|write|rights|rites|writes</pre>
 <pre>
   ! array nCorrection = correction|corrections
   ! array nCost = cost|costs
@@ -1191,17 +1221,17 @@ varied forms.</p>
   ! array nUserName = username|usernames</pre>
 <p>
 </p>
-<h2><a name="english_verbs">English Verbs</a></h2>
+<h2><a name="english_englishverbs_rsl">English/EnglishVerbs.rsl</a></h2>
 <pre>
   /*
-  ######################################################
+  ########################################################
   ## RiveScript Library Suite                           ##
   ##--------------------------------------------------  ##
   ## English.rsl -- Library of English Verbs,           ##
   ## Nouns, and Adjectives.                             ##
   ##--------------------------------------------------  ##
   ## See &quot;English.rsl&quot; for usage instructions.          ##
-  ######################################################
+  ########################################################
   */</pre>
 <pre>
   ! array vAbort = abort|aborts|aborting|aborted

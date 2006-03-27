@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 use RiveScript;
-use Data::Dumper;
+
+my $braindir = './replies';
 
 my $debug = 0;
 if (@ARGV) {
@@ -12,18 +13,17 @@ if (@ARGV) {
 
 print "RiveScript $RiveScript::VERSION Loaded\n";
 
+print "Load brain from directory or <$braindir>: ";
+my $dir = <STDIN>;
+chomp $dir;
+$braindir = $dir if length $dir;
+
 # Create a new RS interpreter.
 my $rs = new RiveScript (debug => $debug);
 
 # Load in some RS files.
-$rs->loadDirectory ("./replies");
+$rs->loadDirectory ($braindir);
 $rs->sortReplies;
-
-# Set the bot to be 16 instead of 14 years old
-$rs->setVariable (age => 16);
-
-# Write all data to a new file.
-$rs->write();
 
 while(1) {
 	print " In> ";

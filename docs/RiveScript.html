@@ -125,6 +125,7 @@
 	<li><a href="#changes">CHANGES</a></li>
 	<li><a href="#todo_list">TO-DO LIST</a></li>
 	<li><a href="#special_thanks">SPECIAL THANKS</a></li>
+	<li><a href="#keywords">KEYWORDS</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#copyright_and_license">COPYRIGHT AND LICENSE</a></li>
 </ul>
@@ -349,7 +350,8 @@ to define variables and arrays. Their format is as follows:
   sub     - A substitution pattern
   person  - A person substitution.
   addpath - Add an include path
-  include - An include method</pre>
+  include - An include method
+  syslib  - Include a Perl module globally</pre>
 </dd>
 <dd>
 <p>Some examples:</p>
@@ -401,6 +403,14 @@ to define variables and arrays. Their format is as follows:
 <pre>
   // Include a package of objects
   ! include DateTime.rsp</pre>
+</dd>
+<dd>
+<p>For objects which use Perl modules, you can use <strong>!syslib</strong> to include the module
+global to RiveScript to save on memory.</p>
+</dd>
+<dd>
+<pre>
+  ! syslib LWP::Simple</pre>
 </dd>
 <dd>
 <p><strong>Note:</strong> For arrays, you can have multi-word items if you separate the entries
@@ -471,6 +481,32 @@ might say it's sort of like &lt;that&gt; in AIML. Example:
 <dd>
 <pre>
   // and so-on...</pre>
+</dd>
+<dd>
+<p>The % command is like a +Trigger but for the bot's last reply. The
+same substitutions that are applied to the user's messages are applied
+to the bot's reply.</p>
+</dd>
+<dd>
+<pre>
+  ! sub who's = who is</pre>
+</dd>
+<dd>
+<pre>
+  + knock knock
+  - Who's there?</pre>
+</dd>
+<dd>
+<pre>
+  + *
+  % who is *
+  - {sentence}&lt;star&gt; who?{/sentence}</pre>
+</dd>
+<dd>
+<pre>
+  + *
+  % * who
+  - Ha! {sentence}&lt;star&gt;!{/sentence} That's hilarious!</pre>
 </dd>
 <p></p>
 <dt><strong><a name="item__2d__28response_29"><strong>- (Response)</strong></a></strong><br />
@@ -1248,6 +1284,18 @@ decide if it should give a reply.</p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
 <pre>
+  Version 0.16
+  - Added &quot;! syslib&quot; directive for including Perl modules at the RiveScript:: level,
+    to save on memory usage when more than one object might want the same module.
+  - The &quot;%PREVIOUS&quot; directive now takes a regexp. The bot's last reply is saved as-is,
+    not formatted to lowercase. The % command now works like a +Trigger for the bot's
+    last reply.
+  - The &quot;%PREVIOUS&quot; directive check has been moved to another subroutine. In this way,
+    its priority is much higher. A trigger of * (catch-all) with a %PREVIOUS will always
+    match, for example.
+  - Fixed a bug with the BEGIN method. The bot's reply is no longer saved while the
+    topic is __begin__ - this messed up the %THAT directive.</pre>
+<pre>
   Version 0.15
   - Broke RiveScript into multiple sub-modules.</pre>
 <pre>
@@ -1347,6 +1395,12 @@ decide if it should give a reply.</p>
 <h1><a name="special_thanks">SPECIAL THANKS</a></h1>
 <p>Special thanks goes out to <strong>jeffohrt</strong> and <strong>harleypig</strong> of the AiChaos
 Forum for helping so much with the development of RiveScript.</p>
+<p>
+</p>
+<hr />
+<h1><a name="keywords">KEYWORDS</a></h1>
+<p>bot, chatbot, chatterbot, chatter bot, reply, replies, script, aiml,
+alpha</p>
 <p>
 </p>
 <hr />

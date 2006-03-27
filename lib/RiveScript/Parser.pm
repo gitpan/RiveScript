@@ -3,7 +3,7 @@ package RiveScript::Parser;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub new {
 	my $proto = shift;
@@ -351,6 +351,17 @@ sub loadFile {
 				}
 
 				$self->loadFile ("$path");
+			}
+			elsif ($type eq 'syslib') {
+				# Include a system library
+
+				my $lib = $what;
+				if ($lib =~ /[^A-Za-z0-9:_\(\) ]/i) {
+					warn "Cannot load syslib $what: bad module name at $file line $num";
+				}
+				else {
+					eval ("use $what;");
+				}
 			}
 			else {
 				warn "Unsupported type at $file line $num";

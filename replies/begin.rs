@@ -15,7 +15,7 @@
 	* mood = angry => {@i am angry}
 	* mood = swear => {topic=apology}{ok}
 	* name ? => Your name is <get name>. {ok}
-	- UC: {uppercase}{ok}{/uppercase}
+	- {ok}
 //	- I'm not allowing your request right now. Try again. ;)
 
 	+ i am angry

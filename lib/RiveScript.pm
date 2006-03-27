@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 sub new {
 	my $proto = shift;
@@ -561,6 +561,7 @@ The supported types are as follows:
   person  - A person substitution.
   addpath - Add an include path
   include - An include method
+  syslib  - Include a Perl module globally
 
 Some examples:
 
@@ -595,6 +596,11 @@ Some examples:
 
   // Include a package of objects
   ! include DateTime.rsp
+
+For objects which use Perl modules, you can use B<!syslib> to include the module
+global to RiveScript to save on memory.
+
+  ! syslib LWP::Simple
 
 B<Note:> For arrays, you can have multi-word items if you separate the entries
 with a pipe ("|") symbol rather than a space.
@@ -641,6 +647,23 @@ might say it's sort of like E<lt>thatE<gt> in AIML. Example:
   - What kind of pet?
 
   // and so-on...
+
+The % command is like a +Trigger but for the bot's last reply. The
+same substitutions that are applied to the user's messages are applied
+to the bot's reply.
+
+  ! sub who's = who is
+
+  + knock knock
+  - Who's there?
+
+  + *
+  % who is *
+  - {sentence}<star> who?{/sentence}
+
+  + *
+  % * who
+  - Ha! {sentence}<star>!{/sentence} That's hilarious!
 
 =item B<- (Response)>
 
@@ -1429,6 +1452,18 @@ None yet known.
 
 =head1 CHANGES
 
+  Version 0.16
+  - Added "! syslib" directive for including Perl modules at the RiveScript:: level,
+    to save on memory usage when more than one object might want the same module.
+  - The "%PREVIOUS" directive now takes a regexp. The bot's last reply is saved as-is,
+    not formatted to lowercase. The % command now works like a +Trigger for the bot's
+    last reply.
+  - The "%PREVIOUS" directive check has been moved to another subroutine. In this way,
+    its priority is much higher. A trigger of * (catch-all) with a %PREVIOUS will always
+    match, for example.
+  - Fixed a bug with the BEGIN method. The bot's reply is no longer saved while the
+    topic is __begin__ - this messed up the %THAT directive.
+
   Version 0.15
   - Broke RiveScript into multiple sub-modules.
 
@@ -1526,6 +1561,11 @@ Feel free to offer any ideas. ;)
 
 Special thanks goes out to B<jeffohrt> and B<harleypig> of the AiChaos
 Forum for helping so much with the development of RiveScript.
+
+=head1 KEYWORDS
+
+bot, chatbot, chatterbot, chatter bot, reply, replies, script, aiml,
+alpha
 
 =head1 AUTHOR
 

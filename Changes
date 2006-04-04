@@ -1,5 +1,8 @@
 Revision history for Perl extension RiveScript.
 
+0.18 Tue Apr  4 17:12:00 2006
+	- Minor bugfix with the "%PREVIOUS" internal array.
+
 0.17 Tue Apr  4 16:50:00 2006
 	- All the "%PREVIOUS" commands found at loading time are now sorted in an internal
 		arrayref, in the same manner that "+TRIGGERS" are. This solves the bug with

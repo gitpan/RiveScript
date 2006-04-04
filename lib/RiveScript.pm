@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 sub new {
 	my $proto = shift;
@@ -23,7 +23,7 @@ sub new {
 		],
 		replies     => {},    # Replies
 		array       => {},    # Sorted replies array
-		thatarray   => {},    # Sorted "that" array (for %PREVIOUS)
+		thatarray   => [],    # Sorted "that" array (for %PREVIOUS)
 		syntax      => {},    # Keep files and line numbers
 		streamcache => undef, # For streaming replies in
 		botvars     => {},    # Bot variables (! var botname = Casey)
@@ -1476,6 +1476,9 @@ L<RiveScript::Util> - String utilities for RiveScript.
 None yet known.
 
 =head1 CHANGES
+
+  Version 0.18
+  - Minor bugfix with the "%PREVIOUS" internal array.
 
   Version 0.17
   - All the "%PREVIOUS" commands found at loading time are now sorted in an internal

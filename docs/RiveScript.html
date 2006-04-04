@@ -84,6 +84,8 @@
 		<li><a href="#_ok_">{ok}</a></li>
 		<li><a href="#_s">\s</a></li>
 		<li><a href="#_n">\n</a></li>
+		<li><a href="#__">\/</a></li>
+		<li><a href="#__">\#</a></li>
 	</ul>
 
 	<li><a href="#environmental_variables">ENVIRONMENTAL VARIABLES</a></li>
@@ -661,6 +663,22 @@ The comment syntax is //, as it is in other programming languages. Also,
     across multiple lines
   */</pre>
 </dd>
+<dd>
+<p>Comments can be used in-line next to normal RiveScript commands. They are
+required to have at least one whitespace before or after the comment symbols.</p>
+</dd>
+<dd>
+<pre>
+  + what color is my (@colors) * // &quot;what color is my green shoe&quot;
+  - Your &lt;star2&gt; is &lt;star1&gt;!     // &quot;your shoe is green!&quot;</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item__23__28comments_29"><strong># (Comments)</strong></a></strong><br />
+</dt>
+<dd>
+An alternative to // comments. These can also be used in-line, provided there
+are whitespaces before AND after the # symbol.
+</dd>
 <p></p></dl>
 <p>
 </p>
@@ -1045,6 +1063,19 @@ of the two tags.</p>
 a reply(). Other than that, it exists in memory as a literal '\n' (or ``\\n'')</p>
 <p>
 </p>
+<h2><a name="__">\/</a></h2>
+<p>Insert a forward slash. This is to, for example, include a `` // '' in your reply
+but without it being parsed as a comment.</p>
+<pre>
+  + system login
+  - Perl System \// Logging In...</pre>
+<p>
+</p>
+<h2><a name="__">\#</a></h2>
+<p>Insert a pound sign. This is to, for example, include a `` # '' in your reply without
+it being parsed as a comment.</p>
+<p>
+</p>
 <hr />
 <h1><a name="environmental_variables">ENVIRONMENTAL VARIABLES</a></h1>
 <p>Environmental variables are kept as ``botvariables'' (i.e. they can be retrieved with
@@ -1283,6 +1314,16 @@ decide if it should give a reply.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  Version 0.17
+  - All the &quot;%PREVIOUS&quot; commands found at loading time are now sorted in an internal
+    arrayref, in the same manner that &quot;+TRIGGERS&quot; are. This solves the bug with
+    matchability when using several %PREVIOUS commands in your replies.
+  - Added the # command as a &quot;Perly&quot; alternative to // comments.
+  - Comments can be used in-line next to normal RiveScript code, requiring that at
+    least one space exist before and after the comment symbols. You can escape the
+    symbols too if you need them in the reply.
+  - Created a new package DateTime.rsp for your timestamp-formatting needs.</pre>
 <pre>
   Version 0.16
   - Added &quot;! syslib&quot; directive for including Perl modules at the RiveScript:: level,

@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>DateTime.rsp - Package for returning a formatted timestamp.</title>
+<link rev="made" href="mailto:" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#usage">USAGE</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#source">SOURCE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>DateTime.rsp - Package for returning a formatted timestamp.</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This package exports <strong>datetime</strong>, an object for returning a time stamp.</p>
+<p>
+</p>
+<hr />
+<h1><a name="usage">USAGE</a></h1>
+<pre>
+  &amp;datetime(STRING)</pre>
+<p><strong>Example:</strong></p>
+<pre>
+  + time
+  - It is currently &amp;datetime(Weekday, Month D Year @ h:mm:ss AM)</pre>
+<p>The <strong>STRING</strong> is a timestamp string. The keywords are:</p>
+<pre>
+  Month   = Full month name  (&quot;January..December&quot;)
+  Mon     = Abbr. month name (&quot;Jan..Dec&quot;)
+  MNum    = Month of Year    (&quot;1..12&quot;)
+  Weekday = Day of Week      (&quot;Sunday..Saturday&quot;)
+  Day     = Abbr. Weekday    (&quot;Sun..Sat&quot;)
+  D       = Day of Month     (&quot;1..31&quot;)
+  DD      = Padded Day       (&quot;01..31&quot;)
+  Year    = Full Year        (&quot;2006&quot;)
+  YYYY    = 4-Digit Year     (&quot;2006&quot;)
+  YY      = 2-Digit Year     (&quot;06&quot;)
+  HM      = Military Hours   (&quot;0..23&quot;)
+  HHM     = Padded Mil. Hours(&quot;00..23&quot;)
+  H       = Hour             (&quot;1..12&quot;)
+  HH      = Padded Hour      (&quot;01..12&quot;)
+  M       = Minutes          (&quot;0..59&quot;)
+  MM      = Padded Minutes   (&quot;00..59&quot;)
+  S       = Seconds          (&quot;0..59&quot;)
+  SS      = Padded Seconds   (&quot;00..59&quot;)
+  AM      = AM or PM         (&quot;AM..PM&quot;)</pre>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<pre>
+  Cerone Kirsle &lt;kirsle at rainbowboi.com&gt;
+  Created: 4:42 PM 4/4/2006
+  Updated: 4:42 PM 4/4/2006</pre>
+<p>
+</p>
+<hr />
+<h1><a name="source">SOURCE</a></h1>
+<pre>
+  /*
+  ######################################################
+  ## RiveScript Package                               ##
+  ##--------------------------------------------------##
+  ## DateTime.rsp -- Objects for returning formatted  ##
+  ## Date and Time strings.                           ##
+  ##--------------------------------------------------##
+  ## Author: Cerone Kirsle &lt;kirsle at rainbowboi.com&gt; ##
+  ## Created: 4:42 PM 4/4/2006                        ##
+  ## Updated: 4:42 PM 4/4/2006                        ##
+  ##--------------------------------------------------##
+  ## Usage:                                           ##
+  ##   &amp;datetime(STRING)                              ##
+  ##                                                  ##
+  ##   Month   = Full month name (&quot;January&quot;)          ##
+  ##   Mon     = Abbrev. Month Name (&quot;Jan&quot;)           ##
+  ##   MNum    = Month of Year (&quot;1..12&quot;)              ##
+  ##   Weekday = Full day of the week (&quot;Monday&quot;)      ##
+  ##   Day     = Abbrev. Day Name (&quot;Mon&quot;)             ##
+  ##   D       = Day of Month (&quot;1..31&quot;)               ##
+  ##   DD      = Padded Day of Month (&quot;01..31&quot;)       ##
+  ##   Year    = Full Year (&quot;2006&quot;)                   ##
+  ##   YYYY    = 4-Digit Year (&quot;2006&quot;)                ##
+  ##   YY      = 2-Digit Year (&quot;06&quot;)                  ##
+  ##   HM      = Military Hour (&quot;0..23&quot;)              ##
+  ##   HHM     = Padded Military Hour (&quot;00..23&quot;)      ##
+  ##   H       = Hour (&quot;1..12&quot;)                       ##
+  ##   HH      = Padded Hour (&quot;01..12&quot;)               ##
+  ##   AM      = AM or PM (&quot;AM..PM&quot;)                  ##
+  ##   M       = Minutes (&quot;0..59&quot;)                    ##
+  ##   MM      = Padded Minutes (&quot;00..59&quot;)            ##
+  ##   S       = Seconds (&quot;0..59&quot;)                    ##
+  ##   SS      = Padded Seconds (&quot;00..59&quot;)            ##
+  ######################################################
+  */</pre>
+<pre>
+  &gt; object datetime
+    my ($method,$string) = @_;</pre>
+<pre>
+    # Arrays.
+    my @monthnames = qw(January February March April May June July
+        August September October November December);
+    my @monthabbrev = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+    my @daynames = qw(Sunday Monday Tuesday Wednesday Thursday Friday Saturday);
+    my @dayabbrev = qw(Sun Mon Tue Wed Thu Fri Sat);</pre>
+<pre>
+    # Hash to hold temporary details.
+    my %data = ();</pre>
+<pre>
+    # Get the timestamp.
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time());
+    $year += 1900;</pre>
+<pre>
+    # Get the month name.
+    $data{month} = $monthnames [ $mon ];
+    $data{mon}   = $monthabbrev [ $mon ];
+    $data{mnum}  = $mon + 1;</pre>
+<pre>
+    # Get the day name.
+    $data{weekday} = $daynames [ $wday ];
+    $data{day}     = $dayabbrev [ $wday ];
+    $data{d}       = $mday;
+    $data{dd}      = $mday;
+    $data{dd}      = '0' . $data{dd} until length $data{dd} == 2;</pre>
+<pre>
+    # Format the years.
+    $data{year}    = $year;
+    $data{yyyy}    = $year;
+    $data{yy}      = substr($data{yyyy},2,3);</pre>
+<pre>
+    # Format the hours.
+    $data{hm}      = $hour;
+    $data{hhm}     = $hour;
+    $data{hhm}     = '0' . $data{hhm} until length $data{hhm} == 2;
+    $data{h}       = $hour;
+    $data{hh}      = 0;
+    $data{am}      = 'AM';
+    if ($data{h} &gt; 12) {
+        $data{h} -= 12;
+        $data{am} = 'PM';
+        $data{h}  = 12 if $data{h} == 0;
+    }
+    $data{hh}      = $data{h};
+    $data{hh}      = '0' . $data{hh} until length $data{hh} == 2;</pre>
+<pre>
+    # Format the minutes.
+    $data{m}       = $min;
+    $data{mm}      = $min;
+    $data{mm}      = '0' . $data{mm} until length $data{mm} == 2;</pre>
+<pre>
+    # Format the seconds.
+    $data{s}       = $sec;
+    $data{ss}      = $sec;
+    $data{ss}      = '0' . $data{ss} until length $data{ss} == 2;</pre>
+<pre>
+    # Substitute them in.
+    my @keys = qw(mnum month mon weekday day d dd year yy yyyy hhm hh hm h am mm m ss s);
+    foreach my $k (@keys) {
+        $string =~ s/\b$k\b/$data{$k}/ig;
+    }</pre>
+<pre>
+    return $string;
+  &lt; object</pre>
+
+</body>
+
+</html>

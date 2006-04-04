@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 sub new {
 	my $proto = shift;
@@ -19,10 +19,11 @@ sub new {
 		parser      => undef, # RiveScript::Parser Object
 		reserved    => [      # Array of reserved (unmodifiable) keys.
 			qw (reserved replies array syntax streamcache botvars uservars botarrays
-			sort users substitutions library parser),
+			sort users substitutions library parser thatarray),
 		],
 		replies     => {},    # Replies
 		array       => {},    # Sorted replies array
+		thatarray   => {},    # Sorted "that" array (for %PREVIOUS)
 		syntax      => {},    # Keep files and line numbers
 		streamcache => undef, # For streaming replies in
 		botvars     => {},    # Bot variables (! var botname = Casey)
@@ -786,6 +787,17 @@ The comment syntax is //, as it is in other programming languages. Also,
     across multiple lines
   */
 
+Comments can be used in-line next to normal RiveScript commands. They are
+required to have at least one whitespace before or after the comment symbols.
+
+  + what color is my (@colors) * // "what color is my green shoe"
+  - Your <star2> is <star1>!     // "your shoe is green!"
+
+=item B<# (Comments)>
+
+An alternative to // comments. These can also be used in-line, provided there
+are whitespaces before AND after the # symbol.
+
 =back
 
 =head1 RIVESCRIPT HOLDS THE KEYS
@@ -1202,6 +1214,19 @@ of the two tags.
 Inserts a newline. Note that this tag is interpreted at the time of grabbing
 a reply(). Other than that, it exists in memory as a literal '\n' (or "\\n")
 
+=head2 \/
+
+Insert a forward slash. This is to, for example, include a " // " in your reply
+but without it being parsed as a comment.
+
+  + system login
+  - Perl System \// Logging In...
+
+=head2 \#
+
+Insert a pound sign. This is to, for example, include a " # " in your reply without
+it being parsed as a comment.
+
 =head1 ENVIRONMENTAL VARIABLES
 
 Environmental variables are kept as "botvariables" (i.e. they can be retrieved with
@@ -1451,6 +1476,16 @@ L<RiveScript::Util> - String utilities for RiveScript.
 None yet known.
 
 =head1 CHANGES
+
+  Version 0.17
+  - All the "%PREVIOUS" commands found at loading time are now sorted in an internal
+    arrayref, in the same manner that "+TRIGGERS" are. This solves the bug with
+    matchability when using several %PREVIOUS commands in your replies.
+  - Added the # command as a "Perly" alternative to // comments.
+  - Comments can be used in-line next to normal RiveScript code, requiring that at
+    least one space exist before and after the comment symbols. You can escape the
+    symbols too if you need them in the reply.
+  - Created a new package DateTime.rsp for your timestamp-formatting needs.
 
   Version 0.16
   - Added "! syslib" directive for including Perl modules at the RiveScript:: level,

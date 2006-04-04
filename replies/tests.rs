@@ -165,7 +165,7 @@
 
 + sorry
 % you are * mean
-- Don't worry--it's okay. ;-)
+- Don't worry--it's okay. ;-) (and test: {@hello})
 
 // This one stands alone.
 + sorry
@@ -200,6 +200,12 @@
 + *
 % who is there
 - <star> who?
+
++ knock knock
+% * who
+- Who's there?
+
+
 
 + *
 % * who
@@ -384,3 +390,32 @@
 
 + test eng (@aMinimum)
 - You said <star>.
+
+/* ##############################
+   ## Test Inline Comments     ##
+   ############################## */
+
++ test pound
+- I am #1 and you are #2.
+
++ test comment
+- This reply had a comment on it. # this is comment data
+
++ test comment 2
+- This reply also has a comment. //a normal comment syntax
+
++ test comment 3 // this trigger has a comment
+- Another test.        // many spaces here
+
++ test comment 4
+- This \# reply has \/\/ comment \// codes inside.
+
+/* ##############################
+   ## Test DateTime Object     ##
+   ############################## */
+
++ time
+- It is currently &datetime(Weekday, Month dd yyyy @ hh:mm:ss AM)
+
++ mtime
+- It is currently &datetime(Day, Mon dd yy @ hhm:mm:ss)

@@ -3,7 +3,7 @@ package RiveScript::Util;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub splitSentences {
 	my ($splitters,$msg) = @_;
@@ -73,6 +73,10 @@ sub person {
 
 sub tagFilter {
 	my ($self,$reply,$id,$msg) = @_;
+
+	# Comment Escapers.
+	$reply =~ s~\\/~/~ig;
+	$reply =~ s~\\#~#~ig;
 
 	# History tags.
 	$reply =~ s/<input(\d)>/$self->{users}->{$id}->{history}->{input}->[$1]/g;

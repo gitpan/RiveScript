@@ -9,6 +9,7 @@ docs/RiveScript/Parser.html
 docs/RiveScript/Tutorial.html
 docs/RiveScript/Util.html
 docs/RiveScript/RSLIB/English.html
+docs/RiveScript/RSLIB/DateTime.html
 lib/RiveScript.pm
 lib/RiveScript/Brain.pm
 lib/RiveScript/Parser.pm
@@ -16,10 +17,14 @@ lib/RiveScript/Util.pm
 lib/RiveScript/Tutorial.pod
 lib/RiveScript/RSLIB/English.rsl
 lib/RiveScript/RSLIB/English.pod
+lib/RiveScript/RSLIB/DateTime.rsp
+lib/RiveScript/RSLIB/DateTime.pod
 lib/RiveScript/RSLIB/English/EnglishAdj.rsl
 lib/RiveScript/RSLIB/English/EnglishNouns.rsl
 lib/RiveScript/RSLIB/English/EnglishVerbs.rsl
 replies/begin.rs
 replies/config.rs
+replies/different.txt
+replies/objects.rs
 replies/hello.rs
 replies/tests.rs

@@ -1,5 +1,15 @@
 Revision history for Perl extension RiveScript.
 
+0.17 Tue Apr  4 16:50:00 2006
+	- All the "%PREVIOUS" commands found at loading time are now sorted in an internal
+		arrayref, in the same manner that "+TRIGGERS" are. This solves the bug with
+		matchability when using several %PREVIOUS commands in your replies.
+	- Added the # command as a "Perly" alternative to // comments.
+	- Comments can be used in-line next to normal RiveScript code, requiring that at
+		least one space exist before and after the comment symbols. You can escape the
+		symbols too if you need them in the reply.
+	- Created a new package DateTime.rsp for your timestamp-formatting needs.
+
 0.16 Mon Mar 27 16:58:00 2006
 	- Added "! syslib" directive for including Perl modules at the RiveScript:: level,
 		to save on memory usage when more than one object might want the same module.

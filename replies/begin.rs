@@ -7,7 +7,8 @@
 */
 
 // Include English
-// ! include English.rsl
+! include English.rsl
+! include DateTime.rsp
 
 > begin
 	// There will be a 50/50 chance he won't allow it

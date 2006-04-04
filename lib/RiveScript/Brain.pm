@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use RiveScript::Util;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub reply {
 	my $self = shift;
@@ -521,11 +521,8 @@ sub checkThat {
 	my $thatTopic = undef;
 	$lastSent = RiveScript::Util::formatMessage ($self->{substitutions},$lastSent);
 
-	# Cycle through all '__that__*' topics.
-	foreach my $topic (keys %{$self->{replies}}) {
-		next unless $topic =~ /^__that__/i;
-		my $regexp = $topic;
-		$regexp =~ s/^__that__//i;
+	foreach my $past (@{$self->{thatarray}}) {
+		my $regexp = $past;
 
 		# Run substitutions.
 		$regexp =~ s~\*~__rivescript_wildcard__~g;
@@ -536,7 +533,7 @@ sub checkThat {
 		if ($lastSent =~ /^$regexp$/i) {
 			# It's a match!
 			$isThat = 1;
-			$thatTopic = $topic;
+			$thatTopic = "__that__$past";
 			last;
 		}
 	}

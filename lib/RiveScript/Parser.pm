@@ -3,7 +3,7 @@ package RiveScript::Parser;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub new {
 	my $proto = shift;
@@ -14,6 +14,7 @@ sub new {
 		reserved      => [],    # Array of reserved names
 		replies       => {},    # Replies hash
 		array         => {},    # Array hash for sorting
+		thatarray     => [],    # Previous arrays
 		syntax        => {},    # Log of file lines and names
 		streamcache   => undef, # Cache from stream()
 		botvars       => {},    # Bot Variables
@@ -80,6 +81,7 @@ sub loadFile {
 	my $num     = 0;        # Line numbers.
 	my $conc    = 0;        # Concetanate the last command (0.06)
 	my $lastCmd = '';       # The last command used (0.06)
+	my @thats   = ();       # For sorting "that's"
 
 	# Go through the file.
 	foreach my $line (@data) {
@@ -99,10 +101,6 @@ sub loadFile {
 		$line =~ s/^[\s\t]*//ig;     # Remove prepent whitepaces
 		$line =~ s/[\s\t]*$//ig;     # Remove appent whitespaces
 
-		if ($line =~ /^\s/) {
-			print "Line: $line\n";
-		}
-
 		# Separate the command from its data.
 		my ($command,$data) = split(/\s+/, $line, 2);
 
@@ -110,9 +108,9 @@ sub loadFile {
 		$data =~ s/\\s/ /g if defined $data;
 
 		# Check for comment commands...
-		if ($command =~ /^\/\//) {
-			# Single comment. Skip it.
-			next;
+		if ($command =~ m~^(//|#)~) {
+			# Single comment.
+			next unless $inCom;
 		}
 		if ($command eq '/*') {
 			# We're starting a comment section.
@@ -131,6 +129,10 @@ sub loadFile {
 		next if $inCom;
 
 		next unless length $command;
+
+		# Remove in-line comments.
+		my ($save,$void) = split(/\s+(\/\/|#)\s+/, $data, 2);
+		$data = $save;
 
 		# Concatenate previous commands.
 		if ($command eq '^') {
@@ -402,6 +404,9 @@ sub loadFile {
 				next;
 			}
 
+			# Save this one for sorting.
+			push (@thats,$data);
+
 			# Set the topic to "__that__$data"
 			$lastCmd = "\% $data";
 			$topic = "__that__$data";
@@ -465,6 +470,10 @@ sub loadFile {
 		else {
 			warn "Unknown command $command at $file line $num;";
 		}
+	}
+
+	if (scalar(@thats)) {
+		$self->sortThats (@thats);
 	}
 }
 
@@ -559,11 +568,81 @@ sub sortReplies {
 	return 1;
 }
 
+sub sortThats {
+	my ($self,@thats) = @_;
+
+	# Fail if no that's are provided.
+	return 0 unless (scalar (@thats));
+
+	# Delete the replies array if it exists.
+	if (exists $self->{thatarray}) {
+		delete $self->{thatarray};
+	}
+
+	$self->debug ("Sorting the that's...");
+
+	# Sort by number of whole words (or, not wildcards).
+	my $sort = {
+		def => [],
+		unknown => [],
+	};
+	for (my $i = 0; $i <= 50; $i++) {
+		$sort->{$i} = [];
+	}
+
+	# Set trigger arrays.
+	my @trigNorm = ();
+	my @trigWild = ();
+
+	# Go through each item.
+	foreach my $key (@thats) {
+
+		# If this has wildcards...
+		if ($key =~ /\*/) {
+			# See how many full words it has.
+			my @words = split(/\s/, $key);
+			my $cnt = 0;
+			foreach my $word (@words) {
+				$word =~ s/\s//g;
+				next unless length $word;
+				if ($word !~ /\*/) {
+					# A whole word.
+					$cnt++;
+				}
+			}
+
+			# What did we get?
+			$cnt = 50 if $cnt > 50;
+
+			if (exists $sort->{$cnt}) {
+				push (@{$sort->{$cnt}}, $key);
+			}
+			else {
+				push (@{$sort->{unknown}}, $key);
+			}
+		}
+		else {
+			# Save to normal array.
+			push (@{$sort->{def}}, $key);
+		}
+	}
+
+	# Merge all the arrays.
+	$self->{thatarray} = [
+		@{$sort->{def}},
+	];
+	for (my $i = 50; $i >= 1; $i--) {
+		push (@{$self->{thatarray}}, @{$sort->{$i}});
+	}
+	push (@{$self->{thatarray}}, @{$sort->{unknown}});
+	push (@{$self->{thatarray}}, @{$sort->{0}});
+
+	return 1;
+}
+
 sub write {
 	my $self = shift;
 	my $to = shift || 'written.rs';
-
-	print "RiveScript::Parser::write called\n";
 
 	my @file = ();
 

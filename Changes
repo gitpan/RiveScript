@@ -1,5 +1,12 @@
 Revision history for Perl extension RiveScript.
 
+0.19 Wed Apr  5 22:20:00 2006
+	- Added methods for allowing or denying certain commands to be used when RiveScript
+		documents are loaded in.
+	- Bugfix: the sortThats() method of RiveScript::Parser was blanking out the current
+		value of $self->{thatarray} -- meaning, the last file to have %Previous commands used
+		would be kept in memory, previous ones would be lost. This has been fixed now.
+
 0.18 Tue Apr  4 17:12:00 2006
 	- Minor bugfix with the "%PREVIOUS" internal array.
 

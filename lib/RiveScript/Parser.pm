@@ -3,7 +3,7 @@ package RiveScript::Parser;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub new {
 	my $proto = shift;
@@ -133,6 +133,66 @@ sub loadFile {
 		# Remove in-line comments.
 		my ($save,$void) = split(/\s+(\/\/|#)\s+/, $data, 2);
 		$data = $save;
+
+		# See if we're denying use of any commands.
+		if ($self->{strict_type} ne 'allow_all') {
+			if ($self->{strict_type} eq 'allow_some') {
+				my $ok = 0;
+				foreach my $item (@{$self->{cmd_allowed}}) {
+					my $allow = $item;
+					if (length $allow == 1) {
+						# A simple command.
+						if ($command eq $allow) {
+							$ok = 1;
+						}
+					}
+					else {
+						# A more complex one.
+						$allow =~ s/\s+//g;
+						my $check = $line;
+						$check =~ s/\s+//g;
+						$allow =~ s/([^A-Za-z0-9 <>=_])/\\$1/ig;
+
+						print "Checking $check =~ /^$allow/i\n";
+
+						if ($check =~ /^$allow/i) {
+							$ok = 1;
+						}
+					}
+				}
+				unless ($ok) {
+					warn "The command $command at $file line $num is disallowed by your interpreter (allow_some)";
+					next;
+				}
+			}
+			elsif ($self->{strict_type} eq 'deny_some') {
+				my $ok = 1;
+				foreach my $item (@{$self->{cmd_denied}}) {
+					my $allow = $item;
+					if (length $allow == 1) {
+						# A simple command.
+						if ($command eq $allow) {
+							$ok = 0;
+						}
+					}
+					else {
+						# A more complex one.
+						$allow =~ s/\s+//g;
+						my $check = $line;
+						$check =~ s/\s+//g;
+						$allow =~ s/([^A-Za-z0-9 <>=_])/\\$1/ig;
+
+						if ($check =~ /^$allow/i) {
+							$ok = 0;
+						}
+					}
+				}
+				unless ($ok) {
+					warn "The command $command at $file line $num is disallowed by your interpreter (deny_some)";
+					next;
+				}
+			}
+		}
 
 		# Concatenate previous commands.
 		if ($command eq '^') {
@@ -575,8 +635,8 @@ sub sortThats {
 	return 0 unless (scalar (@thats));
 
 	# Delete the replies array if it exists.
-	if (exists $self->{thatarray}) {
-		delete $self->{thatarray};
+	if (scalar(@{$self->{thatarray}})) {
+		push (@thats, @{$self->{thatarray}});
 	}
 
 	$self->debug ("Sorting the that's...");
@@ -735,6 +795,10 @@ Load in a single file. Takes the same arguments as B<RiveScript::loadFile>
 =head2 sortReplies()
 
 Sort the replies. Takes the same arguments as B<RiveScript::sortReplies>
+
+=head2 sortThats()
+
+Sort all the values of "%PREVIOUS" in the same fashion that replies are sorted.
 
 =head2 write()
 

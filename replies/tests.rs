@@ -191,27 +191,6 @@
 - I know some people from out there.
 
 /* ##############################
-   ## Knock Knock              ##
-   ############################## */
-
-+ knock knock
-- Who's there?
-
-+ *
-% who is there
-- <star> who?
-
-+ knock knock
-% * who
-- Who's there?
-
-
-
-+ *
-% * who
-- Ha! <star>! That's hilarious!
-
-/* ##############################
    ## Strong Redirect Test     ##
    ############################## */
 

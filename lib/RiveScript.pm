@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '0.18';
+our $VERSION = '0.19';
 
 sub new {
 	my $proto = shift;
@@ -37,6 +37,11 @@ sub new {
 		macros      => {},    # Subroutine macro objects
 		library     => ['.'], # Include Libraries
 		evals       => undef, # Needed by RiveScript::Parser
+
+		# Enable/Disable Certain RS Commands
+		strict_type => 'allow_all', # deny_some, allow_some, allow_all
+		cmd_allowed => [],
+		cmd_denied  => [],
 
 		# Some editable globals.
 		split_sentences    => 1,                    # Perform sentence-splitting.
@@ -69,6 +74,37 @@ sub debug {
 	my ($self,$msg) = @_;
 
 	print "RiveScript // $msg\n" if $self->{debug} == 1;
+}
+
+sub denyMode {
+	my ($self,$mode) = @_;
+
+	if ($mode =~ /^(deny_some|allow_some|allow_all)$/i) {
+		$self->{strict_type} = lc($mode);
+	}
+	else {
+		warn "Invalid mode \"$mode\" -- must be deny_some, allow_some, or allow_all";
+	}
+}
+
+sub deny {
+	my ($self,@cmd) = @_;
+
+	if ($self->{strict_type} ne 'deny_some') {
+		warn "Adding commands to deny list but denyMode isn't deny_some!";
+	}
+
+	push (@{$self->{cmd_denied}}, @cmd);
+}
+
+sub allow {
+	my ($self,@cmd) = @_;
+
+	if ($self->{strict_type} ne 'allow_some') {
+		warn "Adding commands to allow list but denyMode isn't allow_some!";
+	}
+
+	push (@{$self->{cmd_allowed}}, @cmd);
 }
 
 sub makeParser {
@@ -485,6 +521,51 @@ Set a user variable (alias for <set var=value>)
 Get all uservars for a user. Returns a hashref of the variables. If you don't
 pass in a $USER_ID, it will return a hashref of hashrefs for each user (first
 level being their ID, second level being their variables).
+
+=head1 SECURITY METHODS
+
+The RiveScript interpreter (a la the Perl script) can specify some security settings
+as far as what a RiveScript file is allowed to contain.
+
+=head2 denyMode (MODE)
+
+Valid modes are B<deny_some>, B<allow_some>, and B<allow_all>. allow_all is the default.
+Use the B<deny()> and B<allow()> methods complementary to the denyMode specified.
+
+=head2 deny (COMMANDS)
+
+Add COMMANDS to the denied commands list. These can be single commands (one character)
+or I<beginnings> of command texts. Examples:
+
+  $rive->deny (
+    '&',
+    '! global',
+    '! var copyright',
+    '> begin',
+    '< begin',
+    '> __begin__',
+    '< __begin__',
+  );
+
+In that example, &PERL, !GLOBAL, and the BEGIN statement (as well as the internal names
+for the BEGIN statement's topic) would be disallowed in the RiveScript documents loaded in.
+It would also disallow the RiveScript documents to (re)define a variable named "copyright"
+
+=head2 allow (COMMANDS)
+
+Add COMMANDS to the allowed commands list. For the highest security, you'd want to
+B<allow_some> commands rather than B<deny_some>. This method is to be used with that
+mode of denial.
+
+  $rive->allow (
+    '+',
+    '-',
+    '! var',
+    '@',
+  );
+
+That example would deny EVERY command except for triggers, responses, botvariable setters,
+and redirections.
 
 =head1 PRIVATE METHODS
 
@@ -1476,6 +1557,13 @@ L<RiveScript::Util> - String utilities for RiveScript.
 None yet known.
 
 =head1 CHANGES
+
+  Version 0.19
+  - Added methods for allowing or denying certain commands to be used when RiveScript
+    documents are loaded in.
+  - Bugfix: the sortThats() method of RiveScript::Parser was blanking out the current
+    value of $self->{thatarray} -- meaning, the last file to have %Previous commands used
+    would be kept in memory, previous ones would be lost. This has been fixed now.
 
   Version 0.18
   - Minor bugfix with the "%PREVIOUS" internal array.

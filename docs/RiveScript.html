@@ -34,6 +34,14 @@
 		<li><a href="#getuservars____user_id__">getUservars ([$USER_ID])</a></li>
 	</ul>
 
+	<li><a href="#security_methods">SECURITY METHODS</a></li>
+	<ul>
+
+		<li><a href="#denymode__mode_">denyMode (MODE)</a></li>
+		<li><a href="#deny__commands_">deny (COMMANDS)</a></li>
+		<li><a href="#allow__commands_">allow (COMMANDS)</a></li>
+	</ul>
+
 	<li><a href="#private_methods">PRIVATE METHODS</a></li>
 	<ul>
 
@@ -268,6 +276,50 @@ ignored, because the module doesn't pay attention to them at loading time anyway
 <p>Get all uservars for a user. Returns a hashref of the variables. If you don't
 pass in a $USER_ID, it will return a hashref of hashrefs for each user (first
 level being their ID, second level being their variables).</p>
+<p>
+</p>
+<hr />
+<h1><a name="security_methods">SECURITY METHODS</a></h1>
+<p>The RiveScript interpreter (a la the Perl script) can specify some security settings
+as far as what a RiveScript file is allowed to contain.</p>
+<p>
+</p>
+<h2><a name="denymode__mode_">denyMode (MODE)</a></h2>
+<p>Valid modes are <strong>deny_some</strong>, <strong>allow_some</strong>, and <strong>allow_all</strong>. allow_all is the default.
+Use the <strong>deny()</strong> and <strong>allow()</strong> methods complementary to the denyMode specified.</p>
+<p>
+</p>
+<h2><a name="deny__commands_">deny (COMMANDS)</a></h2>
+<p>Add COMMANDS to the denied commands list. These can be single commands (one character)
+or <em>beginnings</em> of command texts. Examples:</p>
+<pre>
+  $rive-&gt;deny (
+    '&amp;',
+    '! global',
+    '! var copyright',
+    '&gt; begin',
+    '&lt; begin',
+    '&gt; __begin__',
+    '&lt; __begin__',
+  );</pre>
+<p>In that example, &amp;PERL, !GLOBAL, and the BEGIN statement (as well as the internal names
+for the BEGIN statement's topic) would be disallowed in the RiveScript documents loaded in.
+It would also disallow the RiveScript documents to (re)define a variable named ``copyright''</p>
+<p>
+</p>
+<h2><a name="allow__commands_">allow (COMMANDS)</a></h2>
+<p>Add COMMANDS to the allowed commands list. For the highest security, you'd want to
+<strong>allow_some</strong> commands rather than <strong>deny_some</strong>. This method is to be used with that
+mode of denial.</p>
+<pre>
+  $rive-&gt;allow (
+    '+',
+    '-',
+    '! var',
+    '@',
+  );</pre>
+<p>That example would deny EVERY command except for triggers, responses, botvariable setters,
+and redirections.</p>
 <p>
 </p>
 <hr />
@@ -1314,6 +1366,13 @@ decide if it should give a reply.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  Version 0.19
+  - Added methods for allowing or denying certain commands to be used when RiveScript
+    documents are loaded in.
+  - Bugfix: the sortThats() method of RiveScript::Parser was blanking out the current
+    value of $self-&gt;{thatarray} -- meaning, the last file to have %Previous commands used
+    would be kept in memory, previous ones would be lost. This has been fixed now.</pre>
 <pre>
   Version 0.18
   - Minor bugfix with the &quot;%PREVIOUS&quot; internal array.</pre>

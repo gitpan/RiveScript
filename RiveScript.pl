@@ -19,7 +19,9 @@ chomp $dir;
 $braindir = $dir if length $dir;
 
 # Create a new RS interpreter.
-my $rs = new RiveScript (debug => $debug);
+my $rs = new RiveScript (
+	debug => $debug,
+);
 
 # Load in some RS files.
 $rs->loadDirectory ($braindir);

@@ -32,9 +32,7 @@ while(1) {
 	my $in = <STDIN>;
 	chomp $in;
 
-	my @reply = $rs->reply ('localhost',$in,
-		scalar => 1,
-	);
+	my @reply = $rs->reply ('localhost',$in);
 
 	print "Out> $_\n" foreach(@reply);
 }

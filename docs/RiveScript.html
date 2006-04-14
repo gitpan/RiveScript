@@ -52,6 +52,8 @@
 		<li><a href="#formatmessage___string_">formatMessage ($STRING)</a></li>
 		<li><a href="#mergewildcards___string___array_">mergeWildcards ($STRING, $ARRAY)</a></li>
 		<li><a href="#stringutil___type___string_">stringUtil ($TYPE, $STRING)</a></li>
+		<li><a href="#tagfilter___reply__id__msg_">tagFilter ($REPLY,$ID,$MSG)</a></li>
+		<li><a href="#tagshortcuts___reply_">tagShortcuts ($REPLY)</a></li>
 	</ul>
 
 	<li><a href="#format">FORMAT</a></li>
@@ -81,14 +83,14 @@
 		<li><a href="#_topic_____">{topic=...}</a></li>
 		<li><a href="#_nextreply_">{nextreply}</a></li>
 		<li><a href="#_weight_____">{weight=...}</a></li>
-		<li><a href="#______">{@...}</a></li>
+		<li><a href="#___________">{@...}, &lt;@&gt;</a></li>
 		<li><a href="#______">{!...}</a></li>
 		<li><a href="#_random______random_">{random}...{/random}</a></li>
-		<li><a href="#_person______person_">{person}...{/person}</a></li>
-		<li><a href="#_formal______formal_">{formal}...{/formal}</a></li>
-		<li><a href="#_sentence______sentence_">{sentence}...{/sentence}</a></li>
-		<li><a href="#_uppercase______uppercase_">{uppercase}...{/uppercase}</a></li>
-		<li><a href="#_lowercase______lowercase_">{lowercase}...{/lowercase}</a></li>
+		<li><a href="#_person______person____person_">{person}...{/person}, &lt;person&gt;</a></li>
+		<li><a href="#_formal______formal____formal_">{formal}...{/formal}, &lt;formal&gt;</a></li>
+		<li><a href="#_sentence______sentence____sentence_">{sentence}...{/sentence}, &lt;sentence&gt;</a></li>
+		<li><a href="#_uppercase______uppercase____uppercase_">{uppercase}...{/uppercase}, &lt;uppercase&gt;</a></li>
+		<li><a href="#_lowercase______lowercase____lowercase_">{lowercase}...{/lowercase}, &lt;lowercase&gt;</a></li>
 		<li><a href="#_ok_">{ok}</a></li>
 		<li><a href="#_s">\s</a></li>
 		<li><a href="#_n">\n</a></li>
@@ -359,6 +361,14 @@ array should be blank; there is no such thing as a &lt;star0&gt;.</p>
 </p>
 <h2><a name="stringutil___type___string_">stringUtil ($TYPE, $STRING)</a></h2>
 <p>Called on for string format tags (uppercase, lowercase, formal, sentence).</p>
+<p>
+</p>
+<h2><a name="tagfilter___reply__id__msg_">tagFilter ($REPLY,$ID,$MSG)</a></h2>
+<p>Run tag filters on $REPLY. Returns the new $REPLY.</p>
+<p>
+</p>
+<h2><a name="tagshortcuts___reply_">tagShortcuts ($REPLY)</a></h2>
+<p>Runs shortcut tags on $REPLY. Returns the new $REPLY.</p>
 <p>
 </p>
 <hr />
@@ -1055,12 +1065,13 @@ chosen (when there is more than one reply that could be randomly chosen).
 See <a href="#complexities_of_the_response">COMPLEXITIES OF THE RESPONSE</a>.</p>
 <p>
 </p>
-<h2><a name="______">{@...}</a></h2>
+<h2><a name="___________">{@...}, &lt;@&gt;</a></h2>
 <p>An inline redirection. These work like normal redirections, except are inserted
 inline into a reply.</p>
 <pre>
   + * or something
   - Or something. {@&lt;star1&gt;}</pre>
+<p>&lt;@&gt; is an alias for {@&lt;star&gt;}</p>
 <p>
 </p>
 <h2><a name="______">{!...}</a></h2>
@@ -1078,25 +1089,30 @@ in the final response of the bot; the changes are made silently.</p>
   {random}Yes sir.|No sir.{/random}</pre>
 <p>
 </p>
-<h2><a name="_person______person_">{person}...{/person}</a></h2>
+<h2><a name="_person______person____person_">{person}...{/person}, &lt;person&gt;</a></h2>
 <p>Will take the enclosed text and run person substitutions on them (see
 <a href="#person_substitution">PERSON SUBSTITUTION</a>).</p>
+<p>&lt;person&gt; is an alias for {person}&lt;star&gt;{/person}</p>
 <p>
 </p>
-<h2><a name="_formal______formal_">{formal}...{/formal}</a></h2>
+<h2><a name="_formal______formal____formal_">{formal}...{/formal}, &lt;formal&gt;</a></h2>
 <p>Will Make Your Text Formal</p>
+<p>&lt;formal&gt; is an alias for {formal}&lt;star&gt;{/formal}</p>
 <p>
 </p>
-<h2><a name="_sentence______sentence_">{sentence}...{/sentence}</a></h2>
+<h2><a name="_sentence______sentence____sentence_">{sentence}...{/sentence}, &lt;sentence&gt;</a></h2>
 <p>Will make your text sentence-cased.</p>
+<p>&lt;sentence&gt; is an alias for {sentence}&lt;star&gt;{/sentence}</p>
 <p>
 </p>
-<h2><a name="_uppercase______uppercase_">{uppercase}...{/uppercase}</a></h2>
+<h2><a name="_uppercase______uppercase____uppercase_">{uppercase}...{/uppercase}, &lt;uppercase&gt;</a></h2>
 <p>WILL MAKE THE TEXT UPPERCASE.</p>
+<p>&lt;uppercase&gt; is an alias for {uppercase}&lt;star&gt;{/uppercase}</p>
 <p>
 </p>
-<h2><a name="_lowercase______lowercase_">{lowercase}...{/lowercase}</a></h2>
+<h2><a name="_lowercase______lowercase____lowercase_">{lowercase}...{/lowercase}, &lt;lowercase&gt;</a></h2>
 <p>will make the text lowercase.</p>
+<p>&lt;lowercase&gt; is an alias for {lowercase}&lt;star&gt;{/lowercase}</p>
 <p>
 </p>
 <h2><a name="_ok_">{ok}</a></h2>
@@ -1136,9 +1152,10 @@ the &lt;bot&gt; tag). The variable names all begin with ``ENV_'' and are in uppe
 </p>
 <h2><a name="rivescript_environment_variables">RiveScript Environment Variables</a></h2>
 <pre>
-  ENV_OS         = The operating system RiveScript is running on.
-  ENV_APPVERSION = The version of RiveScript used.
-  ENV_APPNAME    = A user-agent style string that looks like &quot;RiveScript/0.08&quot;</pre>
+  ENV_OS          = The operating system RiveScript is running on.
+  ENV_APPVERSION  = The version of RiveScript used.
+  ENV_APPNAME     = A user-agent style string that looks like &quot;RiveScript/0.08&quot;
+  ENV_REPLY_COUNT = The number of loaded triggers.</pre>
 <p>
 </p>
 <h2><a name="perl_environment_variables">Perl Environment Variables</a></h2>
@@ -1366,6 +1383,13 @@ decide if it should give a reply.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  Version 0.20
+  - Added shortcut tags: &lt;person&gt;, &lt;@&gt;, &lt;formal&gt;, &lt;sentence&gt;, &lt;uppercase&gt;, &lt;lowercase&gt;,
+    for running the respective tags on &lt;star&gt; (i.e. &lt;person&gt; ==&gt; {person}&lt;star&gt;{/person})
+  - Added environment variable ENV_REPLY_COUNT which holds the number of loaded triggers.
+  - Bugfix: sending scalar=&gt;0 to reply() was returning the scalar of the array of replies,
+    not the array itself. This has been fixed.</pre>
 <pre>
   Version 0.19
   - Added methods for allowing or denying certain commands to be used when RiveScript

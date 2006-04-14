@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use RiveScript::Util;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub reply {
 	my $self = shift;
@@ -84,7 +84,7 @@ sub reply {
 			return join (" ", @final);
 		}
 
-		return @final;
+		return (@final);
 	}
 	else {
 		# Run tag filters anyway.
@@ -399,6 +399,7 @@ sub intReply {
 	# A reply?
 	if (defined $reply) {
 		# Filter in stars...
+		$reply = $self->tagShortcuts ($reply);
 		$reply = $self->mergeWildcards ($reply,\@stars);
 	}
 	else {

@@ -31,3 +31,6 @@
 
 + test force a topic
 - {! var mood = swear}On your next message I'll force a topic on you.
+
++ test new trigger
+- This is just a test.

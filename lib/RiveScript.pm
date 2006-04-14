@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 sub new {
 	my $proto = shift;
@@ -303,6 +303,7 @@ sub loadFile {
 
 	# Undefine the object.
 	$self->{parser} = undef;
+
 	return 1;
 }
 
@@ -321,6 +322,16 @@ sub sortReplies {
 	}
 
 	$self->{parser} = undef;
+
+	# Get an idea of the number of replies we have.
+	my $replyCount = 0;
+	foreach my $topic (keys %{$self->{array}}) {
+		$replyCount += scalar(@{$self->{array}->{$topic}});
+	}
+
+	$self->{replycount} = $replyCount;
+	$self->{botvars}->{ENV_REPLY_COUNT} = $replyCount;
+
 	return 1;
 }
 
@@ -359,6 +370,10 @@ sub person {
 
 sub tagFilter {
 	return RiveScript::Util::tagFilter (@_);
+}
+
+sub tagShortcuts {
+	return RiveScript::Util::tagShortcuts (@_);
 }
 
 sub mergeWildcards {
@@ -604,6 +619,14 @@ array should be blank; there is no such thing as a E<lt>star0E<gt>.
 =head2 stringUtil ($TYPE, $STRING)
 
 Called on for string format tags (uppercase, lowercase, formal, sentence).
+
+=head2 tagFilter ($REPLY,$ID,$MSG)
+
+Run tag filters on $REPLY. Returns the new $REPLY.
+
+=head2 tagShortcuts ($REPLY)
+
+Runs shortcut tags on $REPLY. Returns the new $REPLY.
 
 =head1 FORMAT
 
@@ -1235,13 +1258,15 @@ A -REPLY can have a weight tag applied to it to change the probability of it bei
 chosen (when there is more than one reply that could be randomly chosen).
 See L<"COMPLEXITIES OF THE RESPONSE">.
 
-=head2 {@...}
+=head2 {@...}, E<lt>@E<gt>
 
 An inline redirection. These work like normal redirections, except are inserted
 inline into a reply.
 
   + * or something
   - Or something. {@<star1>}
+
+E<lt>@E<gt> is an alias for {@E<lt>starE<gt>}
 
 =head2 {!...}
 
@@ -1258,26 +1283,36 @@ Will insert a bit of random text. This has two syntaxes:
   Insert a random phrase (separate by pipes)
   {random}Yes sir.|No sir.{/random}
 
-=head2 {person}...{/person}
+=head2 {person}...{/person}, E<lt>personE<gt>
 
 Will take the enclosed text and run person substitutions on them (see
 L<"PERSON SUBSTITUTION">).
 
-=head2 {formal}...{/formal}
+E<lt>personE<gt> is an alias for {person}E<lt>starE<gt>{/person}
+
+=head2 {formal}...{/formal}, E<lt>formalE<gt>
 
 Will Make Your Text Formal
 
-=head2 {sentence}...{/sentence}
+E<lt>formalE<gt> is an alias for {formal}E<lt>starE<gt>{/formal}
+
+=head2 {sentence}...{/sentence}, E<lt>sentenceE<gt>
 
 Will make your text sentence-cased.
 
-=head2 {uppercase}...{/uppercase}
+E<lt>sentenceE<gt> is an alias for {sentence}E<lt>starE<gt>{/sentence}
+
+=head2 {uppercase}...{/uppercase}, E<lt>uppercaseE<gt>
 
 WILL MAKE THE TEXT UPPERCASE.
 
-=head2 {lowercase}...{/lowercase}
+E<lt>uppercaseE<gt> is an alias for {uppercase}E<lt>starE<gt>{/uppercase}
+
+=head2 {lowercase}...{/lowercase}, E<lt>lowercaseE<gt>
 
 will make the text lowercase.
+
+E<lt>lowercaseE<gt> is an alias for {lowercase}E<lt>starE<gt>{/lowercase}
 
 =head2 {ok}
 
@@ -1315,9 +1350,10 @@ the E<lt>botE<gt> tag). The variable names all begin with "ENV_" and are in uppe
 
 =head2 RiveScript Environment Variables
 
-  ENV_OS         = The operating system RiveScript is running on.
-  ENV_APPVERSION = The version of RiveScript used.
-  ENV_APPNAME    = A user-agent style string that looks like "RiveScript/0.08"
+  ENV_OS          = The operating system RiveScript is running on.
+  ENV_APPVERSION  = The version of RiveScript used.
+  ENV_APPNAME     = A user-agent style string that looks like "RiveScript/0.08"
+  ENV_REPLY_COUNT = The number of loaded triggers.
 
 =head2 Perl Environment Variables
 
@@ -1557,6 +1593,13 @@ L<RiveScript::Util> - String utilities for RiveScript.
 None yet known.
 
 =head1 CHANGES
+
+  Version 0.20
+  - Added shortcut tags: <person>, <@>, <formal>, <sentence>, <uppercase>, <lowercase>,
+    for running the respective tags on <star> (i.e. <person> ==> {person}<star>{/person})
+  - Added environment variable ENV_REPLY_COUNT which holds the number of loaded triggers.
+  - Bugfix: sending scalar=>0 to reply() was returning the scalar of the array of replies,
+    not the array itself. This has been fixed.
 
   Version 0.19
   - Added methods for allowing or denying certain commands to be used when RiveScript

@@ -71,6 +71,20 @@ sub person {
 	return $msg;
 }
 
+sub tagShortcuts {
+	my ($self,$reply) = @_;
+
+	# Run command shortcuts
+	$reply =~ s~<person>~{person}<star>{/person}~ig;
+	$reply =~ s~<@>~{@<star>}~ig;
+	$reply =~ s~<formal>~{formal}<star>{/formal}~ig;
+	$reply =~ s~<sentence>~{sentence}<star>{/sentence}~ig;
+	$reply =~ s~<uppercase>~{uppercase}<star>{/uppercase}~ig;
+	$reply =~ s~<lowercase>~{lowercase}<star>{/lowercase}~ig;
+
+	return $reply;
+}
+
 sub tagFilter {
 	my ($self,$reply,$id,$msg) = @_;
 

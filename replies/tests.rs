@@ -398,3 +398,19 @@
 
 + mtime
 - It is currently &datetime(Day, Mon dd yy @ hhm:mm:ss)
+
++ count replies
+- There are currently <bot ENV_REPLY_COUNT> loaded triggers.
+
+/* ##############################
+   ## Test Shortcut Tags       ##
+   ############################## */
+
++ test formal *
+- Your message in formal: <formal>
+
++ test uc *
+- Your message in uc: <uppercase>
+
++ test redirect *
+- Your response: <@>

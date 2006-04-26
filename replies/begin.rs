@@ -8,6 +8,7 @@
 
 // Include English
 ! include English.rsl
+! include Colors.rsl
 ! include DateTime.rsp
 
 > begin

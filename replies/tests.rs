@@ -17,6 +17,14 @@
 - This is the second random reply.
 - Here is random reply #3.
 
++ test undef
+- There us an \u undefined character here.
+
+// Test an undef macro failure
+! global macro_failure = \u
++ test macro
+- Failed macro: [&failure()]
+
 /* ##############################
    ## Variables Testing        ##
    ############################## */

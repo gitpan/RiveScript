@@ -1,5 +1,22 @@
 Revision history for Perl extension RiveScript.
 
+0.21 Wed Apr 26 10:43:00 2006
+	- Added \u tag for inserting an "undefined" character (i.e. set global macro_failure
+		to \u to remove macro failure notifications altogether from the responses)
+	- The code to run objects is now run last in RiveScript::Util::tagFilter, so that other
+		tags such as {random}, <get>, etc. are all run before the object is executed.
+	- Two new standard libraries have been added:
+		- Colors.rsl - Arrays for color names
+		- Numbers.rsl - Arrays for number names
+
+0.20 Fri Apr 14 15:00:00 2006
+	- Added shortcut tags: <person>, <@>, <formal>, <sentence>, <uppercase>, <lowercase>,
+		for running the respective tags on <star> (i.e. <person> ==> {person}<star>{/person})
+	- Added environment variable ENV_REPLY_COUNT which holds the number of loaded triggers.
+	- Bugfix: sending scalar=>0 to reply() was returning the scalar of the array of replies,
+		not the array itself. This has been fixed.
+
+
 0.19 Wed Apr  5 22:20:00 2006
 	- Added methods for allowing or denying certain commands to be used when RiveScript
 		documents are loaded in.

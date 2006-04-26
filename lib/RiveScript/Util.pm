@@ -149,26 +149,6 @@ sub tagFilter {
 		$reply =~ s/\{\@$o\}/$resp/i;
 	}
 
-	# Run macros.
-	while ($reply =~ /\&(.*?)\((.*?)\)/i) {
-		my $rel = $1;
-		my $data = $2;
-
-		my ($object,$method) = split(/\./, $rel, 2);
-		$method = 'default' unless defined $method;
-
-		my $returned = '';
-
-		if (defined $self->{macros}->{$object}) {
-			$returned = &{$self->{macros}->{$object}} ($method,$data);
-		}
-		else {
-			$returned = $self->{macro_failure} || 'ERR(Macro Failure!)';
-		}
-
-		$reply =~ s/\&(.*?)\((.*?)\)/$returned/i;
-	}
-
 	# Randomness.
 	while ($reply =~ /\{random\}(.*?)\{\/random\}/i) {
 		my $text = $1;
@@ -263,6 +243,32 @@ sub tagFilter {
 		my $new = $self->person ($data);
 
 		$reply =~ s/\{person\}(.*?)\{\/person\}/$new/i;
+	}
+
+	# Run macros.
+	while ($reply =~ /\&(.*?)\((.*?)\)/i) {
+		my $rel = $1;
+		my $data = $2;
+
+		my ($object,$method) = split(/\./, $rel, 2);
+		$method = 'default' unless defined $method;
+
+		my $returned = '';
+
+		if (defined $self->{macros}->{$object}) {
+			$returned = &{$self->{macros}->{$object}} ($method,$data);
+		}
+		else {
+			if ($self->{macro_failure}) {
+				$returned = $self->{macro_failure};
+			}
+			else {
+				warn "ERR(Macro Failure)";
+				$returned = '';
+			}
+		}
+
+		$reply =~ s/\&(.*?)\((.*?)\)/$returned/i;
 	}
 
 	return $reply;

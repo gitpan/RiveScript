@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 sub new {
 	my $proto = shift;
@@ -1593,6 +1593,15 @@ L<RiveScript::Util> - String utilities for RiveScript.
 None yet known.
 
 =head1 CHANGES
+
+  Version 0.21
+  - Added \u tag for inserting an "undefined" character (i.e. set global macro_failure
+    to \u to remove macro failure notifications altogether from the responses)
+  - The code to run objects is now run last in RiveScript::Util::tagFilter, so that other
+    tags such as {random}, <get>, etc. are all run before the object is executed.
+  - Two new standard libraries have been added:
+    - Colors.rsl - Arrays for color names
+    - Numbers.rsl - Arrays for number names
 
   Version 0.20
   - Added shortcut tags: <person>, <@>, <formal>, <sentence>, <uppercase>, <lowercase>,

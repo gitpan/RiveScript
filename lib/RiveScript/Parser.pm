@@ -107,6 +107,9 @@ sub loadFile {
 		# Filter in hard spaces.
 		$data =~ s/\\s/ /g if defined $data;
 
+		# Filter in undefined characters.
+		$data =~ s/\\u//g if defined $data;
+
 		# Check for comment commands...
 		if ($command =~ m~^(//|#)~) {
 			# Single comment.

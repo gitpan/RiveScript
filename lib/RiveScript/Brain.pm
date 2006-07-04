@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use RiveScript::Util;
 
-our $VERSION = '0.03';
+our $VERSION = '1.00';
 
 sub reply {
 	my $self = shift;

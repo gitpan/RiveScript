@@ -1,5 +1,8 @@
 Revision history for Perl extension RiveScript.
 
+1.00 Tue Jul  4 17:43:00 2006
+	- Public stable beta release.
+
 0.21 Wed Apr 26 10:43:00 2006
 	- Added \u tag for inserting an "undefined" character (i.e. set global macro_failure
 		to \u to remove macro failure notifications altogether from the responses)

@@ -3,7 +3,7 @@ package RiveScript::Util;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '1.00';
 
 sub splitSentences {
 	my ($splitters,$msg) = @_;

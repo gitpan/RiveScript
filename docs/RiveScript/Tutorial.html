@@ -1,8 +1,10 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>RiveScript::Tutorial - A beginner's guide to creating their
 first RiveScript brain.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:" />
 </head>
 
@@ -141,31 +143,38 @@ This assumes that the brain's RS files will be stored in a directory
 called ``tutorial'', local to the Perl script. You'd want to edit certain
 parameters in this code if you see fit.</p>
 <pre>
-  #!/usr/bin/perl -w</pre>
+  <span class="comment">#!/usr/bin/perl -w</span>
+</pre>
 <pre>
-  use strict;
-  use warnings;
-  use RiveScript;</pre>
+  <span class="keyword">use</span> <span class="variable">strict</span><span class="operator">;</span>
+  <span class="keyword">use</span> <span class="variable">warnings</span><span class="operator">;</span>
+  <span class="keyword">use</span> <span class="variable">RiveScript</span><span class="operator">;</span>
+</pre>
 <pre>
-  # Create the RiveScript interpreter.
-  my $rive = new RiveScript();</pre>
+  <span class="comment"># Create the RiveScript interpreter.</span>
+  <span class="keyword">my</span> <span class="variable">$rive</span> <span class="operator">=</span> <span class="variable">new</span> <span class="variable">RiveScript</span><span class="operator">();</span>
+</pre>
 <pre>
-  # Load the RS tutorial brain.
-  $rive-&gt;loadDirectory (&quot;./tutorial&quot;);</pre>
+  <span class="comment"># Load the RS tutorial brain.</span>
+  <span class="variable">$rive</span><span class="operator">-&gt;</span><span class="variable">loadDirectory</span> <span class="operator">(</span><span class="string">"./tutorial"</span><span class="operator">);</span>
+</pre>
 <pre>
-  # Sort them.
-  $rive-&gt;sortReplies;</pre>
+  <span class="comment"># Sort them.</span>
+  <span class="variable">$rive</span><span class="operator">-&gt;</span><span class="variable">sortReplies</span><span class="operator">;</span>
+</pre>
 <pre>
-  # Go into a chatting loop.
-  while (1) {
-    print &quot;User&gt; &quot;;
-    my $msg = &lt;STDIN&gt;;
-    chomp $msg;</pre>
+  <span class="comment"># Go into a chatting loop.</span>
+  <span class="keyword">while</span> <span class="operator">(</span><span class="number">1</span><span class="operator">)</span> <span class="operator">{</span>
+    <span class="keyword">print</span> <span class="string">"User&gt; "</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">$msg</span> <span class="operator">=</span> <span class="operator">&lt;</span><span class="variable">STDIN</span><span class="operator">&gt;;</span>
+    <span class="keyword">chomp</span> <span class="variable">$msg</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Grab a reply.
-    my @reply = $rive-&gt;reply ('user',$msg);
-    print &quot; Bot&gt; $_\n&quot; foreach(@reply);
-  }</pre>
+    <span class="comment"># Grab a reply.</span>
+    <span class="keyword">my</span> <span class="variable">@reply</span> <span class="operator">=</span> <span class="variable">$rive</span><span class="operator">-&gt;</span><span class="variable">reply</span> <span class="operator">(</span><span class="string">'user'</span><span class="operator">,</span><span class="variable">$msg</span><span class="operator">);</span>
+    <span class="keyword">print</span> <span class="string">" Bot&gt; $_\n"</span> <span class="keyword">foreach</span><span class="operator">(</span><span class="variable">@reply</span><span class="operator">);</span>
+      <span class="operator">}</span>
+</pre>
 <p>
 </p>
 <hr />
@@ -221,16 +230,16 @@ substitute things in the user's message with something else. This
 set of code should get you started, but you can add substitutions
 for anything else you can think of, too.</p>
 <pre>
-  ! sub &amp;quote;   = quot
-  ! sub &amp;apos;    = apos
-  ! sub &amp;amp;     = amp
-  ! sub &amp;lt;      = lt
-  ! sub &amp;gt;      = gt
-  ! sub +         = plus
-  ! sub -         = minus
-  ! sub /         = divided
-  ! sub *         = times
-  ! sub i'm       = i am
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">&amp;</span><span class="variable">quote</span><span class="operator">;</span>   <span class="operator">=</span> <span class="variable">quot</span>
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">&amp;</span><span class="variable">apos</span><span class="operator">;</span>    <span class="operator">=</span> <span class="variable">apos</span>
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">&amp;</span><span class="variable">amp</span><span class="operator">;</span>     <span class="operator">=</span> <span class="variable">amp</span>
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">&amp;</span><span class="keyword">lt</span><span class="operator">;</span>      <span class="operator">=</span> <span class="keyword">lt</span>
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">&amp;</span><span class="keyword">gt</span><span class="operator">;</span>      <span class="operator">=</span> <span class="keyword">gt</span>
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">+</span>         <span class="operator">=</span> <span class="variable">plus</span>
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">-</span>         <span class="operator">=</span> <span class="variable">minus</span>
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">/</span>         <span class="operator">=</span> <span class="variable">divided</span>
+  <span class="operator">!</span> <span class="variable">sub</span> <span class="operator">*</span>         <span class="operator">=</span> <span class="keyword">times</span>
+  <span class="operator">!</span> <span class="keyword">sub</span><span class="variable"> i'm       = i am
   ! sub i'd       = i would
   ! sub i've      = i have
   ! sub i'll      = i will
@@ -278,7 +287,9 @@ for anything else you can think of, too.</p>
   ! sub r         = are
   ! sub im        = i am
   ! sub wat       = what
-  ! sub wats      = what is</pre>
+  ! sub wats      = what is
+  </span>
+</pre>
 <p>Finally, we'll define some ``person'' substitutions. These are
 special substitutions used for the bot's reply. Anything between
 the tags <strong>{person}</strong> and <strong>{/person}</strong> in the bot's reply uses
@@ -311,10 +322,11 @@ takes only one preset trigger from the user: ``request''</p>
 normal reply for the user's message is obtained and substituted back
 into the ``request'' reply, where the <strong>{ok}</strong> tag is.</p>
 <pre>
-  &gt; begin
-    + request
-    - {ok}
-  &lt; begin</pre>
+  <span class="operator">&gt;</span> <span class="variable">begin</span>
+    <span class="operator">+</span> <span class="variable">request</span>
+    <span class="operator">-</span> <span class="operator">{</span><span class="variable">ok</span><span class="operator">}</span>
+  <span class="operator">&lt;</span> <span class="variable">begin</span>
+</pre>
 <p>This is the simplest form for a BEGIN statement. You can use conditionals
 and other things here too, which we'll get into later in the tutorial.
 But for now, the user <strong>request</strong>s a reply, and the bot returns one.</p>
@@ -365,11 +377,12 @@ the bot should use that reply a lot less than the other ones.</p>
 them being chosen. So here, we'll add weights to all the triggers except
 for the one calling you a human:</p>
 <pre>
-  + hello
-  - Hello there, human.
-  - Hey, how are you?{weight=3}
-  - Hi there.{weight=2}
-  - Hello. :){weight=4}</pre>
+  <span class="operator">+</span> <span class="variable">hello</span>
+  <span class="operator">-</span> <span class="variable">Hello</span> <span class="variable">there</span><span class="operator">,</span> <span class="variable">human</span><span class="operator">.</span>
+  <span class="operator">-</span> <span class="variable">Hey</span><span class="operator">,</span> <span class="variable">how</span> <span class="variable">are</span> <span class="variable">you</span><span class="operator">?</span><span class="operator">{</span><span class="variable">weight</span><span class="operator">=</span><span class="number">3</span><span class="operator">}</span>
+  <span class="operator">-</span> <span class="variable">Hi</span> <span class="variable">there</span><span class="operator">.{</span><span class="variable">weight</span><span class="operator">=</span><span class="number">2</span><span class="operator">}</span>
+  <span class="operator">-</span> <span class="variable">Hello</span><span class="operator">.</span> <span class="operator">:){</span><span class="variable">weight</span><span class="operator">=</span><span class="number">4</span><span class="operator">}</span>
+</pre>
 <p>Note that if a {weight} tag isn't specified, the trigger assumes a weight
 of 1. Now, there is a total of 10 weights in these replies: 3 + 2 + 4, and
 then +1 for the ``Hello there, human.'' response.</p>
@@ -468,9 +481,10 @@ we created the ``config.rs'' file can be retrieved in &lt;bot&gt; tags.</p>
 part. So while we're on the ``users.rs'' file, we'll add a trigger for if the
 user has the same name as the bot.</p>
 <pre>
-  + my name is &lt;bot name&gt;
-  - &lt;set name=&lt;bot name&gt;&gt;Is it really? Don't tell me your last\s
-  ^ name is &lt;bot lastname&gt; too. ;)</pre>
+  <span class="operator">+</span> <span class="keyword">my</span> <span class="variable">name</span> <span class="variable">is</span> <span class="operator">&lt;</span><span class="variable">bot</span> <span class="variable">name</span><span class="operator">&gt;</span>
+  <span class="operator">-</span> <span class="operator">&lt;</span><span class="variable">set</span> <span class="variable">name</span><span class="operator">=&lt;</span><span class="variable">bot</span> <span class="variable">name</span><span class="operator">&gt;&gt;</span><span class="variable">Is</span> <span class="variable">it</span> <span class="variable">really</span><span class="operator">?</span> <span class="variable">Don't</span> <span class="keyword">tell</span> <span class="variable">me</span> <span class="variable">your</span> <span class="keyword">last</span><span class="operator">\</span><span class="keyword">s</span>
+  <span class="operator">^</span> <span class="variable">name</span> <span class="variable">is</span> <span class="operator">&lt;</span><span class="variable">bot</span> <span class="variable">lastname</span><span class="operator">&gt;</span> <span class="variable">too</span><span class="operator">.</span> <span class="operator">;)</span>
+</pre>
 <p>Also note that this example used a carat to extend the reply. When you do this,
 you'll usually want to include a \s at the end of the previous line, to put a
 space between the two parts of the reply (otherwise it would say ``Don't tell me
@@ -509,8 +523,9 @@ such as a name, you want them to be formatted to start with capital letters.</p>
 name, as we did in the last step, it will say it correctly). So we have one of
 two options:</p>
 <pre>
-  + my name is *
-  - &lt;set name={formal}&lt;star&gt;{/formal}&gt;Nice to meet you, {formal}&lt;star&gt;{/formal}.</pre>
+  <span class="operator">+</span> <span class="keyword">my</span> <span class="variable">name</span> <span class="variable">is</span> <span class="operator">*</span>
+  <span class="operator">-</span> <span class="operator">&lt;</span><span class="variable">set</span> <span class="variable">name</span><span class="operator">=</span><span class="operator">{</span><span class="string">formal</span><span class="operator">}</span><span class="operator">&lt;</span><span class="variable">star</span><span class="operator">&gt;{</span><span class="regex">/formal}&gt;Nice to meet you, {formal}&lt;star&gt;{/formal</span><span class="operator">}.</span>
+</pre>
 <p>This one will formalize &lt;star&gt; in both instances. It's not the greatest
 to look at.</p>
 <p>A feature of RiveScript is that &lt;set&gt; tags are run before &lt;get&gt;
@@ -635,10 +650,11 @@ of the variable name.</p>
 <p>In place of the ``equals'' sign in the conditions above, you can use numeric
 operators to check values of numeric variables.</p>
 <pre>
-  + am i a juvenile
-  * age &lt;  18 =&gt; Yes, you're under 18.
-  * age &gt;= 18 =&gt; No, you're at least 18 years old.
-  - I don't know; I don't think I know how old you are.</pre>
+  <span class="operator">+</span> <span class="variable">am</span> <span class="variable">i</span> <span class="variable">a</span> <span class="variable">juvenile</span>
+  <span class="operator">*</span> <span class="variable">age</span> <span class="operator">&lt;</span>  <span class="number">18</span> <span class="operator">=&gt;</span> <span class="variable">Yes</span><span class="operator">,</span> <span class="variable">you're</span> <span class="variable">under</span> <span class="number">18.</span>
+  <span class="operator">*</span> <span class="variable">age</span> <span class="operator">&gt;=</span> <span class="number">18</span> <span class="operator">=&gt;</span> <span class="variable">No</span><span class="operator">,</span> <span class="variable">you're</span> <span class="variable">at</span> <span class="variable">least</span> <span class="number">18</span> <span class="variable">years</span> <span class="variable">old</span><span class="operator">.</span>
+  <span class="operator">-</span> <span class="variable">I</span> <span class="variable">don't</span> <span class="variable">know</span><span class="operator">;</span> <span class="variable">I</span> <span class="variable">don't</span> <span class="variable">think</span> <span class="variable">I</span> <span class="variable">know</span> <span class="variable">how</span> <span class="variable">old</span> <span class="variable">you</span> <span class="variable">are</span><span class="operator">.</span>
+</pre>
 <p>Conditionals are checked in order of appearance. When one returns false, the
 next one down the line is checked, and so-on. If all conditionals are false,
 a normal reply should be provided. Random replies can be used here too.</p>
@@ -701,17 +717,19 @@ different topic.</p>
 <p>To set a topic, use the {topic} tag. To declare a topic, use the LABEL commands.</p>
 <p>Here's an example of a topic set to handle abusive users:</p>
 <pre>
-  + i hate you
-  - I don't like you either. Not apologize or I won't talk with you.{topic=sorry}</pre>
+  <span class="operator">+</span> <span class="variable">i</span> <span class="variable">hate</span> <span class="variable">you</span>
+  <span class="operator">-</span> <span class="variable">I</span> <span class="variable">don't</span> <span class="variable">like</span> <span class="variable">you</span> <span class="variable">either</span><span class="operator">.</span> <span class="variable">Not</span> <span class="variable">apologize</span> <span class="keyword">or</span> <span class="variable">I</span> <span class="variable">won't</span> <span class="variable">talk</span> <span class="variable">with</span> <span class="variable">you</span><span class="operator">.{</span><span class="variable">topic</span><span class="operator">=</span><span class="variable">sorry</span><span class="operator">}</span>
+</pre>
 <pre>
   &gt; topic sorry
     + *
     - Say that you're sorry.
     - Apologize for being so mean to me.</pre>
 <pre>
-    + sorry
-    - Okay--I'll forgive you.{topic=random}
-  &lt; topic</pre>
+    <span class="operator">+</span> <span class="variable">sorry</span>
+    <span class="operator">-</span> <span class="variable">Okay</span><span class="operator">--</span><span class="variable">I'll</span> <span class="variable">forgive</span> <span class="variable">you</span><span class="operator">.{</span><span class="variable">topic</span><span class="operator">=</span><span class="variable">random</span><span class="operator">}</span>
+      <span class="operator">&lt;</span> <span class="variable">topic</span>
+</pre>
 <p>
 </p>
 <h2><a name="rivescript_objects">RiveScript Objects</a></h2>
@@ -720,10 +738,11 @@ object, use the LABEL commands to name the object, and then provide some Perl co
 <p>Create a new RiveScript document named ``objects.rs'' and we'll start with a simple
 localtime-returning object:</p>
 <pre>
-  &gt; object localtime
-    my ($method,$data) = @_;
-    return localtime();
-  &lt; object</pre>
+  <span class="operator">&gt;</span> <span class="variable">object</span> <span class="keyword">localtime</span>
+    <span class="keyword">my</span> <span class="operator">(</span><span class="variable">$method</span><span class="operator">,</span><span class="variable">$data</span><span class="operator">)</span> <span class="operator">=</span> <span class="variable">@_</span><span class="operator">;</span>
+    <span class="keyword">return</span> <span class="keyword">localtime</span><span class="operator">();</span>
+  <span class="operator">&lt;</span> <span class="variable">object</span>
+</pre>
 <p>Now we have an object named ``localtime'' which returns Perl's <code>localtime()</code> value. Now
 how to use it?</p>
 <p>Refer back to the trigger above that looks like this:</p>
@@ -740,19 +759,22 @@ get the time!</p>
 objects by creating methods for them. Here's an example of a (simple?) text-encoder,
 which will encode things in either Base64 or MD5_Hex.</p>
 <pre>
-  &gt; object encode
-    my ($method,$data) = @_;</pre>
+  <span class="operator">&gt;</span> <span class="variable">object</span> <span class="variable">encode</span>
+    <span class="keyword">my</span> <span class="operator">(</span><span class="variable">$method</span><span class="operator">,</span><span class="variable">$data</span><span class="operator">)</span> <span class="operator">=</span> <span class="variable">@_</span><span class="operator">;</span>
+</pre>
 <pre>
-    use MIME::Base64 qw(encode_base64);
-    use Digest::MD5 qw(md5_hex);</pre>
+    <span class="keyword">use</span> <span class="variable">MIME::Base64</span> <span class="string">qw(encode_base64)</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Digest::MD5</span> <span class="string">qw(md5_hex)</span><span class="operator">;</span>
+</pre>
 <pre>
-    if ($method eq 'base64') {
-      return encode_base64($data);
-    }
-    elsif ($method eq 'md5') {
-      return md5_hex($data);
-    }
-  &lt; object</pre>
+    <span class="keyword">if</span> <span class="operator">(</span><span class="variable">$method</span> <span class="keyword">eq</span> <span class="string">'base64'</span><span class="operator">)</span> <span class="operator">{</span>
+      <span class="keyword">return</span> <span class="variable">encode_base64</span><span class="operator">(</span><span class="variable">$data</span><span class="operator">);</span>
+    <span class="operator">}</span>
+    <span class="keyword">elsif</span> <span class="operator">(</span><span class="variable">$method</span> <span class="keyword">eq</span> <span class="string">'md5'</span><span class="operator">)</span> <span class="operator">{</span>
+      <span class="keyword">return</span> <span class="variable">md5_hex</span><span class="operator">(</span><span class="variable">$data</span><span class="operator">);</span>
+    <span class="operator">}</span>
+      <span class="operator">&lt;</span> <span class="variable">object</span>
+</pre>
 <p>And now we can test that with these triggers:</p>
 <pre>
   + base64 encode *
@@ -828,23 +850,26 @@ than or equal to 1.</p>
 <h3><a name="______">{@...}</a></h3>
 <p>An inline redirection.</p>
 <pre>
-  + * or something
-  - Or something. {@&lt;star&gt;}</pre>
+  <span class="operator">+</span> <span class="operator">*</span> <span class="keyword">or</span> <span class="variable">something</span>
+  <span class="operator">-</span> <span class="variable">Or</span> <span class="variable">something</span><span class="operator">.</span> <span class="operator">{</span><span class="variable">@&lt;</span><span class="variable">star</span><span class="operator">&gt;}</span>
+</pre>
 <p>``Are you a bot or something?'' ``Or something. How did you know I am a machine?''</p>
 <p>
 </p>
 <h3><a name="______">{!...}</a></h3>
 <p>An inline definition.</p>
 <pre>
-  + set your name to joe
-  - {! var name = Joe}I have set my name to Joe.</pre>
+  <span class="operator">+</span> <span class="variable">set</span> <span class="variable">your</span> <span class="variable">name</span> <span class="variable">to</span> <span class="variable">joe</span>
+  <span class="operator">-</span> <span class="operator">{!</span> <span class="variable">var</span> <span class="variable">name</span> <span class="operator">=</span> <span class="variable">Joe</span><span class="operator">}</span><span class="variable">I</span> <span class="variable">have</span> <span class="variable">set</span> <span class="keyword">my</span> <span class="variable">name</span> <span class="variable">to</span> <span class="variable">Joe</span><span class="operator">.</span>
+</pre>
 <p>
 </p>
 <h3><a name="_random______random_">{random}...{/random}</a></h3>
 <p>Insert a small bit of random text within a single reply.</p>
 <pre>
-  + say something random
-  - This {random}reply response output{/random} has a random {random}word noun{/random}.</pre>
+  <span class="operator">+</span> <span class="variable">say</span> <span class="variable">something</span> <span class="variable">random</span>
+  <span class="operator">-</span> <span class="variable">This</span> <span class="operator">{</span><span class="variable">random</span><span class="operator">}</span><span class="variable">reply</span> <span class="variable">response</span> <span class="variable">output</span><span class="operator">{</span><span class="regex">/random} has a random {random}word noun{/random</span><span class="operator">}.</span>
+</pre>
 <p>To have multiple-word items, separate them with pipes instead of spaces.</p>
 <pre>
   + give me a fortune cookie

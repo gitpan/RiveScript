@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>DateTime.rsp - Package for returning a formatted timestamp.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:" />
 </head>
 
@@ -110,73 +112,85 @@
   ######################################################
   */</pre>
 <pre>
-  &gt; object datetime
-    my ($method,$string) = @_;</pre>
+  <span class="operator">&gt;</span> <span class="variable">object</span> <span class="variable">datetime</span>
+    <span class="keyword">my</span> <span class="operator">(</span><span class="variable">$method</span><span class="operator">,</span><span class="variable">$string</span><span class="operator">)</span> <span class="operator">=</span> <span class="variable">@_</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Arrays.
-    my @monthnames = qw(January February March April May June July
-        August September October November December);
-    my @monthabbrev = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
-    my @daynames = qw(Sunday Monday Tuesday Wednesday Thursday Friday Saturday);
-    my @dayabbrev = qw(Sun Mon Tue Wed Thu Fri Sat);</pre>
+    <span class="comment"># Arrays.</span>
+    <span class="keyword">my</span> <span class="variable">@monthnames</span> <span class="operator">=</span> <span class="string">qw(January February March April May June July
+        August September October November December)</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">@monthabbrev</span> <span class="operator">=</span> <span class="string">qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">@daynames</span> <span class="operator">=</span> <span class="string">qw(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">@dayabbrev</span> <span class="operator">=</span> <span class="string">qw(Sun Mon Tue Wed Thu Fri Sat)</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Hash to hold temporary details.
-    my %data = ();</pre>
+    <span class="comment"># Hash to hold temporary details.</span>
+    <span class="keyword">my</span> <span class="variable">%data</span> <span class="operator">=</span> <span class="operator">();</span>
+</pre>
 <pre>
-    # Get the timestamp.
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time());
-    $year += 1900;</pre>
+    <span class="comment"># Get the timestamp.</span>
+    <span class="keyword">my</span> <span class="operator">(</span><span class="variable">$sec</span><span class="operator">,</span><span class="variable">$min</span><span class="operator">,</span><span class="variable">$hour</span><span class="operator">,</span><span class="variable">$mday</span><span class="operator">,</span><span class="variable">$mon</span><span class="operator">,</span><span class="variable">$year</span><span class="operator">,</span><span class="variable">$wday</span><span class="operator">,</span><span class="variable">$yday</span><span class="operator">,</span><span class="variable">$isdst</span><span class="operator">)</span> <span class="operator">=</span> <span class="keyword">localtime</span><span class="operator">(</span><span class="keyword">time</span><span class="operator">());</span>
+    <span class="variable">$year</span> <span class="operator">+=</span> <span class="number">1900</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Get the month name.
-    $data{month} = $monthnames [ $mon ];
-    $data{mon}   = $monthabbrev [ $mon ];
-    $data{mnum}  = $mon + 1;</pre>
+    <span class="comment"># Get the month name.</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">month</span><span class="operator">}</span> <span class="operator">=</span> <span class="variable">$monthnames</span> <span class="operator">[</span> <span class="variable">$mon</span> <span class="operator">]</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">mon</span><span class="operator">}</span>   <span class="operator">=</span> <span class="variable">$monthabbrev</span> <span class="operator">[</span> <span class="variable">$mon</span> <span class="operator">]</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">mnum</span><span class="operator">}</span>  <span class="operator">=</span> <span class="variable">$mon</span> <span class="operator">+</span> <span class="number">1</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Get the day name.
-    $data{weekday} = $daynames [ $wday ];
-    $data{day}     = $dayabbrev [ $wday ];
-    $data{d}       = $mday;
-    $data{dd}      = $mday;
-    $data{dd}      = '0' . $data{dd} until length $data{dd} == 2;</pre>
+    <span class="comment"># Get the day name.</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">weekday</span><span class="operator">}</span> <span class="operator">=</span> <span class="variable">$daynames</span> <span class="operator">[</span> <span class="variable">$wday</span> <span class="operator">]</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">day</span><span class="operator">}</span>     <span class="operator">=</span> <span class="variable">$dayabbrev</span> <span class="operator">[</span> <span class="variable">$wday</span> <span class="operator">]</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">d</span><span class="operator">}</span>       <span class="operator">=</span> <span class="variable">$mday</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">dd</span><span class="operator">}</span>      <span class="operator">=</span> <span class="variable">$mday</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">dd</span><span class="operator">}</span>      <span class="operator">=</span> <span class="string">'0'</span> <span class="operator">.</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">dd</span><span class="operator">}</span> <span class="keyword">until</span> <span class="keyword">length</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">dd</span><span class="operator">}</span> <span class="operator">==</span> <span class="number">2</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Format the years.
-    $data{year}    = $year;
-    $data{yyyy}    = $year;
-    $data{yy}      = substr($data{yyyy},2,3);</pre>
+    <span class="comment"># Format the years.</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">year</span><span class="operator">}</span>    <span class="operator">=</span> <span class="variable">$year</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">yyyy</span><span class="operator">}</span>    <span class="operator">=</span> <span class="variable">$year</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">yy</span><span class="operator">}</span>      <span class="operator">=</span> <span class="keyword">substr</span><span class="operator">(</span><span class="variable">$data</span><span class="operator">{</span><span class="string">yyyy</span><span class="operator">}</span><span class="operator">,</span><span class="number">2</span><span class="operator">,</span><span class="number">3</span><span class="operator">);</span>
+</pre>
 <pre>
-    # Format the hours.
-    $data{hm}      = $hour;
-    $data{hhm}     = $hour;
-    $data{hhm}     = '0' . $data{hhm} until length $data{hhm} == 2;
-    $data{h}       = $hour;
-    $data{hh}      = 0;
-    $data{am}      = 'AM';
-    if ($data{h} &gt; 12) {
-        $data{h} -= 12;
-        $data{am} = 'PM';
-        $data{h}  = 12 if $data{h} == 0;
-    }
-    $data{hh}      = $data{h};
-    $data{hh}      = '0' . $data{hh} until length $data{hh} == 2;</pre>
+    <span class="comment"># Format the hours.</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">hm</span><span class="operator">}</span>      <span class="operator">=</span> <span class="variable">$hour</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">hhm</span><span class="operator">}</span>     <span class="operator">=</span> <span class="variable">$hour</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">hhm</span><span class="operator">}</span>     <span class="operator">=</span> <span class="string">'0'</span> <span class="operator">.</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">hhm</span><span class="operator">}</span> <span class="keyword">until</span> <span class="keyword">length</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">hhm</span><span class="operator">}</span> <span class="operator">==</span> <span class="number">2</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">h</span><span class="operator">}</span>       <span class="operator">=</span> <span class="variable">$hour</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">hh</span><span class="operator">}</span>      <span class="operator">=</span> <span class="number">0</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">am</span><span class="operator">}</span>      <span class="operator">=</span> <span class="string">'AM'</span><span class="operator">;</span>
+    <span class="keyword">if</span> <span class="operator">(</span><span class="variable">$data</span><span class="operator">{</span><span class="string">h</span><span class="operator">}</span> <span class="operator">&gt;</span> <span class="number">12</span><span class="operator">)</span> <span class="operator">{</span>
+        <span class="variable">$data</span><span class="operator">{</span><span class="string">h</span><span class="operator">}</span> <span class="operator">-=</span> <span class="number">12</span><span class="operator">;</span>
+        <span class="variable">$data</span><span class="operator">{</span><span class="string">am</span><span class="operator">}</span> <span class="operator">=</span> <span class="string">'PM'</span><span class="operator">;</span>
+        <span class="variable">$data</span><span class="operator">{</span><span class="string">h</span><span class="operator">}</span>  <span class="operator">=</span> <span class="number">12</span> <span class="keyword">if</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">h</span><span class="operator">}</span> <span class="operator">==</span> <span class="number">0</span><span class="operator">;</span>
+    <span class="operator">}</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">hh</span><span class="operator">}</span>      <span class="operator">=</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">h</span><span class="operator">}</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">hh</span><span class="operator">}</span>      <span class="operator">=</span> <span class="string">'0'</span> <span class="operator">.</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">hh</span><span class="operator">}</span> <span class="keyword">until</span> <span class="keyword">length</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">hh</span><span class="operator">}</span> <span class="operator">==</span> <span class="number">2</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Format the minutes.
-    $data{m}       = $min;
-    $data{mm}      = $min;
-    $data{mm}      = '0' . $data{mm} until length $data{mm} == 2;</pre>
+    <span class="comment"># Format the minutes.</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">m</span><span class="operator">}</span>       <span class="operator">=</span> <span class="variable">$min</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">mm</span><span class="operator">}</span>      <span class="operator">=</span> <span class="variable">$min</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">mm</span><span class="operator">}</span>      <span class="operator">=</span> <span class="string">'0'</span> <span class="operator">.</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">mm</span><span class="operator">}</span> <span class="keyword">until</span> <span class="keyword">length</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">mm</span><span class="operator">}</span> <span class="operator">==</span> <span class="number">2</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Format the seconds.
-    $data{s}       = $sec;
-    $data{ss}      = $sec;
-    $data{ss}      = '0' . $data{ss} until length $data{ss} == 2;</pre>
+    <span class="comment"># Format the seconds.</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">s</span><span class="operator">}</span>       <span class="operator">=</span> <span class="variable">$sec</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">ss</span><span class="operator">}</span>      <span class="operator">=</span> <span class="variable">$sec</span><span class="operator">;</span>
+    <span class="variable">$data</span><span class="operator">{</span><span class="string">ss</span><span class="operator">}</span>      <span class="operator">=</span> <span class="string">'0'</span> <span class="operator">.</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">ss</span><span class="operator">}</span> <span class="keyword">until</span> <span class="keyword">length</span> <span class="variable">$data</span><span class="operator">{</span><span class="string">ss</span><span class="operator">}</span> <span class="operator">==</span> <span class="number">2</span><span class="operator">;</span>
+</pre>
 <pre>
-    # Substitute them in.
-    my @keys = qw(mnum month mon weekday day d dd year yy yyyy hhm hh hm h am mm m ss s);
-    foreach my $k (@keys) {
-        $string =~ s/\b$k\b/$data{$k}/ig;
-    }</pre>
+    <span class="comment"># Substitute them in.</span>
+    <span class="keyword">my</span> <span class="variable">@keys</span> <span class="operator">=</span> <span class="string">qw(mnum month mon weekday day d dd year yy yyyy hhm hh hm h am mm m ss s)</span><span class="operator">;</span>
+    <span class="keyword">foreach</span> <span class="keyword">my</span> <span class="variable">$k</span> <span class="operator">(</span><span class="variable">@keys</span><span class="operator">)</span> <span class="operator">{</span>
+        <span class="variable">$string</span> <span class="operator">=~</span> <span class="regex">s/\b$k\b/$data{$k}/ig</span><span class="operator">;</span>
+    <span class="operator">}</span>
+</pre>
 <pre>
-    return $string;
-  &lt; object</pre>
+    <span class="keyword">return</span> <span class="variable">$string</span><span class="operator">;</span>
+      <span class="operator">&lt;</span> <span class="variable">object</span>
+</pre>
 
 </body>
 

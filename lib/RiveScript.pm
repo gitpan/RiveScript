@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '0.21';
+our $VERSION = '1.00';
 
 sub new {
 	my $proto = shift;
@@ -415,144 +415,146 @@ RiveScript - Rendering Intelligence Very Easily
   # Create a new RiveScript interpreter.
   my $rs = new RiveScript;
 
-  # Define a macro.
-  $rs->setSubroutine (weather => \&weather);
-
-  # Load in some RiveScript documents.
+  # Load some replies.
   $rs->loadDirectory ("./replies");
 
   # Load in another file.
   $rs->loadFile ("./more_replies.rs");
 
-  # Stream in yet more replies.
-  $rs->stream ('! global split_sentences = 1');
+  # Stream in even more RiveScript code.
+  $rs->stream (q~! global split_sentences = 1~);
 
-  # Sort them.
+  # Sort all the loaded replies.
   $rs->sortReplies;
 
   # Grab a response.
-  my @reply = $rs->reply ('localhost','Hello RiveScript!');
-  print join ("\n",@reply) . "\n";
+  my @reply = $rs->reply ('localscript', 'Hello RiveScript!');
+  print join ("\n", @reply), "\n";
 
 =head1 DESCRIPTION
 
-RiveScript is a simple input/response language. It is simple, easy to learn,
-and mimics and perhaps even surpasses the power of AIML (Artificial Intelligence
-Markup Language). RiveScript was initially created as a reply language for
-chatterbots, but it has also been used for more complex things above and beyond
-that.
+RiveScript is a simple input/response language. It has a simple, easy-to-learn syntax,
+yet it is more powerful even than Dr. Wallace's AIML (Artificial Intelligence Markup Language).
+RiveScript was created as a reply language for chatterbots, but it has been used for
+more complex things above and beyond that.
 
-RiveScript was originally known as Alpha but was reprogrammed to
-add more flexibility and power to it. While their syntaces are similar,
-Alpha code is not entirely compatible with RiveScript.
+=head1 PERL PACKAGE
 
-=head1 PUBLIC METHODS
+This part of the manpage documents the methods of the Perl RiveScript library. The RiveScript
+language specifications are below: see L<"RIVESCRIPT">.
 
-=head2 new
+=head2 Public Methods
 
-Creates a new RiveScript instance. Pass in any defaults here.
+=over 4
 
-=head2 setSubroutine (OBJECT_NAME => CODEREF)
+=item new
 
-Define a macro (see Object Macros)
+Creates a new RiveScript instance.
 
-=head2 loadDirectory ($DIRECTORY[, @EXTS])
+=item setSubroutine (OBJECT_NAME => CODEREF)
 
-Load a directory of RiveScript files. EXTS is optionally an array of file
-extensions to load, in the format B<(.rs .txt .etc)>. Default is just ".rs"
+Define an object macro (see L<"Object Macros">)
 
-=head2 loadFile ($FILEPATH[, $STREAM])
+=item loadDirectory ($DIRECTORY[, @EXTS])
 
-Load a single file. Don't worry about the STREAM argument, it is handled
-in the stream() method.
+Load a directory of RiveScript files. C<@EXTS> is optionally an array of file extensions
+to load, in the format C<(.rs .txt .etc)>. Default is just ".rs"
 
-=head2 stream ($CODE)
+=item loadFile ($FILEPATH[, $STREAM])
 
-Stream RiveScript code directly into the module.
+Load a single RiveScript file. Don't worry about the C<$STREAM> argument, it is handled
+in the C<stream()> method.
 
-=head2 sortReplies
+=item stream ($CODE)
 
-Sorts the replies. This is ideal for matching purposes. If you fail to
-do so and just go ahead and call reply(), you'll get a nasty Perl warning.
-It will sort them for you anyway, but it's always recommended to sort them
-yourself. For example, if you sort them and then load new replies, the new
-replies will not be matchable because the sort cache hasn't updated.
+Stream RiveScript codes directly into the module.
 
-=head2 reply ($USER_ID, $MESSAGE[, %TAGS])
+=item sortReplies
 
-Get a reply from the bot. This will return an array. The values of this
-array would be all the replies (i.e. if you use {nextreply} in a response
-to return multiple).
+Sorts all the loaded replies. This is necessary for reply matching purposes. If you fail
+to call this method yourself, it will be called automatically with C<reply()>, but not without
+a nasty Perl warning. It's better to always sort them yourself, for example if you load in
+new replies later, they won't be matchible unless a new C<sortReplies> is called.
 
-B<%TAGS> is optionally a string of special reply tags, each value is a
-boolean (1 or 0, all default to 0):
+=item reply ($USER_ID, $MESSAGE[, %TAGS])
 
-  scalar   -- Forces a scalar return of all replies found. The method
-              will return a scalar rather than an array.
-  no_split -- Ignore sentence-splitting when going into the reply.
-              This is for special cases such as ";-)" (winking emoticon)
-              where it is unmatchable because ; is a sentence-splitter.
+Get a reply from the bot. This will (normally) return an array. The values of the array
+would be all the replies to that message (i.e. if you use the C<{nextreply}> tag in a
+response, or if you pass in multiple sentences).
 
-  retry    -- You should NEVER set this argument. This is used internally
-              so the module knows it's on a retry run (if a reply isn't
-              found, it tries again but sets no_split to true).
+C<%TAGS> is optionally a hash of special reply tags. Each value is boolean.
 
-=head2 search ($STRING)
+  scalar   = Forces the return value into a scalar instead of an array
+  no_split = Don't run sentence-splitters on the message.
+  retry    = INTERNAL. Tells the module that it's on a retry run, for special cases
+             such as ;) - winking emoticon - since ; is a default sentence-splitter.
 
-Search all loaded replies for every trigger that STRING matches. Returns an
-array of results, containing the trigger, what topic it was under, and the
-reference to its file and line number.
+=item search ($STRING)
 
-=head2 write ([$FILEPATH])
+Search all loaded replies for every trigger that C<$STRING> matches. Returns an array
+of results, containing the trigger, what topic it was under, and its file and line number
+where applicable.
 
-Outputs the current contents of the loaded replies into a single file. This
-is useful for if your application dynamically learns replies by editing the
-loaded hashrefs. It will write all replies to the file under their own topics...
-i.e. perfectly functional code. Comments and other unnessecary formatting is
-ignored, because the module doesn't pay attention to them at loading time anyway.
+=item write ([$FILEPATH])
 
-The default path is to "written.rs"
+Writes all the currently loaded replies into a single file. This is useful for if your
+application dynamically learns replies by editing the loaded hashrefs. It will write all
+replies to the file under their own topics. Comments and other unnessecary information is
+ignored.
 
-See L<"DYNAMIC REPLIES">.
+The default path is to "written.rs" in the working directory.
 
-=head2 setGlobal (VARIABLE => VALUE, ...)
+B<Note:> This method doesn't honor the C<%PREVIOUS> command in RiveScript.
 
-Set a global variable directly from Perl (alias for B<! global>)
+See L<"Dynamic Replies">.
 
-=head2 setVariable (VARIABLE => VALUE, ...)
+=item setGlobal (VARIABLE => VALUE, ...)
 
-Set a botvariable (alias for B<! var>)
+Set a global RiveScript variable directly from Perl (alias for C<! global>)
 
-=head2 setSubstitution (BEFORE => AFTER, ...)
+=item setVariable (VARIABLE => VALUE, ...)
 
-Set a substitution setting (alias for B<! sub>)
+Set a botvariable (alias for C<! var>)
 
-=head2 setUservar ($USER_ID, VARIABLE => VALUE, ...)
+=item setSubstitution (BEFORE => AFTER, ...)
 
-Set a user variable (alias for <set var=value>)
+Set a substitution setting (alias for C<! sub>)
 
-=head2 getUservars ([$USER_ID])
+=item setUservar ($USER_ID, VARIABLE => VALUE, ...)
 
-Get all uservars for a user. Returns a hashref of the variables. If you don't
-pass in a $USER_ID, it will return a hashref of hashrefs for each user (first
-level being their ID, second level being their variables).
+Set a user variable (alias for C<E<lt>set var=valueE<gt>> for C<$USER_ID>)
 
-=head1 SECURITY METHODS
+=item getUservars ([$USER_ID])
 
-The RiveScript interpreter (a la the Perl script) can specify some security settings
-as far as what a RiveScript file is allowed to contain.
+Get all uservars for a user. Returns a hashref of the variables. If you don't pass in a
+C<$USER_ID>, it will return a hashref of hashrefs for each user by their ID.
 
-=head2 denyMode (MODE)
+=back
 
-Valid modes are B<deny_some>, B<allow_some>, and B<allow_all>. allow_all is the default.
-Use the B<deny()> and B<allow()> methods complementary to the denyMode specified.
+=head2 Security Methods
 
-=head2 deny (COMMANDS)
+The RiveScript interpreter can specify some security settings as far as what a
+RiveScript file is allowed to contain.
 
-Add COMMANDS to the denied commands list. These can be single commands (one character)
-or I<beginnings> of command texts. Examples:
+B<Note:> These settings only apply to commands found in a RiveScript document
+while it's being loaded. It does not apply to tags within RiveScript responses
+(for example C<{! global ...}> could be used in a reply to reset a global variable.
+This can't be helped with these commands. For ultimate security, you should have
+your program manually check these things).
 
-  $rive->deny (
+=over 4
+
+=item denyMode ($MODE)
+
+Valid modes are C<deny_some>, C<allow_some>, and C<allow_all>. allow_all is the default.
+Use the C<deny()> and C<allow()> methods complementary to the denyMode specified.
+
+=item deny (@COMMANDS)
+
+Add C<@COMMANDS> to the denied commands list. These can be single commands or beginnings
+of command texts. Example:
+
+  $rivescript->deny (
     '&',
     '! global',
     '! var copyright',
@@ -562,132 +564,142 @@ or I<beginnings> of command texts. Examples:
     '< __begin__',
   );
 
-In that example, &PERL, !GLOBAL, and the BEGIN statement (as well as the internal names
-for the BEGIN statement's topic) would be disallowed in the RiveScript documents loaded in.
-It would also disallow the RiveScript documents to (re)define a variable named "copyright"
+In that example, C<&PERL>, C<!GLOBAL>, the botvariable C<copyright>, and the C<BEGIN>
+statements (and its internal names) are all blocked from being accepted in any loaded
+RiveScript file.
 
-=head2 allow (COMMANDS)
+=item allow (@COMMANDS)
 
-Add COMMANDS to the allowed commands list. For the highest security, you'd want to
-B<allow_some> commands rather than B<deny_some>. This method is to be used with that
-mode of denial.
+Add C<@COMMANDS> to the allowed commands list. For the highest security, it would be better
+to C<allow_some> commands rather than C<deny_some>.
 
-  $rive->allow (
+  $rivescript->allow (
     '+',
     '-',
     '! var',
     '@',
   );
 
-That example would deny EVERY command except for triggers, responses, botvariable setters,
-and redirections.
+That example would deny every command I<except> for triggers, responses, botvariable
+setters, and redirections.
 
-=head1 PRIVATE METHODS
+=back
+
+=head2 Private Methods
 
 These methods are called on internally and should not be called by you.
 
-=head2 debug ($MESSAGE)
+=over 4
 
-Print a debug message.
+=item debug ($MESSAGE)
 
-=head2 makeParser
+Print a debug message (when debug mode is active).
 
-Creates a L<RiveScript::Parser> instance, passing in the current data held
-by B<RiveScript>. This call is made before using the parser, and the object
-is destroyed when it is no longer needed (to save on memory usage).
+=item makeParser
 
-=head2 intReply ($USER_ID, $MESSAGE)
+Creates a L<RiveScript::Parser|RiveScript::Parser> instance, passing in the current data
+held by C<RiveScript>. This call is made before using the parser (to read or write replies)
+and destroyed when no longer needed.
 
-This should not be called. Call B<reply> instead. This method assumes
-that the variables are neatly formatted and may cause serious consequences
-for passing in badly formatted data.
+=item intReply ($USER_ID, $MESSAGE)
 
-=head2 splitSentences ($STRING)
+This is the internal reply-getting routine. Call C<reply()> instead. This assumes that the
+data is all correctly formatted before being processed.
 
-Splits string at the sentence-splitters and returns an array.
+=item splitSentences ($STRING)
 
-=head2 formatMessage ($STRING)
+Splits C<$STRING> at hte sentence-splitters and returns an array.
 
-Formats the message (runs substitutions, removes punctuation, etc)
+=item formatMessage ($STRING)
 
-=head2 mergeWildcards ($STRING, $ARRAY)
+Formats C<$STRING> by running substitutions and removing punctuation and symbols.
 
-Merges the values from ARRAY into STRING, where the items in ARRAY
-correspond to a captured value from $1 to $100+. The first item in the
-array should be blank; there is no such thing as a E<lt>star0E<gt>.
+=item mergeWildcards ($STRING, @STARS)
 
-=head2 stringUtil ($TYPE, $STRING)
+Merges the values from C<@STARS> into C<$STRING>, where the items in C<@STARS> correspond
+to a captured value from C<$1> to C<$100+>. The first item in the array should be blank as
+there is no C<E<lt>star0E<gt>>.
 
-Called on for string format tags (uppercase, lowercase, formal, sentence).
+=item stringUtil ($TYPE, $STRING)
 
-=head2 tagFilter ($REPLY,$ID,$MSG)
+Formats C<$STRING> by C<$TYPE> (uppercase, lowercase, formal, sentence).
 
-Run tag filters on $REPLY. Returns the new $REPLY.
+=item tagFilter ($REPLY, $ID, $MESSAGE)
 
-=head2 tagShortcuts ($REPLY)
+Run tag filters on C<$REPLY>. Returns the new C<$REPLY>.
 
-Runs shortcut tags on $REPLY. Returns the new $REPLY.
+=item tagShortcuts ($REPLY)
 
-=head1 FORMAT
+Runs shortcut tags on C<$REPLY>. Returns the new C<$REPLY>.
 
-RiveScript documents have a simple format: they're a line-by-line
-language. The first symbol(s) are the commands, and the following text
-is typically the command's data.
+=back
 
-In its most simple form, a valid RiveScript entry looks like this:
+=head1 RIVESCRIPT
+
+The following is the RiveScript 1.00 specification.
+
+=head2 RiveScript Format
+
+RiveScript is a line-by-line command-driven language. The first symbol(s) of each line is
+a B<command>, and the following text is its B<data>.
+
+In its most simple form, a valid RiveScript reply looks like this:
 
   + hello bot
   - Hello human.
 
-=head1 RIVESCRIPT COMMANDS
-
-The following are the commands that RiveScript supports.
+=head2 RiveScript Commands
 
 =over 4
 
 =item B<! (Definition)>
 
-The ! command is for definitions. These are one of the few stand-alone
-commands (ones that needn't be part of a bigger reply group). They are
-to define variables and arrays. Their format is as follows:
+The C<!> command is for definitions. These are used to define variables and arrays at load
+time. Their format is as follows:
 
-  ! type variable = value
-
-  type     = the variable type
-  variable = the name of the variable
-  value    = the variable's value
+  ! $type $variable = $value
 
 The supported types are as follows:
 
-  global  - Global settings (top-level things)
-  var     - BotVariables (i.e. the bot's name, age, etc)
+  global  - Global settings (eg. debug and sentence_splitters)
+  var     - BotVariables (eg. the bot's name, age, etc)
   array   - An array
   sub     - A substitution pattern
-  person  - A person substitution.
-  addpath - Add an include path
-  include - An include method
-  syslib  - Include a Perl module globally
+  person  - A "person" substitution pattern
+  addpath - Add an include path for RiveScript includibles
+  include - Include a separate RiveScript library or package
+  syslib  - Include a Perl module into the RiveScript:: namespace.
 
 Some examples:
 
-  // Set global vars
-  ! global debug = 1
+  // Set global variables (defaults)
+  ! global debug = 0
   ! global split_sentences = 1
   ! global sentence_splitters = . ! ; ?
 
-  // Setup a handler for macro failures.
+  // Setup a handler string for object failures.
   ! global macro_failure = <b>ERROR: Macro Failure</b>
 
   // Set bot vars
-  ! var botname   = Casey Rive
-  ! var botage    = 14
-  ! var botgender = male
+  ! var name   = Casey Rive
+  ! var age    = 14
+  ! var gender = male
+  ! var color  = blue
 
-  // Some substitutions
+  // Delete botvar "color"
+  ! var color = undef
+
+  // An array of color names
+  ! array colors = red blue green yellow cyan fuchsia
+
+  // An array of "can not" variations
+  ! array not = can not|would not|should not|could not
+
+  // A few substitutions
   ! sub can't = can not
   ! sub i'm   = i am
 
-  // Person substitutions
+  // Person substitutions (swaps 1st- and 2nd-person pronouns)
   ! person i   = you
   ! person you = me
   ! person am  = are
@@ -696,53 +708,56 @@ Some examples:
   // Add a path to find libraries.
   ! addpath C:/MyRsLibraries
 
-  // Include a library of arrays
+  // Include some English verb arrays
   ! include English/EngVerbs.rsl
 
-  // Include a package of objects
+  // Include a package of objects.
   ! include DateTime.rsp
 
-For objects which use Perl modules, you can use B<!syslib> to include the module
-global to RiveScript to save on memory.
+B<Note:> For arrays with single-word items, separate entries with white spaces. For
+multi-word items, use pipe symbols.
 
-  ! syslib LWP::Simple
+B<Note:> To delete a variable, set its value to "undef"
 
-B<Note:> For arrays, you can have multi-word items if you separate the entries
-with a pipe ("|") symbol rather than a space.
-
-B<Note:> To delete a variable, set its value to "undef" and its internal hashref
-key will be deleted altogether.
-
-See also: L<"ENVIRONMENTAL VARIABLES"> and L<"PERSON SUBSTITUTION">.
+See also: L<"Environment Variables"> and L<"Person Substitution">.
 
 =item B<E<lt> and E<gt> (Label)>
 
-The E<lt> and E<gt> commands are for defining labels. A label is used to treat
-a part of code differently. Currently there are three uses for labels:
-B<begin>, B<topic>, and B<object>. Example usage:
+The C<E<lt>> and C<E<gt>> commands are for defining labels. A label is used to treat
+a part of code differently. Currently there are three uses for labels: C<begin>, C<topic>,
+and C<object>. Example:
 
-  // Define a topic
-  > topic some_topic_name
+  + you are stupid
+  - You're mean. Apologize or I'm not talking to you again.{topic=apology}
 
-    // there'd be some triggers here
+  > topic apology
+
+    + *
+    - No, apologize for being so mean to me.
+
+    + sorry
+    - See, that wasn't too hard. I'll forgive you.{topic=random}
 
   < topic
-  // close the topic
 
 =item B<+ (Trigger)>
 
-The + command is the basis for all triggers. The + command is what the
-user has to say to activate the reply set. In the example,
+The C<+> command is the basis for all reply sets. The C<+> command is what the user has
+to say to activate the reply set. In the example,
 
   + hello bot
   - Hello human.
 
-The user would say "hello bot" only to get a "Hello human." back.
+The user would say "hello bot" and get a "Hello human." reply.
+
+Triggers are passed through the regexp engine. They should be completely lowercase and
+not contain too many foreign characters (use substitutions to format the message any way
+you want so you don't need to use foreign characters!)
 
 =item B<% (Previous)>
 
-The % command is for drawing a user back to complete a thought. You
-might say it's sort of like E<lt>thatE<gt> in AIML. Example:
+The C<%> command is for drawing a user back to complete a thought. It's similar to the
+C<E<lt>thatE<gt>> functionality in AIML.
 
   + ask me a question
   - Do you have any pets?
@@ -751,11 +766,8 @@ might say it's sort of like E<lt>thatE<gt> in AIML. Example:
   % do you have any pets
   - What kind of pet?
 
-  // and so-on...
-
-The % command is like a +Trigger but for the bot's last reply. The
-same substitutions that are applied to the user's messages are applied
-to the bot's reply.
+The C<%> command is like the C<+Trigger>, but for the bot's last reply. The same
+substitutions are run on the bot's last reply as are run on the user's messages.
 
   ! sub who's = who is
 
@@ -764,25 +776,27 @@ to the bot's reply.
 
   + *
   % who is *
-  - {sentence}<star> who?{/sentence}
+  - <formal> who?
 
   + *
   % * who
-  - Ha! {sentence}<star>!{/sentence} That's hilarious!
+  - Haha! <sentence>! That's hilarious!
+
+(see L<"Tags"> for details on what C<E<lt>formalE<gt>> and C<E<lt>sentenceE<gt>> are)
 
 =item B<- (Response)>
 
-The - command is the response. The - command has several uses, depending
-on its context. For example, in the "hello bot/hello human" example, one
-+ with one - gets a one-way question/answer scenario. If more than one -
-is used, a random one is chosen (and some may be weighted). There are many
-other uses that we'll get into later.
+The C<-> command is the response to a trigger. The C<-> command has several different
+uses, depending on its context. One C<+Trigger> with one C<-Response> makes a one-way
+question-and-answer scenario. When multiple C<-Response>s are used, they become random
+replies. For more information, see L<"Complexities of the Response">.
 
 =item B<^ (Continue)>
 
-The ^Continue command is for extending the previous command down a line.
+The C<^> command is to extend the data of the previous command. This is for editor-side
+use only and has no effect on the brain when replies have all been loaded.
 
-The commands that can be continued with ^Continue:
+The following commands can be used with the C<^Continue> command:
 
   ! global
   ! var
@@ -792,9 +806,9 @@ The commands that can be continued with ^Continue:
   - response
   @ redirection
 
-Sometimes your -REPLY is too long to fit on one line, and you don't like
-the idea of having a horizontal scrollbar on your text editor.
-The ^ command will continue on from the last -REPLY. For example:
+Here's an example of extending a very long C<-Response> over multiple lines. When the
+brain is tested, the reply will come out as one long string. The C<^Continue> is only
+for you, the reply writer, to make it easier to read the code.
 
   + tell me a poem
   - Little Miss Muffit sat on her tuffet\s
@@ -803,50 +817,34 @@ The ^ command will continue on from the last -REPLY. For example:
   ^ the Spider, the bounder,\s
   ^ is not in the picture today.
 
-Here are some examples of the other uses of ^Continue:
-
-  ! array colors  = red blue green yellow cyan fuchsia
-  ^ white black gray grey orange pink
-  ^ turqoise magenta gold silver
-
-  ! var quote = How much wood would a woodchuck
-  ^ chuck if a woodchuck could chuck wood?
-
-  + how much wood would a woodchuck\s
-  ^ chuck if a woodchuck could chuck wood
-  - A whole forest. ;)
-
-  + how much wood
-  @ how much wood would a woodchuck\s
-  ^ chuck if a woodchuck could chuck wood
+Note that spaces are NOT assumed between
+breaks. You'll need the C<\s> tag (see L<"Tags">).
 
 =item B<@ (Redirect)>
 
-The @ command is for directing one trigger to another. For example, there
-may be complicated ways people have of asking the same thing, and you don't
-feel like making your main trigger handle all of them.
+The C<@> command is for directing one trigger to another. For example:
 
   + my name is *
-  - Nice to meet you, {formal}<star1>{/formal}.
+  - Nice to meet you, <formal>.
 
-  + people around here call me *
-  @ my name is <star1>
+  + people call me *
+  @ my name is <star>
 
-Redirections can also be used inline. See the L<"TAGS"> section for more details.
+  + i am named *
+  @ my name is <star>
 
-=item B<* (Conditions)>
+=item B<* (Condition)>
 
-The * command is used for checking conditionals. The format is:
+The C<*> command is for checking conditions. The format is:
 
   * variable = value => say this
 
-For example, you might want to make a condition to differentiate male from
-female users.
+For an example, you can differentiate between male and female users:
 
-  + am i a guy or a girl
-  * gender=male => You're a guy.
-  * gender=female => You're a girl.
-  - I don't think you ever told me what you are.
+  + am i a boy or a girl
+  * gender = male   => You're a boy.
+  * gender = female => You're a girl.
+  - You've never told me what you are.
 
 You can perform the following operations on variable checks:
 
@@ -856,33 +854,38 @@ You can perform the following operations on variable checks:
   <= less than or equal to
   >  greater than
   >= greater than or equal to
-  ?  returns true if the var is even defined
+  ?  returns true if the variable is defined
 
-B<Note:> If you want a condition to check the value of a bot variable, you must
-prepend a # sign on the variable name. For instance:
+If you want to check the condition of a bot variable, prepend a C<#> sign to the variable
+name. This isn't necessary, but if the user has a variable by the same name, the user's
+variable overrides the bot's.
 
   + is your name still soandso
   * #name = Soandso => That's still my name.
   - No, I changed it.
 
-That would check the B<botvar> "name", not the B<uservar>, because of the
-supplied # sign.
+Here's an example of the "defined" condition:
+
+  // Only use the user's name if they've defined it to us
+  + hello bot
+  * name ? => Hello there, <get name>, nice to see you again!
+  - Hello there!
 
 =item B<& (Perl)>
 
-Sometimes RiveScript isn't powerful enough to do what you want. The & command
-will execute Perl codes to handle these cases. Be sure to read through this
-whole manpage before resorting to Perl, though. RiveScript has come a long way
-since it was known as Alpha.
+The C<&> command is for executing Perl codes directly from a RiveScript reply set. Use this
+only as a last resort, though. RiveScript is powerful enough to handle almost anything you could
+want it to, and it can handle these things more securely than this command would, as this command
+simply C<eval>s the expression.
 
   + what is 2 plus 2
-  - 500 Internal Error.
+  - 500 Internal Error (the eval failed for some reason!)
   & $reply = '2 + 2 = 4';
 
-=item B<// (Comments)>
+=item B<// I<or> # (Comments)>
 
-The comment syntax is //, as it is in other programming languages. Also,
-/* */ comments may be used to span over multiple lines.
+The comment syntax is C<//>, as it is in other scripting languages. Also, C</* */> comments
+can be used to span across multiple lines:
 
   // A one-line comment
 
@@ -891,137 +894,141 @@ The comment syntax is //, as it is in other programming languages. Also,
     across multiple lines
   */
 
-Comments can be used in-line next to normal RiveScript commands. They are
-required to have at least one whitespace before or after the comment symbols.
+Commands can be used in-line next to RiveScript commands. They need to have at least one
+white space before and after the comment symbols.
 
-  + what color is my (@colors) * // "what color is my green shoe"
-  - Your <star2> is <star1>!     // "your shoe is green!"
+  + what color is my (@colors) * // "What color is my green shoe?"
+  - Your <star2> is <star1>!     // "Your shoe is green!"
 
-=item B<# (Comments)>
-
-An alternative to // comments. These can also be used in-line, provided there
-are whitespaces before AND after the # symbol.
+The Perl comment symbol, C<#>, can be used in RiveScript as well. It follows the same
+principals as the C<//> commands, but it can B<not> span across multiple lines.
 
 =back
 
-=head1 RIVESCRIPT HOLDS THE KEYS
+=head2 RiveScript Holds The Keys
 
-The RiveScript engine was designed for your RiveScript brain to hold most of the
-control. As little programming on the Perl side as possible has made it so that
-your RiveScript can define its own variables and handle what it wants to. See
-L<"A GOOD BRAIN"> for tips on how to approach this.
+The RiveScript engine was designed for the RiveScript brain to hold most of the control. As
+little programming as possible on the Perl side as possible has made it so that your RiveScript
+can define its own variables and handle what it wants to. See L<"A Good Brain"> for tips on how
+to approach this.
 
-=head1 COMPLEXITIES OF THE TRIGGER
+=head2 Complexities of the Trigger
 
-The + command can be used for more complex things as a simple, 100% dead-on
-trigger. This part is passed through a regexp. Therefore, any regexp things
-can be used in the trigger.
+The C<+Trigger> can be used for more complex things than just simple, 100% dead-on triggers.
+This part is passed through a regexp, hence any regexp commands can be used in the trigger...
+however, don't think too much into it, you can get impressive results with simple-looking
+patterns.
 
-B<Note:> an asterisk * is always converted into (.*?) regardless of its context.
-Keep this in mind.
+B<Note:> An asterisk C<*> is always converted into C<(.*?)> regardless of its context. Keep
+this in mind.
 
-B<Alternations:> You can use alternations in the triggers like so:
+=over 4
 
-  + what (s|is) your (home|office|cell) phone number
+=item B<Wildcards:>
 
-Anything inside of parenthesis, or anything matched by asterisks, can be
-obtained through the tags E<lt>star1E<gt> to E<lt>star100E<gt>. For example (keeping in mind
-that * equals (.*?):
+You can write open-ended triggers (called "wildcard triggers"). You can
+capture the output of them, in order, by using the tags C<E<lt>star1E<gt>> to
+C<E<lt>star100E<gt>>+. Example:
 
   + my name is *
   - Nice to meet you, <star1>.
 
-B<Optionals:> You can use optional words in a trigger. These words don't have
-to exist in the user's message but they I<can>. Example:
+=item B<Alternations:>
+
+You can use alternations in the triggers like so:
+
+  + what (s|is) your (home|office|cell) phone number
+
+The values the user chose for each set of alternations are also put into the
+C<E<lt>starE<gt>> tags like the wildcards are.
+
+=item B<Optionals:>
+
+You can use optional words in a trigger. These words don't have to exist in the user's message
+in order to match it, but they can be. Example:
 
   + what is your [home] phone number
   - You can call me at 555-5555.
 
-So that would match "I<what is your phone number>" as well as
-"I<what is your home phone number>"
-
-Optionals can have alternations in them too.
+Alternations can be used inside of optionals as well:
 
   + what (s|is) your [home|office|cell] phone number
 
-B<Arrays:> This is why it's good to define arrays using the !define tag. The
-best way to explain how this works is by example.
+=item B<Arrays:>
+
+This is why it's good to define arrays. Arrays can be used in any number of triggers. Here's
+an example of how it works:
 
   // Make an array of color names
-  ! array colors = red blue green yellow white black orange
+  ! array colors = red blue green yellow cyan fuchsia
 
-  // Now the user can tell us their favorite color from the array
+  // Now they can tell us their favorite color!
   + my favorite color is (@colors)
-  - Really! Mine is <star1> too!
+  - Really?! Mine is <star> too!
 
-If you want an array to be matchable, enclose it in parenthesis. This will allow
-its value to be put into a E<lt>starE<gt> tag, as in the above example. If you
-don't include the parenthesis, its value won't be matchable. For an example of
-the difference:
+If you want the array choice to be put into a C<E<lt>starE<gt>> tag, enclose it in parenthesis.
+Without the parenthesis, it will be skipped over and not matchible. Example:
 
-  If the input is "sometimes I am a tool"...
+  // If the input is "sometimes I am a tool"...
 
   ! array be = am are is was were
 
-  + *\bi @be *
-      <star1> = ''
-      <star2> = 'a tool'
+  + * i @be *
+    // <star1> = 'sometimes'
+    // <star2> = 'tool'
 
-  + *\bi (@be) *
-      <star1> = 'sometimes'
-      <star2> = 'am'
-      <star3> = 'a tool'
+  + * i (@be) *
+    // <star1> = 'sometimes'
+    // <star2> = 'am'
+    // <star3> = 'a tool'
 
-It turns your array into regexp form, B<(?:red|blue|green|yellow|...)> before matching
-so it saves you a lot of work there. Not to mention arrays can be used in any number
-of triggers! Just imagine how many triggers you can come up with where a color name
-would be needed...
+=back
 
-=head1 COMPLEXITIES OF THE RESPONSE
+=head2 Complexities of the Response
 
-As mentioned above, the - command has many many uses.
+The C<-Response> command has many uses depending on its context:
 
-B<One-way question/answer:> A single + and a single - will lead to a dead-on
-question and answer reply.
+=over 4
 
-B<Random Replies:> A single + with multiple -'s will yield random results
-from among the responses. For example:
+=item B<One-way question/answer:>
+
+A single C<+> and a single C<-> will lead to a one-way question/answer scenario.
+
+=item B<Random Replies:>
+
+A single C<+> with multiple C<->'s will yield random results from the responses.
 
   + hello
   - Hey.
   - Hi.
   - Hello.
 
-Would randomly return any of those three responses.
+=item B<Fallbacks:>
 
-B<Conditional Fallback:> When using conditionals, you should always provide
-at least one response to fall back on, in case every conditional returns false.
+When using conditionals and Perl codes, you should have at least one C<-Response>
+to fall back on in case everything returns false.
 
-B<Perl Code Fallback:> When executing Perl code, you should always have a response
-to fall back on [even if the Perl is going to redefine $reply for itself]. This is
-in case of an eval error and the Perl couldn't do its thing.
+=item B<Weighted Responses:>
 
-B<Weighted Responses:> Yes, with random responses you can weight them! Responses
-with higher weight will have a better chance of being chosen over ones with a low
-weight. For example:
+With random replies, you can apply weight to them to improve their probability of
+being chosen. All replies have a default weight of 1, and anything lower than 1 can
+not be used. Example:
 
   + hello
   - Hello, how are you?{weight=49}
   - Yo, wazzup dawg?{weight=1}
 
-In this case, "Hello, how are you?" will almost always be sent back. A 1 in 50
-chance would return "Yo, wazzup dawg?" instead.
+See L<"Tags">.
 
-(as a side note: you don't need to set a weight to 1; 1 is implied for any
-response without weight. Weights of less than 1 aren't acceptable)
+=back
 
-=head1 BEGIN STATEMENT
+=head2 Begin Statement
 
-B<The BEGIN file is the first reply file loaded in a loadDirectory call.>
-If a "begin.rs" file exists in the directory being loaded, it is included first.
+B<The BEGIN file is the first reply file loaded in a loadDirectory call.> If a
+"begin.rs" file exists in the directory being loaded, it is included first. This is
+the best place to put your definitions and include statements.
 
-B<Note:> BEGIN statements are not required. That being said, begin statements
-are executed before any request.
+B<Note:> BEGIN statements are not required.
 
 B<How to define a BEGIN statement>
 
@@ -1030,25 +1037,22 @@ B<How to define a BEGIN statement>
     - {ok}
   < begin
 
-Begin statements are sort of like topics, but are always called first. If the response
-given contains {ok} in it, then the module knows it's allowed to get a reply.
-Also note that {ok} is replaced with the response. In this way, B<begin> might be
-useful to format all responses in one way. For a good example:
+BEGIN statements are like topics, but are always called first on every reply. If the
+response contains C<{ok}> in it, then the module gets an actual reply to your message
+and substitutes it for C<{ok}>. In this way, the BEGIN statement could format all the
+replies in the same way. For an example:
 
   > begin
 
-    // Don't give a reply if the bot is down for maintenance.
+    // Don't give a reply if the bot is down for maintenance. Else, sentence-case
+    // every reply the bot gives.
     + request
-    * down=yes => The bot is currently deactivated for maintenance.
-    - <font color="red"><b>{ok}</b></font>
+    * #maintenance = yes => Sorry, the bot is currently deactivated!
+    - {sentence}{ok}{/sentence}
 
   < begin
 
-That would give the reply about the bot being under maintenance if the variable
-"down" equals "yes." Else, it would give a response in red bold font.
-
-You can also put tags in to modify the returned responses of the bot. For example,
-the bot can "type" differently depending on a variable "mood" (see L<"TAGS">)
+Here is a more complex example using a botvariable "mood"
 
   > begin
     + request
@@ -1060,320 +1064,297 @@ the bot can "type" differently depending on a variable "mood" (see L<"TAGS">)
 
     + not talking
     - I'm not in a talkative mood.
-    - I'm not too happy right now.
     - I don't want to talk right now.
   < begin
 
-B<Note:> At the time being, the only trigger that BEGIN ever receives is "request"
+B<Note:> The only trigger that BEGIN receives automatically is C<request>.
 
-The "begin.rs" file is also where you would place your B<!include> statements to
-make sure that they're included before any other files.
+=head2 Topics
 
-=head1 TOPICS
+Topics are declared in a similar way to the BEGIN statement. To declare and close a topic,
+the syntax is as follows:
 
-Topics are declared in a way similar to the BEGIN statement. The way to declare
-and close a topic is generally as follows:
-
-  > topic TOPICNAME
+  > topic NAME
     ...
   < topic
 
-The topic name should be unique, and only one word.
+The topic name should be unique and only one word.
 
-B<The Default Topic:> The default topic name is "random"
+B<The Default Topic:> The default topic name is "C<random>"
 
-B<Setting a Topic:> To set a topic, use the {topic} tag (see L<"TAGS"> below). Example:
+B<Setting a Topic:> To set a topic, use the C<{topic}> tag (see L<"Tags"> below).
 
-  + i hate you
-  - You're not very nice. I'm going to make you apologize.{topic=apology}
+  + you are stupid
+  - You're mean. Apologize or I'm not talking to you again.{topic=apology}
 
   > topic apology
+
     + *
-    - Not until you admit that you're sorry.
+    - No, apologize for being so mean to me.
 
     + sorry
-    - Okay, I'll forgive you.{topic=random}
+    - See, that wasn't too hard. I'll forgive you.{topic=random}
+
   < topic
 
 Always set topic back to "random" to break out of a topic.
 
-=head1 OBJECT MACROS
+=head2 Object Macros
 
-Special macros (Perl routines) can be defined and then utilized in your RiveScript
-code.
+Special macros (Perl routines) can be defined and then utilized in your RiveScript code.
 
-=head2 Inline Objects
+=over 4
 
-New with version 0.04 is the ability to define objects directly within the RiveScript code. Keep in mind
-that the code for your object is evaluated local to RiveScript. That being said, basic tips to
-follow to make an object work:
+=item B<Inline Objects>
 
-  1) If it uses any module besides strict and warnings, that module must be explicitely
-     declared within your object with a 'use' statement.
-  2) If your object refers to any variables global to your main program, 'main::' must
-     be prepended (i.e. '$main::hashref->{key}')
-  3) If your object refers to a subroutine of your main program, 'main::' must be prepended
-     (i.e. '&main::reload()')
+You can define objects within your RiveScript code. When doing this, keep in mind that the
+object is included as part of the C<RiveScript::> namespace. That being said, here are some
+basic tips to follow:
 
-The basic way is to do it like this:
+  1) If it uses any modules, they need to be explicitely declared with a 'use' statement.
+  2) If it refers to any variables global to your main script, 'main::' must be prepended.
+     Example: '$main::hashref->{key}'
+  3) If it refers to any subroutine of your main program, 'main::' must be prepended.
+     Example: '&main::reload()'
+
+Here's a full example of an object:
+
+  + give me a fortune cookie
+  - Your random fortune cookie: &fortune.get()
 
   > object fortune
     my ($method,$msg) = @_;
 
-    my @fortunes = (
-       'You will be rich and famous',
-       'You will meet a celebrity',
-       'You will go to the moon',
+    my @cookies = (
+      'You will be rich and famous',
+      'You will meet a celebrity',
+      'You will go to the moon',
     );
 
-    return $fortunes [ int(rand(scalar(@fortunes))) ];
+    return $cookies [ int(rand(scalar(@cookies))) ];
   < object
 
-Note: the B<closing tag> (last line in the above example) is required for objects. An object isn't included until the closing tag
-is found.
-
-=head2 Define an Object from Perl
+=item B<Define an Object from Perl>
 
 This is done like so:
 
   # Define a weather lookup macro.
-  $rs->setSubroutine (weather => \&weather_lookup);
+  $rivescript->setSubroutine (weather => \&weather_lookup);
 
-The code of the subroutine would be basically the same as it would be in the example for Inline Objects.
-Basically, think of the "E<gt> object fortune" as "sub fortune {" and the "E<lt> object" as "}" and it's a little
-easier to visualize. ;)
+=item B<Call an Object>
 
-=head2 Call an Object
+To call on an object inside of a reply, the format is:
 
-You can use a macro within a reply such as this example:
+  &object_name.method_name(argument)
 
-  + give me the local weather for *
-  - Weather for &weather.cityname(<star1>):\n\n
-  ^ Temperature: &weather.temp(<star1>)\n
-  ^ Feels Like: &weather.feelslike(<star1>)
+All objects receive C<$method> (the data after the dot) and C<$argument> (the data inside
+the parenthesis). Here's another example:
 
-The subroutine "weather_lookup" will receive two variables: the method and the
-arguments. The method would be the bit following the dot (i.e. "cityname",
-"temp", or "feelslike" in this example). The arguments would be the value of
-<star1>.
+  + encode * in base64
+  - &encode.base64(<star>)
 
-Whatever weather_lookup would return is inserted into the reply in place of the
-macro call.
+  + encode * in md5
+  - &encode.md5(<star>)
 
-B<Note:> If a macro does not exist, has faulty code, or does not return a reply,
-the contents of global "macro_failure" will be inserted instead. At this time the
-module is unable to tell you which of the three errors is the cause.
+  > object encode
+    my ($method,$data) = @_;
 
-=head1 TAGS
+    use MIME::Base64 qw(encode_base64);
+    use Digest::MD5 qw(md5_hex);
 
-Special tags can be inserted into replies and redirections. Tags either have
-E<lt>angle bracketsE<gt> or {curly brackets}. The E<lt>angle bracketsE<gt> are
-generally for things that insert something back into the message, such as
-E<lt>starE<gt>, E<lt>idE<gt>, or E<LT>input5E<gt>. The {curly brackets} are
-generally for things that operate in silence and don't output anything, such
-as {topic} which modifies the topic, or they're modifiers of text, such as
-{random} and {uppercase}.
+    if ($method eq 'base64') {
+      return encode_base64 ($data);
+    }
+    else {
+      return md5_hex ($data);
+    }
+  < object
 
-Also, tags closely tied to others in function will have the same symbols as
-them. For instance, E<lt>setE<gt> doesn't output anything but is close in
-function to E<lt>getE<gt>. This is just an explanation of my choice of symbols.
-That being said, you can ignore these two paragraphs. ;)
+B<Note:> If an object does not exist, has faulty code, or does not return a reply, the contents
+of global C<macro_failure> will be inserted instead. The module cannot tell you which of the
+three errors is the cause, though.
 
-The supported tags are as follows:
+=back
 
-=head2 E<lt>starE<gt>, E<lt>star1E<gt> - E<lt>star100E<gt>
+=head2 Tags
 
-These tags will insert the values of $1 to $100, as matched in the regexp, into
-the reply. They go in order from left to right. <star> is an alias for <star1>.
+Special tags can be inserted into RiveScript replies. The tags are as follows:
 
-=head2 E<lt>input1E<gt> - E<lt>input9E<gt>; E<lt>reply1E<gt> - E<lt>reply9E<gt>
+=over 4
 
-Inserts the last 1 to 9 things the user said, and the last 1 to 9 things the bot
-said, respectively. Good for things like "You said hello and then I said hi and then
-you said what's up and then I said not much"
+=item B<E<lt>starE<gt>, E<lt>star1E<gt> - E<lt>star100E<gt>+>
 
-=head2 E<lt>idE<gt>
+These tags will insert the values of C<$1> to C<$100>+, as matched in the trigger regexp.
+C<E<lt>starE<gt>> is an alias for C<E<lt>star1E<gt>>.
+
+=item B<E<lt>input1E<gt> - E<lt>input9E<gt>, E<lt>reply1E<gt> - E<lt>reply9E<gt>>
+
+Inserts the last 1 to 9 things the user said, and the last 1 to 9 things the bot replied
+with, respectively.
+
+=item B<E<id>>
 
 Inserts the user's ID.
 
-=head2 E<lt>botE<gt>
+=item B<E<bot>>
 
-Insert a bot variable (defined with B<! var>).
+Insert a bot variable (defined with C<! var>).
 
   + what is your name
-  - I am <bot name>, created by <bot companyname>.
+  - I am <bot name>, created by <bot author>.
 
-This variable can also be used in triggers.
+This is also the only tag that can be used in triggers.
 
   + my name is <bot name>
   - <set name=<bot name>>What a coincidence, that's my name too!
 
-=head2 E<lt>getE<gt>, E<lt>setE<gt>
+=item B<E<lt>getE<gt>, E<lt>setE<gt>>
 
-Get and set a user variable. These are local variables for each user.
+Get and set a user variable. These are local variables for the current user.
 
   + my name is *
-  - <set name={formal}<star1>{/formal}>Nice to meet you, <get name>!
+  - <set name=<formal>>Nice to meet you, <get name>!
 
   + who am i
   - You are <get name> aren't you?
 
-=head2 E<lt>addE<gt>, E<lt>subE<gt>, E<lt>multE<gt>, E<lt>divE<gt>
+=item B<E<lt>addE<gt>, E<lt>subE<gt>, E<lt>multE<gt>, E<lt>divE<gt>>
 
-Add, subtract, multiply and divide numeric variables, respectively.
+Add, subtract, multiple and divide numeric variables, respectively.
 
   + give me 5 points
-  - <add points=5>You have received 5 points and now have <get points> total.
+  - <add points=5>You have receive 5 points and now have <get points> total.
 
-If the variable is undefined, it is set to 0 before the math is done on it.
-If you try to modify a non-numerical variable, the operation will fail and a
-little note of B<(Var=NaN)> will appear in place of the tag.
+If the variable is undefined, it is set to 0 before the math is done on it. If you try
+to modify a defined, but not numeric, variable (such as "name") then B<(Var=NaN)> is
+inserted in place of this tag.
 
-Likewise, if you try to modify a variable by inputting a non-numerical value
-into the tag, B<(Value=NaN)> would be returned instead. Two examples of how
-to trigger these:
+Likewise, if you modify a variable with a non-numeric value, then B<(Value=NaN)> is
+inserted.
 
-  + add 5 to my name
-  - <add name=5>Tried.
+=item B<{topic=...}>
 
-  + add hello to my age
-  - <add age=hello>Tried.
+This will change the user's topic. See L<"Topics">.
 
-Where "name" would be the user's name and "age" is their (numerical) age.
+=item B<{nextreply}>
 
-=head2 {topic=...}
+Breaks the reply into two parts here. This will cause C<reply()> to return multiple
+responses for each side of the C<{nextreply}> tag.
 
-The topic tag. This will set the user's topic to something else (see L<"TOPICS">). Only
-one of these should be in a response, and in the case of duplicates only the first
-one is evaluated.
+=item B<{weight=...}>
 
-=head2 {nextreply}
+Add some weight to a C<-Response>. See L<"Complexities of the Response">.
 
-Breaks the reply into two (or more) parts there. Will cause the B<reply> method
-to return multiple responses.
+=item B<{@...}, E<lt>@E<gt>>
 
-=head2 {weight=...}
-
-A -REPLY can have a weight tag applied to it to change the probability of it being
-chosen (when there is more than one reply that could be randomly chosen).
-See L<"COMPLEXITIES OF THE RESPONSE">.
-
-=head2 {@...}, E<lt>@E<gt>
-
-An inline redirection. These work like normal redirections, except are inserted
-inline into a reply.
+An inline redirection. These work like normal redirections but can be inserted into another
+reply.
 
   + * or something
-  - Or something. {@<star1>}
+  - Or something. {@<star>}
 
-E<lt>@E<gt> is an alias for {@E<lt>starE<gt>}
+C<E<lt>@E<gt>> is an alias for C<{@E<lt>starE<gt>}>
 
-=head2 {!...}
+=item B<{!...}>
 
-An inline definition. These can be used to (re)set variables. This tag is invisible
-in the final response of the bot; the changes are made silently.
+An inline definition.
 
-=head2 {random}...{/random}
+=item B<{random}...{/random}>
 
-Will insert a bit of random text. This has two syntaxes:
+Inserts a random bit of text. Separate single-word items with spaces or multi-word items
+with pipes.
 
-  Insert a random word (separate by spaces)
-  {random}red blue green yellow{/random}
+  + test random
+  - This {random}reply response{/random} has random {random}bits of text|pieces of data{/random}.
 
-  Insert a random phrase (separate by pipes)
-  {random}Yes sir.|No sir.{/random}
+=item B<{person}...{/person}, E<lt>personE<gt>>
 
-=head2 {person}...{/person}, E<lt>personE<gt>
+Will take the enclosed text and run person substitutions on them. See L<"Person Substitution">.
 
-Will take the enclosed text and run person substitutions on them (see
-L<"PERSON SUBSTITUTION">).
+C<E<lt>personE<gt>> is an alias for C<{person}E<lt>starE<gt>{/person}>
 
-E<lt>personE<gt> is an alias for {person}E<lt>starE<gt>{/person}
+=item B<{formal}...{/formal}, E<lt>formalE<gt>>
 
-=head2 {formal}...{/formal}, E<lt>formalE<gt>
+Will Make Your Text Formal.
 
-Will Make Your Text Formal
+C<E<lt>formalE<gt>> is an alias for C<{formal}E<lt>starE<gt>{/formal}>
 
-E<lt>formalE<gt> is an alias for {formal}E<lt>starE<gt>{/formal}
-
-=head2 {sentence}...{/sentence}, E<lt>sentenceE<gt>
+=item B<{sentence}...{/sentence}, E<lt>sentenceE<gt>>
 
 Will make your text sentence-cased.
 
-E<lt>sentenceE<gt> is an alias for {sentence}E<lt>starE<gt>{/sentence}
+C<E<lt>sentenceE<gt>> is an alias for C<{sentence}E<lt>starE<gt>{/sentence}>
 
-=head2 {uppercase}...{/uppercase}, E<lt>uppercaseE<gt>
+=item B<{uppercase}...{/uppercase}, E<lt>uppercaseE<gt>>
 
 WILL MAKE THE TEXT UPPERCASE.
 
-E<lt>uppercaseE<gt> is an alias for {uppercase}E<lt>starE<gt>{/uppercase}
+C<E<lt>uppercaseE<gt>> is an alias for C<{uppercase}E<lt>starE<gt>{/uppercase}>
 
-=head2 {lowercase}...{/lowercase}, E<lt>lowercaseE<gt>
+=item B<{lowercase}...{/lowercase}, E<lt>lowercaseE<gt>>
 
 will make the text lowercase.
 
-E<lt>lowercaseE<gt> is an alias for {lowercase}E<lt>starE<gt>{/lowercase}
+C<E<lt>lowercaseE<gt>> is an alias for C<{lowercase}E<lt>starE<gt>{/lowercase}>
 
-=head2 {ok}
+=item B<{ok}>
 
-This tag is used only with the L<"BEGIN STATEMENT">. It tells the interpreter
-that it's okay to go and get a reply.
+This is used only with the L<"Begin Statement">. It tells the interpreter that it's okay to
+get a reply.
 
-=head2 \s
+=item B<\s>
 
-Inserts a white space. Simple as that. This is needed if you use the -^ combo
-for continuing a reply. RiveScript does not assume a space between the texts
-of the two tags.
+Inserts a white space.
 
-=head2 \n
+=item B<\n>
 
-Inserts a newline. Note that this tag is interpreted at the time of grabbing
-a reply(). Other than that, it exists in memory as a literal '\n' (or "\\n")
+Inserts a newline.
 
-=head2 \/
+=item B<\/>
 
-Insert a forward slash. This is to, for example, include a " // " in your reply
-but without it being parsed as a comment.
+Insert a forward slash. This is to include forward slashes without them being interpreted
+as comments.
 
-  + system login
-  - Perl System \// Logging In...
+=item B<\#>
 
-=head2 \#
+Inserts a pound symbol. This is to include pound symbols without them being interpreted
+as comments.
 
-Insert a pound sign. This is to, for example, include a " # " in your reply without
-it being parsed as a comment.
+=back
 
-=head1 ENVIRONMENTAL VARIABLES
+=head2 Environment Variables
 
-Environmental variables are kept as "botvariables" (i.e. they can be retrieved with
-the E<lt>botE<gt> tag). The variable names all begin with "ENV_" and are in uppercase.
+Environment variables are kept as "botvariables" and can be retrieved with the
+C<E<lt>botE<gt>> tags. The variable names are all uppercase and begin with "ENV_"
 
-=head2 RiveScript Environment Variables
+=over 4
+
+=item B<RiveScript Environment Variables>
 
   ENV_OS          = The operating system RiveScript is running on.
-  ENV_APPVERSION  = The version of RiveScript used.
-  ENV_APPNAME     = A user-agent style string that looks like "RiveScript/0.08"
+  ENV_APPVERSION  = The version of RiveScript being used.
+  ENV_APPNAME     = A user-agent style string ("RiveScript/1.00")
   ENV_REPLY_COUNT = The number of loaded triggers.
 
-=head2 Perl Environment Variables
+=item B<Perl Environment Variables>
 
-All the environment variables available to your Perl script are kept under B<ENV_SYS_>
-with their original names following. For example, B<ENV_SYS_PATH> would be the %PATH%
-variable on Windows.
+All Perl variables are prepended with "ENV_SYS_", so that "ENV_SYS_REMOTE_ADDR" would
+contain the user's IP address if RiveScript was used via HTTP CGI.
 
-=head2 Set Environment Variables
+=item B<Setting Environment Variables>
 
-Currently, RiveScript's syntax does not allow the modification of any variable
-beginning with "env_". If you absolutely must override one of these variables for
-any reason at all, you can call the B<setVariable()> method to do so.
+RiveScript's syntax prohibits the modification of environment variables through any
+loaded RiveScript document. However, you can call the method C<setVariable()> to
+change environment variables from the Perl side if need-be.
 
-=head1 PERSON SUBSTITUTION
+=back
 
-The {person} tag can be used to perform substitutions between 1st- and 2nd-person
-adjectives (see L<"TAGS">).
+=head2 Person Substitution
 
-You define these with the !define tag in a similar fashion as how you define
-substitution data. For example:
+The C<{person}> tag can be used to perform substitutions between 1st- and 2nd-person
+pronouns.
+
+You can define these with the C<!define> tag:
 
   ! person i     = you
   ! person my    = your
@@ -1385,8 +1366,7 @@ substitution data. For example:
   ! person yours = mine
   ! person are   = am
 
-Then use the {person} tag in a response. The enclosed text will swap the words
-listed with the !person tags. For instance:
+Then use the C<{person}> tag in a response. The enclosed text will swap these pronouns.
 
   + do you think *
   - What if I do think {person}<star>{/person}?
@@ -1394,61 +1374,42 @@ listed with the !person tags. For instance:
   "Do you think I am a bad person?"
   "What if I do think you are a bad person?"
 
-See, that's the use of this tag. Otherwise the bot would have replied "What if I
-do think B<I am> a bad person?" and not make very much sense.
+Without the person tags, it would say "What if I do think I am a bad person?" and not make very
+much sense.
 
-B<Note:> RiveScript does NOT assume any person substitutions. Your RiveScript
-code must define them as exampled above.
+B<Note:> RiveScript does not assume any pre-set substitutions. You must define them in your own
+brains.
 
-=head1 DYNAMIC REPLIES
+=head2 Dynamic Replies
 
-A function added in version 0.07 is to B<write()> the loaded replies into a
-single RS file. This is useful for if your program dynamically learns new
-replies.
+Here is an overview of the internal hashref structure of the RiveScript object, for modifying
+replies directly.
 
-This section of the POD is devoted to explaining the setup of the internal
-hashrefs of the RiveScript instance.
+=over 4
 
-=head2 $rs->{replies}
+=item B<$rs-E<gt>{replies}>
 
-This hashref contains the meat of the loaded replies. The first keys here
-are the topics (keep in mind that 'random' is the default topic). For replies
-that had %PREVIOUS in them, their topics are '__that__(bots last message, lowercase
-and without punctuation)' and that the data from BEGIN is in '__begin__'
+This hashref contains all of the replies. The first keys are the topic name, then the trigger
+texts under that topic.
 
-So for example, B<$rs-E<gt>{replies}-E<gt>{random}> is where replies under the default
-topic are, while B<$rs-E<gt>{replies}-E<gt>{apology}> is where replies under the
-'apology' topic are, et cetera.
+So, B<$rs-E<gt>{replies}-E<gt>{random}> contains all triggers for the default topic.
 
-The sub-keys under a topic are the triggers. These are literally the strings
-you'd find in the file at the + command.
+B<$rs->{replies}->{random}->{'my favorite color is (@colors) *'}> would be the location of a
+specific trigger.
 
-For example, B<$rs-E<gt>{replies}-E<gt>{random}-E<gt>{'my favorite color is (@colors)'}>
+=item B<Trigger Sub-Keys>
 
-=head2 Trigger Keys
+The following keys are underneath a trigger key (B<$rs->{replies}->{$topic}->{$trigger}>)
 
-The following keys are used under trigger hashrefs ($rs->{replies}->{$topic}->{$trigger})
+B<1..n> - The C<-Responses> under the trigger, in order.
 
-B<1..n> - The -REPLIES under the trigger. The first - is position 1, and they increment
-from there.
+B<redirect> - The contents of the C<@Redirect> if applicable.
 
-B<redirect> - The data from the @redirect command. Since RiveScript only supports a single
-@redirect in a message, this always has a single value.
+B<conditions->{1..n}> - The data from the C<*Condition> commands, in order.
 
-B<conditions-E<gt>{1..n}> - The data from the *condition commands. This is in similar format
-to the -replies, where 1 is the first condition.
+B<system->{codes}> - The contents of any C<&Perl> codes if applicable.
 
-B<system-E<gt>{codes}> - The contents of any system codes provided by &perl commands.
-
-=head2 Sorted Arrays
-
-The first keys under B<$rs-E<gt>{array}> are the topic names, as they are in $rs->{replies}.
-But the contents of each topic key is an array ref of the sorted triggers.
-
-Generally, you shouldn't have to worry about modifying this variable directly--just
-call sortReplies() and it will manage it automatically.
-
-=head2 Examples
+=item B<Examples>
 
   // RiveScript Code
   + my name is *
@@ -1476,59 +1437,70 @@ call sortReplies() and it will manage it automatically.
   # Perl code. Access this one's reply.
   $rs->{replies}->{'__that__whos there'}->{1}
 
-=head1 INCLUDED FILES
+=back
 
-B<Recommended Practice> is to put all your B<!include> statements inside your "begin.rs"
-file, as this file is loaded in first. The "include" statement is for including common
-libraries or packages.
+=head2 Included Files
 
-=head2 RiveScript Libraries
+B<Recommended practice> is to place all your C<!include> statements inside your begin.rs file,
+as this file is always loaded in first.
 
-RiveScript Libraries (B<.rsl> extention) are special RiveScript documents which contain
-nothing but B<!arrays> and B<!substitutions> and the like. For instance, you could make
-a language library which could contain arrays of verbs and their conjugations.
+=over 4
 
-=head2 RiveScript Packages
+=item B<RiveScript Libraries>
 
-RiveScript Packages (B<.rsp> extension) are special RiveScript documents which contain
-one (or more) objects. For example, you might create a RiveScript package full of objects
-for returning the date and time in different formats.
+RiveScript Libraries (B<.rsl> extension) are special RiveScript documents that are generally
+full of arrays and substitutions. For instance, the RiveScript distribution comes with English.rsl
+which is full of English nouns, verbs, and adjectives.
 
-=head2 RiveScript Include Search Path
+=item B<RiveScript Packages>
 
-The current RiveScript Includes search path is an array of Perl's @INC, with "/RiveScript"
-tacked on the end of it. Also "." is an include path (the working directory of the script
-running RiveScript).
+RiveScript Packages (B<.rsp> extension) are special RiveScript documents that are generally
+full of objects. The RiveScript distribution comes with DateTime.rsp, which has an object for
+returning time stamps.
 
-You can use the B<!addpath> directive to add new search paths.
+=item B<RiveScript Include Search Path>
 
-=head1 RESERVED VARIABLES
+The default RiveScript Includes search path is the array of Perl's C<@INC>, with "/RiveScript"
+tacked on to the end of it. Also, the working directory of your script is included in this.
 
-The following are all the reserved variables and values within RiveScript's
-processor.
+You can use the C<!addpath> directive to add new search paths.
 
-=head2 Reserved Global Variables
+=back
 
-These variables cannot be overwritten with the B<! global> command:
+=head2 Reserved Variables
+
+The following are all the reserved variables within RiveScript which cannot be (re)set by
+your reply files.
+
+=over 4
+
+=item B<Reserved Global Variables>
+
+These variables can't be overwritten with the C<!global> command:
 
   reserved replies array syntax streamcache botvars uservars
   botarrays sort users substitutions
 
-=head2 Reserved Topic Names
+=item B<Reserved Topic Names>
 
-The following topic names are reserved and should never be (re)created in
-your RiveScript files:
+The following topic names are special and should never be (re)created in your RiveScript files.
 
-  __begin__   (used for the BEGIN method)
-  __that__*   (used for the %PREVIOUS command)
+  __begin__  (used for the BEGIN statement)
+  __that__*  (used for the %Previous command)
 
-=head1 A GOOD BRAIN
+=back
 
-Since RiveScript leaves a lot of control up to the brain and not the Perl code,
-here are some general tips to follow when writing your own brain:
+=head2 A Good Brain
 
-B<Make a config file.> This would probably be named "config.rs" and it would
-handle all your definitions. For example it might look like this:
+Since RiveScript leaves a lot of control up to the brain and not the Perl code, here are some
+general tips to follow when writing your own brain:
+
+=over 4
+
+=item B<Make a config file.>
+
+This would probably be named "config.rs" and it would handle all
+your definitions. For example it might look like this:
 
   // Set up globals
   ! global debug = 0
@@ -1562,15 +1534,15 @@ Here are a list of all the globals you might want to configure.
                        to run (or return a reply).
   debug              - Debug mode (1 or 0, default 0)
 
-B<Make a begin file.> Create a file called "begin.rs" -- there are several reasons
-for doing so.
+=item B<Make a begin file.>
 
-For one, you should use this file for B<!include> statements if you want your brain
-to use some common libraries or packages. Secondly, you can use the B<E<gt>BEGIN>
-statement to setup a handler for incoming messages.
+Create a file called "begin.rs" -- there are several reasons for doing so.
 
-Your begin file could check the "active" variable we set in the config file to
-decide if it should give a reply.
+For one, you should use this file for C<!include> statements if you want your brain
+to use some common libraries or packages. Secondly, you can use the B<E<lt>BEGIN> statement
+to setup a handler for incoming messages.
+
+Your begin file could check the "active" variable we set in the config file to decide if it should give a reply.
 
   > begin
     + request
@@ -1580,19 +1552,20 @@ decide if it should give a reply.
 
 These are the basic tips, just for organizational purposes.
 
+=back
+
 =head1 SEE OTHER
 
-L<RiveScript::Parser> - Reading and Writing of RiveScript Documents
+L<RiveScript::Parser> - Reading and Writing of RiveScript Documents.
 
 L<RiveScript::Brain> - The reply and search methods of RiveScript.
 
 L<RiveScript::Util> - String utilities for RiveScript.
 
-=head1 KNOWN BUGS
-
-None yet known.
-
 =head1 CHANGES
+
+  Version 1.00
+  - Public stable beta release.
 
   Version 0.21
   - Added \u tag for inserting an "undefined" character (i.e. set global macro_failure
@@ -1731,23 +1704,18 @@ None yet known.
   Version 0.01
   - Initial Release
 
-=head1 TO-DO LIST
-
-Feel free to offer any ideas. ;)
-
 =head1 SPECIAL THANKS
 
-Special thanks goes out to B<jeffohrt> and B<harleypig> of the AiChaos
-Forum for helping so much with the development of RiveScript.
+Special thanks goes out to B<jeffohrt> and B<harleypig> of the AiChaos Forum for
+helping so much with RiveScript's development.
 
 =head1 KEYWORDS
 
-bot, chatbot, chatterbot, chatter bot, reply, replies, script, aiml,
-alpha
+bot, chatbot, chatterbot, chatter bot, reply, replies, script, aiml, alpha
 
 =head1 AUTHOR
 
-  Cerone Kirsle, kirsle --at-- rainbowboi.com
+  Cerone Kirsle, kirsle --at-- f2mb.com
 
 =head1 COPYRIGHT AND LICENSE
 

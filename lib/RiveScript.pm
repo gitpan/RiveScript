@@ -608,7 +608,7 @@ data is all correctly formatted before being processed.
 
 =item splitSentences ($STRING)
 
-Splits C<$STRING> at hte sentence-splitters and returns an array.
+Splits C<$STRING> at the sentence-splitters and returns an array.
 
 =item formatMessage ($STRING)
 
@@ -1192,11 +1192,11 @@ C<E<lt>starE<gt>> is an alias for C<E<lt>star1E<gt>>.
 Inserts the last 1 to 9 things the user said, and the last 1 to 9 things the bot replied
 with, respectively.
 
-=item B<E<id>>
+=item B<E<lt>idE<gt>>
 
 Inserts the user's ID.
 
-=item B<E<bot>>
+=item B<E<lt>botE<gt>>
 
 Insert a bot variable (defined with C<! var>).
 

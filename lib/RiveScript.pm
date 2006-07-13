@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '1.00';
+our $VERSION = '1.02';
 
 sub new {
 	my $proto = shift;
@@ -1563,6 +1563,13 @@ L<RiveScript::Brain> - The reply and search methods of RiveScript.
 L<RiveScript::Util> - String utilities for RiveScript.
 
 =head1 CHANGES
+
+  Version 1.02
+  - Fixed several bugs:
+    - Makefile.PL was unnecessarily requiring a high version of Perl; not it doesn't.
+    - A typo fixed in Tutorial.pod causing compile errors
+    - MANIFEST file fixed to reflect the new demo brain
+    - Some warnings in Parser.pm were attempted to be fixed
 
   Version 1.00
   - Public stable beta release.

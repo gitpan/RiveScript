@@ -1,5 +1,12 @@
 Revision history for Perl extension RiveScript.
 
+1.02 Thu Jul 13 15:25:00 2006
+	- Fixed several bugs:
+		- Makefile.PL was unnecessarily requiring a high version of Perl; not it doesn't.
+		- A typo fixed in Tutorial.pod causing compile errors
+		- MANIFEST file fixed to reflect the new demo brain
+		- Some warnings in Parser.pm were attempted to be fixed
+
 1.00 Tue Jul  4 17:43:00 2006
 	- Public stable beta release.
 

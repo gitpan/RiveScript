@@ -410,7 +410,7 @@ In most cases, for variable storage uses, this is alright. But for formal things
 such as a name, you want them to be formatted to start with capital letters.
 
 To start this section, we'll go back to the C<my name is *> trigger added under
-E<"Saving User Variables">.
+L<"Saving User Variables">.
 
 To formalize the name, use the B<{formal}> tag:
 

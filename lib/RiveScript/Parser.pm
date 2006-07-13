@@ -111,11 +111,11 @@ sub loadFile {
 		$data =~ s/\\u//g if defined $data;
 
 		# Check for comment commands...
-		if ($command =~ m~^(//|#)~) {
+		if (defined $command && $command =~ m~^(//|#)~) {
 			# Single comment.
 			next unless $inCom;
 		}
-		if ($command eq '/*') {
+		if (defined $command && $command eq '/*') {
 			# We're starting a comment section.
 			if (defined $data && $data =~ /\*\//) {
 				# The section was ended here too.
@@ -123,7 +123,7 @@ sub loadFile {
 			}
 			$inCom = 1;
 		}
-		if ($command eq '*/' || (defined $data && $data =~ /\*\//)) {
+		if (defined $command && $command eq '*/' || (defined $data && $data =~ /\*\//)) {
 			$inCom = 0;
 			next;
 		}
@@ -131,7 +131,7 @@ sub loadFile {
 		# Skip comments.
 		next if $inCom;
 
-		next unless length $command;
+		next unless (defined $command && length $command);
 
 		# Remove in-line comments.
 		my ($save,$void) = split(/\s+(\/\/|#)\s+/, $data, 2);

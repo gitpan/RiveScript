@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use RiveScript::Util;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 sub reply {
 	my $self = shift;
@@ -44,12 +44,14 @@ sub reply {
 		# Format their message.
 		unless ($args{no_split}) {
 			my @sentences = $self->splitSentences ($msg);
+			# print "Sentences = " . join ("###",@sentences) . "\n";
 			foreach my $in (@sentences) {
 				$in = $self->formatMessage ($in);
 				next unless length $in > 0;
 				# print "Sending sentence \"$in\" in...\n";
 				my @returned = $self->intReply ($id,$in);
 				push (@out,@returned);
+				# print "Out = " . join (";", @out) . "\n";
 			}
 		}
 		else {
@@ -60,8 +62,9 @@ sub reply {
 
 		my @final = ();
 
-		my $reply = $begin;
+		my $reply = '';
 		foreach (@out) {
+			$reply = $begin;
 			$reply =~ s/\{ok\}/$_/ig;
 			$reply = $self->tagFilter ($reply,$id,$msg);
 			push (@final,$reply);
@@ -69,6 +72,7 @@ sub reply {
 
 		# Get it in scalar form.
 		my $scalar = join (" ", @final);
+		# print "scalar: $scalar\n";
 
 		# Run final filters on it (for begin statement's sake).
 		# $scalar = $self->tagFilter ($scalar,$id,$msg);
@@ -79,12 +83,10 @@ sub reply {
 			(@final) = (@array);
 		}
 
-		# Return in scalar form?
-		if ($args{scalar}) {
-			return join (" ", @final);
-		}
+		# print "final: @final\n";
 
-		return (@final);
+		# Return in scalar form?
+		return wantarray ? @final : join (" ",@final);
 	}
 	else {
 		# Run tag filters anyway.
@@ -275,7 +277,7 @@ sub intReply {
 								# ?  defined
 
 								if ($type eq '?') {
-									if (defined $usrVar) {
+									if (defined $botVar || defined $usrVar) {
 										$reply = $happens;
 									}
 								}
@@ -570,12 +572,12 @@ The B<RiveScript> manpage.
 
 =head1 AUTHOR
 
-  Cerone Kirsle, kirsle --at-- rainbowboi.com
+  Casey Kirsle, casey at cuvou.net
 
 =head1 COPYRIGHT AND LICENSE
 
     RiveScript - Rendering Intelligence Very Easily
-    Copyright (C) 2006  Cerone J. Kirsle
+    Copyright (C) 2007  Casey Kirsle
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

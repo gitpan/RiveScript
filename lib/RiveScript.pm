@@ -8,7 +8,7 @@ use RiveScript::Parser;
 use RiveScript::Util;
 use Data::Dumper;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 sub new {
 	my $proto = shift;
@@ -1564,6 +1564,14 @@ L<RiveScript::Util> - String utilities for RiveScript.
 
 =head1 CHANGES
 
+  Version 1.03
+  - Fixed a few bugs:
+    - Fixed a bug in which, if you sent in two sentences at once, the module would return
+      only the answer to the first sentence--twice.
+  - Removed attribute "scalar" to reply(). It now uses wantarray to figure out whether it
+    should return an array or a scalar.
+  - The "Defined" condition ? can now check bot variables too.
+
   Version 1.02
   - Fixed several bugs:
     - Makefile.PL was unnecessarily requiring a high version of Perl; not it doesn't.
@@ -1722,12 +1730,12 @@ bot, chatbot, chatterbot, chatter bot, reply, replies, script, aiml, alpha
 
 =head1 AUTHOR
 
-  Cerone Kirsle, kirsle --at-- f2mb.com
+  Casey Kirsle, casey at cuvou.net
 
 =head1 COPYRIGHT AND LICENSE
 
     RiveScript - Rendering Intelligence Very Easily
-    Copyright (C) 2006  Cerone J. Kirsle
+    Copyright (C) 2007  Casey Kirsle
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

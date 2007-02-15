@@ -33,7 +33,7 @@ first RiveScript brain.</title>
 	<li><a href="#creating_reply_files">CREATING REPLY FILES</a></li>
 	<ul>
 
-		<li><a href="#add_some_hello_replies">Add Some ``Hello'' Replies</a></li>
+		<li><a href="#add_some_hello_replies">Add Some &quot;Hello&quot; Replies</a></li>
 		<ul>
 
 			<li><a href="#a_basic_trigger">A Basic Trigger</a></li>
@@ -67,9 +67,9 @@ first RiveScript brain.</title>
 		<li><a href="#reply_conditionals">Reply Conditionals</a></li>
 		<ul>
 
-			<li><a href="#equals_condition">``Equals'' Condition</a></li>
+			<li><a href="#equals_condition">&quot;Equals&quot; Condition</a></li>
 			<li><a href="#numeric_comparisons">Numeric Comparisons</a></li>
-			<li><a href="#defined_condition">``Defined'' Condition</a></li>
+			<li><a href="#defined_condition">&quot;Defined&quot; Condition</a></li>
 		</ul>
 
 		<li><a href="#keeping_it_in_context">Keeping it in Context</a></li>
@@ -140,7 +140,7 @@ always explaining what each of them do.</p>
 <h2><a name="a_simple_rivescript_interpreter">A Simple RiveScript Interpreter</a></h2>
 <p>Here is a simple Perl script for running a RiveScript interpreter.
 This assumes that the brain's RS files will be stored in a directory
-called ``tutorial'', local to the Perl script. You'd want to edit certain
+called &quot;tutorial&quot;, local to the Perl script. You'd want to edit certain
 parameters in this code if you see fit.</p>
 <pre>
   <span class="comment">#!/usr/bin/perl -w</span>
@@ -182,16 +182,16 @@ parameters in this code if you see fit.</p>
 <p>
 </p>
 <h2><a name="structure_of_a_good_brain">Structure of a Good Brain</a></h2>
-<p>By ``A Good Brain'' I mean a brain written to certain standards. Much
+<p>By &quot;A Good Brain&quot; I mean a brain written to certain standards. Much
 like how an HTML file can be written any way you want, but the W3C
 sets up standards for how to write them.</p>
 <p>A good RiveScript brain has at least files named <strong>config.rs</strong> and
-<strong>begin.rs</strong>. ``config.rs'' would be for configuration of the bot, setting
+<strong>begin.rs</strong>. &quot;config.rs&quot; would be for configuration of the bot, setting
 up variables, substitutions, etc. This file's name <em>isn't</em> absolutely
-required to be ``config.rs'' but that's a good name as far as following
+required to be &quot;config.rs&quot; but that's a good name as far as following
 standards goes.</p>
-<p>The ``begin.rs'' file, on the other hand, is more of a required name.
-In the <strong>loadDirectory</strong> method, a file named ``begin.rs'' is loaded in
+<p>The &quot;begin.rs&quot; file, on the other hand, is more of a required name.
+In the <strong>loadDirectory</strong> method, a file named &quot;begin.rs&quot; is loaded in
 <em>first</em>, before any other file. In this way, it has two purposes:</p>
 <pre>
   1. To load in any libraries or packages, since they'll be then
@@ -204,7 +204,7 @@ In the <strong>loadDirectory</strong> method, a file named ``begin.rs'' is loade
 <h2><a name="the_config_rs_file">The config.rs File</a></h2>
 <p>To begin the creation of our RiveScript brain, save the above Perl
 code into a file (if you haven't already done so), and then create
-a folder named ``tutorial'' in the directory you saved the Perl file.</p>
+a folder named &quot;tutorial&quot; in the directory you saved the Perl file.</p>
 <p>Open a text editor (such as Notepad). RiveScript documents are just
 text files so any editor should do just fine (provided it doesn't
 assume you're creating a non-plaintext file and adds in strange
@@ -217,10 +217,10 @@ and some basic information.</p>
   ! var gender   = machine
   ! var age      = 0</pre>
 <p>You can follow that pattern to make any additional variables to give
-your bot a ``personality.''</p>
+your bot a &quot;personality.&quot;</p>
 <p>Next we'll create an array or two. Arrays can be used later in triggers
 to make a specified set of matchable words. We'll create two arrays,
-one for color names and one for the verb ``to be''</p>
+one for color names and one for the verb &quot;to be&quot;</p>
 <pre>
   ! array colors = red blue green yellow cyan fuchsia orange
   ^ black white silver gold gray grey pink
@@ -290,7 +290,7 @@ for anything else you can think of, too.</p>
   ! sub wats      = what is
   </span>
 </pre>
-<p>Finally, we'll define some ``person'' substitutions. These are
+<p>Finally, we'll define some &quot;person&quot; substitutions. These are
 special substitutions used for the bot's reply. Anything between
 the tags <strong>{person}</strong> and <strong>{/person}</strong> in the bot's reply uses
 these substitutions. The purpose of this is to swap first- and
@@ -300,14 +300,14 @@ second-person pronouns.</p>
   ! person me  = you
   ! person am  = are
   ! person are = am</pre>
-<p>And now save this file as ``<strong>config.rs</strong>'' (you may need to put
+<p>And now save this file as &quot;<strong>config.rs</strong>&quot; (you may need to put
 quotes around the filename in Windows if you haven't already
 associated a program with that extension!)</p>
 <p>
 </p>
 <h2><a name="the_begin_rs_file">The begin.rs File</a></h2>
-<p>The second file recommended for a good brain is call ``begin.rs''
-and here is where we'll load in libraries, and set up our ``begin''
+<p>The second file recommended for a good brain is call &quot;begin.rs&quot;
+and here is where we'll load in libraries, and set up our &quot;begin&quot;
 statement.</p>
 <p>So first, we'll load in a library that comes with the RiveScript
 distribution: English. It gives us a lot of arrays of various
@@ -316,11 +316,11 @@ forms.</p>
 <pre>
   ! include English.rsl</pre>
 <p>And now for the BEGIN statement. The BEGIN statement is a block of
-replies that uses the &gt; label for ``begin''. By default, this block
-takes only one preset trigger from the user: ``request''</p>
-<p>When the reply to ``request'' contains the <strong>{ok}</strong> tag in it, then a
+replies that uses the &gt; label for &quot;begin&quot;. By default, this block
+takes only one preset trigger from the user: &quot;request&quot;</p>
+<p>When the reply to &quot;request&quot; contains the <strong>{ok}</strong> tag in it, then a
 normal reply for the user's message is obtained and substituted back
-into the ``request'' reply, where the <strong>{ok}</strong> tag is.</p>
+into the &quot;request&quot; reply, where the <strong>{ok}</strong> tag is.</p>
 <pre>
   <span class="operator">&gt;</span> <span class="variable">begin</span>
     <span class="operator">+</span> <span class="variable">request</span>
@@ -338,7 +338,7 @@ But for now, the user <strong>request</strong>s a reply, and the bot returns one
 for it being able to give an intelligent response to your message.</p>
 <p>
 </p>
-<h2><a name="add_some_hello_replies">Add Some ``Hello'' Replies</a></h2>
+<h2><a name="add_some_hello_replies">Add Some &quot;Hello&quot; Replies</a></h2>
 <p>
 </p>
 <h3><a name="a_basic_trigger">A Basic Trigger</a></h3>
@@ -348,15 +348,15 @@ RiveScript document (new text document) and add a simple reply like so:</p>
 <pre>
   + hello
   - Hello there, human.</pre>
-<p>Now we have something to test. Save this as ``greetings.rs'' in the
-``tutorial'' folder with your other RiveScript documents, then run the
-Perl code you saved earlier to test the bot. At the ``User&gt;''
-prompt, type ``hello'' and the bot should reply ``Hello there, human.''</p>
+<p>Now we have something to test. Save this as &quot;greetings.rs&quot; in the
+&quot;tutorial&quot; folder with your other RiveScript documents, then run the
+Perl code you saved earlier to test the bot. At the &quot;User&gt;&quot;
+prompt, type &quot;hello&quot; and the bot should reply &quot;Hello there, human.&quot;</p>
 <p>
 </p>
 <h3><a name="random_responses">Random Responses</a></h3>
 <p>Now we'll make this trigger return a random reply. Currently, no matter
-how many times you say ``hello'', the bot's reply will never change. This
+how many times you say &quot;hello&quot;, the bot's reply will never change. This
 can be fixed by adding more than one response to the trigger:</p>
 <pre>
   + hello
@@ -364,13 +364,13 @@ can be fixed by adding more than one response to the trigger:</p>
   - Hey, how are you?
   - Hi there.
   - Hello. :)</pre>
-<p>Save and test the bot again. Now, say ``hello'' to it a few times and it
+<p>Save and test the bot again. Now, say &quot;hello&quot; to it a few times and it
 should randomly choose one of those four responses to give you.</p>
 <p>
 </p>
 <h3><a name="weighted_random_responses">Weighted Random Responses</a></h3>
 <p>Now, let's put some weights on certain responses. For instance, the
-``Hello there, human.'' seems quite cold and heartless--a good response
+&quot;Hello there, human.&quot; seems quite cold and heartless--a good response
 for an impulse-driven machine. But for the sake of emotional security,
 the bot should use that reply a lot less than the other ones.</p>
 <p>Using the {weight} tag on the responses will change the probability of
@@ -385,20 +385,20 @@ for the one calling you a human:</p>
 </pre>
 <p>Note that if a {weight} tag isn't specified, the trigger assumes a weight
 of 1. Now, there is a total of 10 weights in these replies: 3 + 2 + 4, and
-then +1 for the ``Hello there, human.'' response.</p>
-<p>So, ``Hey, how are you?'' has a 3 in 10 chance of being chosen, ``Hello. :)''
-has a 4 in 10 chance, ``Hi there.'' has a 2 in 10 chance, and finally
-``Hello there, human.'' has a 1 in 10 chance of being chosen.</p>
-<p>Try it! Save and test the bot again and say ``hello'' quite a few times.
-Compared to the other responses it gives you, it should say ``Hello there,
-human.'' considerably less often.</p>
+then +1 for the &quot;Hello there, human.&quot; response.</p>
+<p>So, &quot;Hey, how are you?&quot; has a 3 in 10 chance of being chosen, &quot;Hello. :)&quot;
+has a 4 in 10 chance, &quot;Hi there.&quot; has a 2 in 10 chance, and finally
+&quot;Hello there, human.&quot; has a 1 in 10 chance of being chosen.</p>
+<p>Try it! Save and test the bot again and say &quot;hello&quot; quite a few times.
+Compared to the other responses it gives you, it should say &quot;Hello there,
+human.&quot; considerably less often.</p>
 <p>
 </p>
 <h3><a name="redirected_triggers">Redirected Triggers</a></h3>
 <p>Now that we're fairly comfortable with this response, we'll add a couple
-other triggers that will point back to this one. So the user can say ``hi''
-or ``hey'' and still get the same effect as if he had said ``hello.'' We
-could, of course, just make substitutions to change ``hey'' into ``hello''
+other triggers that will point back to this one. So the user can say &quot;hi&quot;
+or &quot;hey&quot; and still get the same effect as if he had said &quot;hello.&quot; We
+could, of course, just make substitutions to change &quot;hey&quot; into &quot;hello&quot;
 but that would ruin the sake of learning how to code RiveScript files. ;)</p>
 <pre>
   + hey
@@ -406,9 +406,9 @@ but that would ruin the sake of learning how to code RiveScript files. ;)</p>
 <pre>
   + hi
   @ hello</pre>
-<p>The ``@'' command redirects the user to another trigger: ``hello''. In this
-case, saying ``hey'' or ``hi'' will return a reply as if the user had just
-typed ``hello'' instead. Save and test this.</p>
+<p>The &quot;@&quot; command redirects the user to another trigger: &quot;hello&quot;. In this
+case, saying &quot;hey&quot; or &quot;hi&quot; will return a reply as if the user had just
+typed &quot;hello&quot; instead. Save and test this.</p>
 <p>You can follow this pattern to add some more triggers for goodbyes now, too.</p>
 <p>
 </p>
@@ -417,9 +417,9 @@ typed ``hello'' instead. Save and test this.</p>
 </p>
 <h3><a name="using_wildcards">Using Wildcards</a></h3>
 <p>Let's add a few more triggers. These ones will be open-ended, allowing
-the user to say something to ``fill in a blank,'' and what they say can
+the user to say something to &quot;fill in a blank,&quot; and what they say can
 be matched using the &lt;star&gt; tags.</p>
-<p>Create a new RiveScript document and save it as ``users.rs'' -- this file
+<p>Create a new RiveScript document and save it as &quot;users.rs&quot; -- this file
 will contain triggers specifically geared for learning and repeating
 user details.</p>
 <p>For our first example of using a wildcard, we'll allow the user to tell us
@@ -427,7 +427,7 @@ their name.</p>
 <pre>
   + my name is *
   - Nice to meet you, &lt;star&gt;!</pre>
-<p>Save and test it. Say ``my name is Bob'' or ``my name is Steve'' and see how
+<p>Save and test it. Say &quot;my name is Bob&quot; or &quot;my name is Steve&quot; and see how
 the bot replies. Before moving on, we'll put in another trigger to test
 the use of multiple wildcards:</p>
 <pre>
@@ -435,15 +435,15 @@ the use of multiple wildcards:</p>
   - So do you always get described as &lt;star2&gt; by &lt;star1&gt;?</pre>
 <p>When you're dealing with more than one wildcard, you'll need to include a
 number in the &lt;star&gt; tag. The stars are matched from left to right.
-In this example, if you say ``John would describe me as eccentric'', &lt;star1&gt;
-would be ``John'' and &lt;star2&gt; would be ``eccentric''</p>
+In this example, if you say &quot;John would describe me as eccentric&quot;, &lt;star1&gt;
+would be &quot;John&quot; and &lt;star2&gt; would be &quot;eccentric&quot;</p>
 <p>
 </p>
 <h3><a name="saving_user_variables">Saving User Variables</a></h3>
 <p>The &lt;set&gt; tag can be used to set a <strong>user variable</strong>. User variables are
 variables specific to the current user. For example, your bot can learn a user's
 name and address that user by name from then on, while keeping a different name
-for a different user. You can also think of these as ``local variables,'' local
+for a different user. You can also think of these as &quot;local variables,&quot; local
 to each user.</p>
 <p>So, when the user tells us their name, we should remember it for them:</p>
 <pre>
@@ -476,9 +476,9 @@ bot's response.</p>
 </p>
 <h3><a name="bot_variables">Bot Variables</a></h3>
 <p>While we're on the topic of variables, the bot variables we declared back when
-we created the ``config.rs'' file can be retrieved in &lt;bot&gt; tags.</p>
+we created the &quot;config.rs&quot; file can be retrieved in &lt;bot&gt; tags.</p>
 <p>The &lt;bot&gt; tag is also the only tag that can go inside of the trigger
-part. So while we're on the ``users.rs'' file, we'll add a trigger for if the
+part. So while we're on the &quot;users.rs&quot; file, we'll add a trigger for if the
 user has the same name as the bot.</p>
 <pre>
   <span class="operator">+</span> <span class="keyword">my</span> <span class="variable">name</span> <span class="variable">is</span> <span class="operator">&lt;</span><span class="variable">bot</span> <span class="variable">name</span><span class="operator">&gt;</span>
@@ -487,19 +487,19 @@ user has the same name as the bot.</p>
 </pre>
 <p>Also note that this example used a carat to extend the reply. When you do this,
 you'll usually want to include a \s at the end of the previous line, to put a
-space between the two parts of the reply (otherwise it would say ``Don't tell me
-your lastname is Tutorial too.'', without a space between ``last'' and ``name'')</p>
+space between the two parts of the reply (otherwise it would say &quot;Don't tell me
+your lastname is Tutorial too.&quot;, without a space between &quot;last&quot; and &quot;name&quot;)</p>
 <p>
 </p>
 <h3><a name="environment_variables">Environment Variables</a></h3>
 <p>RiveScript environment variables can be retrieved in the &lt;bot&gt; tag. The
-variable names all begin with ``ENV_'' and are all uppercase.</p>
+variable names all begin with &quot;ENV_&quot; and are all uppercase.</p>
 <p>RiveScript's native variables are as follows:</p>
 <pre>
   ENV_OS         = The operating system running the interpreter
   ENV_APPVERSION = The version of RiveScript being used.
   ENV_APPNAME    = The full string of RiveScript version (i.e. &quot;RiveScript/1.0&quot;)</pre>
-<p>To access Perl environment variables, append ``ENV_SYS_'' to whatever environment
+<p>To access Perl environment variables, append &quot;ENV_SYS_&quot; to whatever environment
 variable you want to use. For instance, when used in online CGI context, the following
 reply would be valid:</p>
 <pre>
@@ -542,12 +542,12 @@ the rest is lowercase).</p>
 </p>
 <h3><a name="catchall_trigger">Catch-All Trigger</a></h3>
 <p>By now in your testing, you may notice that if you say something that isn't
-matched by a trigger, you always get an ``ERR: No Reply'' back. This can be done
+matched by a trigger, you always get an &quot;ERR: No Reply&quot; back. This can be done
 by creating a trigger that consists of nothing but a wildcard symbol.</p>
 <p>Internally, replies are sorted with triggers containing the most whole words
 first, all the way to the triggers containing no whole words. So in this way,
 a trigger of just <code>*</code> is checked last.</p>
-<p>Create a new reply file called ``star.rs'' with this trigger inside:</p>
+<p>Create a new reply file called &quot;star.rs&quot; with this trigger inside:</p>
 <pre>
   + *
   - I'm not sure how to reply to that one.</pre>
@@ -562,16 +562,16 @@ If you combine them with wildcards, make a note of this.</p>
 <p>
 </p>
 <h3><a name="alternations_in_the_trigger">Alternations in the Trigger</a></h3>
-<p>Alternations can be used in the trigger to add a little bit of ``lee-way'' among
+<p>Alternations can be used in the trigger to add a little bit of &quot;lee-way&quot; among
 the user's choice of words, but not as much leeway as you'd get with a wildcard.</p>
-<p>Create a new file named ``bot.rs'' which will be used to keep triggers relating
+<p>Create a new file named &quot;bot.rs&quot; which will be used to keep triggers relating
 to the bot itself (users the question would ask about the bot). Now for a quick
 example of using alternations, add a trigger like this:</p>
 <pre>
   + what (s|is) your (work|home|cell) phone number
   - You can call me at 555-5555.</pre>
-<p>Save and test it. This will match every message from ``what s your work phone number''
-to ``what is your cell phone number'', but it won't be matched if the user doesn't
+<p>Save and test it. This will match every message from &quot;what s your work phone number&quot;
+to &quot;what is your cell phone number&quot;, but it won't be matched if the user doesn't
 choose any of the words provided.</p>
 <p>
 </p>
@@ -581,21 +581,21 @@ We'll edit the reply we just created in the last section to read like this:</p>
 <pre>
   + what (s|is) your [work|home|cell] phone number
   - You can call me at 555-5555.</pre>
-<p>Now you can ask ``what is your phone number'' without specifying which number you
-wanted. The ``work OR home OR cell'' words don't have to exist in the user's message
+<p>Now you can ask &quot;what is your phone number&quot; without specifying which number you
+wanted. The &quot;work OR home OR cell&quot; words don't have to exist in the user's message
 at all. What purpose does this serve? You can take care of possible useless variations
 of a trigger.</p>
 <pre>
   + how are you [today]
   - I am great, how are you?</pre>
-<p>So that would match ``how are you'' OR ``how are you today'', and you don't need
+<p>So that would match &quot;how are you&quot; OR &quot;how are you today&quot;, and you don't need
 to use multiple triggers to handle it.</p>
 <p>
 </p>
 <h3><a name="arrays_in_the_trigger">Arrays in the Trigger</a></h3>
-<p>When we created the ``config.rs'' file, we declared some arrays. One of these was
-an array named ``colors'' which was full of color names.</p>
-<p>Open the ``users.rs'' file we created before (if necessary). We'll be adding a trigger
+<p>When we created the &quot;config.rs&quot; file, we declared some arrays. One of these was
+an array named &quot;colors&quot; which was full of color names.</p>
+<p>Open the &quot;users.rs&quot; file we created before (if necessary). We'll be adding a trigger
 that allows the user to tell us their favorite color, but ONLY if they chose a valid
 color name from our array.</p>
 <pre>
@@ -612,7 +612,7 @@ If you omit the parenthesis, it is not matchable. Here's a quick example to test
 <h3><a name="creating_complex_triggers">Creating Complex Triggers</a></h3>
 <p>Optionals, alternations, and arrays can all be combined into triggers to condense
 a lot of triggers down to just one or two.</p>
-<p>In this example, the user can ask anything from ``what is the time'' to ``what time is it''</p>
+<p>In this example, the user can ask anything from &quot;what is the time&quot; to &quot;what time is it&quot;</p>
 <pre>
   + [what] [@be] [the] time [@be] [it]
   - I don't know what time it is, go find a clock.</pre>
@@ -623,11 +623,11 @@ this later in the tutorial.</p>
 <h2><a name="reply_conditionals">Reply Conditionals</a></h2>
 <p>
 </p>
-<h3><a name="equals_condition">``Equals'' Condition</a></h3>
+<h3><a name="equals_condition">&quot;Equals&quot; Condition</a></h3>
 <p>Conditionals can be used in responses to check for values (or lack thereof) of user
 OR bot variables. In this example, the bot will give a specific reply if the user
-is named ``Bob'' and a different one otherwise.</p>
-<p>In your ``users.rs'' add this trigger:</p>
+is named &quot;Bob&quot; and a different one otherwise.</p>
+<p>In your &quot;users.rs&quot; add this trigger:</p>
 <pre>
   + is my name bob
   * name = Bob =&gt; Yes, that's your name.
@@ -647,7 +647,7 @@ of the variable name.</p>
 <p>
 </p>
 <h3><a name="numeric_comparisons">Numeric Comparisons</a></h3>
-<p>In place of the ``equals'' sign in the conditions above, you can use numeric
+<p>In place of the &quot;equals&quot; sign in the conditions above, you can use numeric
 operators to check values of numeric variables.</p>
 <pre>
   <span class="operator">+</span> <span class="variable">am</span> <span class="variable">i</span> <span class="variable">a</span> <span class="variable">juvenile</span>
@@ -659,7 +659,7 @@ operators to check values of numeric variables.</p>
 next one down the line is checked, and so-on. If all conditionals are false,
 a normal reply should be provided. Random replies can be used here too.</p>
 <p>Note: this reply won't work unless you have another reply for setting a
-value for the variable ``points''</p>
+value for the variable &quot;points&quot;</p>
 <pre>
   + do i have enough points
   * points &gt;= 500 =&gt; Yes, you have at least 500 points.
@@ -668,9 +668,9 @@ value for the variable ``points''</p>
   - Why do you care so much about points?</pre>
 <p>
 </p>
-<h3><a name="defined_condition">``Defined'' Condition</a></h3>
+<h3><a name="defined_condition">&quot;Defined&quot; Condition</a></h3>
 <p>Sometimes, rather than checking a value of a variable, you just want to know
-if the variable has been defined. In this case, just use a ``?'' as the check
+if the variable has been defined. In this case, just use a &quot;?&quot; as the check
 sign.</p>
 <pre>
   + do you know my name
@@ -680,7 +680,7 @@ sign.</p>
 </p>
 <h2><a name="keeping_it_in_context">Keeping it in Context</a></h2>
 <p>You can use the %PREVIOUS command in a RiveScript file to continue a thought
-about the last thing the bot said. Open ``greetings.rs'' and add a trigger
+about the last thing the bot said. Open &quot;greetings.rs&quot; and add a trigger
 for this:</p>
 <pre>
   + how are you
@@ -691,8 +691,8 @@ without punctuation, and use it like this:</p>
   + good
   % good how are you
   - That's great.</pre>
-<p>So if the user says ``how are you'' and then says ``good'', the bot will say
-``That's great.'' but if the user says something else, the bot will answer that
+<p>So if the user says &quot;how are you&quot; and then says &quot;good&quot;, the bot will say
+&quot;That's great.&quot; but if the user says something else, the bot will answer that
 like normal too.</p>
 <p>
 </p>
@@ -705,15 +705,15 @@ pronouns in the bot's reply. For instance:</p>
 <pre>
   &quot;Do you think I hate you?&quot;
   &quot;I don't think you hate me.&quot;</pre>
-<p>In that case, it substitutes ``you'' for ``me'' so that its reply makes more sense.
-Otherwise it would've said ``I don't think you hate <strong>you</strong>'' and not make any sense.</p>
+<p>In that case, it substitutes &quot;you&quot; for &quot;me&quot; so that its reply makes more sense.
+Otherwise it would've said &quot;I don't think you hate <strong>you</strong>&quot; and not make any sense.</p>
 <p>
 </p>
 <h2><a name="topics">Topics</a></h2>
 <p>Topics are sets of responses. While a user is in a topic, he can only match
 the triggers specified under that topic. He can not match triggers under a
 different topic.</p>
-<p>The default topic is ``<strong>random</strong>''</p>
+<p>The default topic is &quot;<strong>random</strong>&quot;</p>
 <p>To set a topic, use the {topic} tag. To declare a topic, use the LABEL commands.</p>
 <p>Here's an example of a topic set to handle abusive users:</p>
 <pre>
@@ -735,7 +735,7 @@ different topic.</p>
 <h2><a name="rivescript_objects">RiveScript Objects</a></h2>
 <p>Objects are bits of Perl code which can be called within a reply. To declare an
 object, use the LABEL commands to name the object, and then provide some Perl code.</p>
-<p>Create a new RiveScript document named ``objects.rs'' and we'll start with a simple
+<p>Create a new RiveScript document named &quot;objects.rs&quot; and we'll start with a simple
 localtime-returning object:</p>
 <pre>
   <span class="operator">&gt;</span> <span class="variable">object</span> <span class="keyword">localtime</span>
@@ -743,7 +743,7 @@ localtime-returning object:</p>
     <span class="keyword">return</span> <span class="keyword">localtime</span><span class="operator">();</span>
   <span class="operator">&lt;</span> <span class="variable">object</span>
 </pre>
-<p>Now we have an object named ``localtime'' which returns Perl's <code>localtime()</code> value. Now
+<p>Now we have an object named &quot;localtime&quot; which returns Perl's <code>localtime()</code> value. Now
 how to use it?</p>
 <p>Refer back to the trigger above that looks like this:</p>
 <pre>
@@ -782,7 +782,7 @@ which will encode things in either Base64 or MD5_Hex.</p>
 <pre>
   + md5 encode *
   - &quot;&lt;star&gt;&quot; encoded in MD5: &amp;encode.md5(&lt;star&gt;)</pre>
-<p>So, $method is the word after the ``.'' and $data is the info passed inside the parenthesis.
+<p>So, $method is the word after the &quot;.&quot; and $data is the info passed inside the parenthesis.
 Note that $data is <em>always</em> a scalar. So if you use commas to separate multiple arguments,
 your object will have to <strong>split</strong> the scalar into an array.</p>
 <p>
@@ -798,7 +798,7 @@ with multiple stars, use &lt;star1&gt;...&lt;starN&gt;</p>
 <p>
 </p>
 <h3><a name="_input1__input9_">&lt;input1&gt;-&lt;input9&gt;</a></h3>
-<p>Inserts the last 1 to 9 things the user said, or ``undefined'' if the user hasn't sent enough
+<p>Inserts the last 1 to 9 things the user said, or &quot;undefined&quot; if the user hasn't sent enough
 messages to match whatever input history you're trying to show.</p>
 <pre>
   + what did i just say
@@ -853,7 +853,7 @@ than or equal to 1.</p>
   <span class="operator">+</span> <span class="operator">*</span> <span class="keyword">or</span> <span class="variable">something</span>
   <span class="operator">-</span> <span class="variable">Or</span> <span class="variable">something</span><span class="operator">.</span> <span class="operator">{</span><span class="variable">@&lt;</span><span class="variable">star</span><span class="operator">&gt;}</span>
 </pre>
-<p>``Are you a bot or something?'' ``Or something. How did you know I am a machine?''</p>
+<p>&quot;Are you a bot or something?&quot; &quot;Or something. How did you know I am a machine?&quot;</p>
 <p>
 </p>
 <h3><a name="______">{!...}</a></h3>
@@ -910,7 +910,7 @@ than or equal to 1.</p>
 </p>
 <hr />
 <h1><a name="rivescript_libraries_and_packages">RIVESCRIPT LIBRARIES AND PACKAGES</a></h1>
-<p>Back in the beginning of this tutorial, we told RiveScript to use the library ``English.rsl''
+<p>Back in the beginning of this tutorial, we told RiveScript to use the library &quot;English.rsl&quot;
 to give us lots of useful arrays we might want to use in triggers. But what is a library?</p>
 <p>Libraries and Packages are special RiveScript documents. Their purpose is to allow multiple
 brains to share common objects and array definitions, without having to copy and paste them
@@ -935,8 +935,8 @@ the !addpath directive:</p>
 <h2><a name="rivescript_library">RiveScript Library</a></h2>
 <p>A RiveScript Library file is a special RiveScript document which consists of nothing but
 array declarations, substitutions, etc. (things you may declare in a config.rs file too).</p>
-<p>The ``English.rsl'' library that comes with RiveScript includes ``English/EnglishNouns.rsl'',
-``English/EnglishAdj.rsl'', and ``English/EnglishVerbs.rsl'' which define tons of arrays for
+<p>The &quot;English.rsl&quot; library that comes with RiveScript includes &quot;English/EnglishNouns.rsl&quot;,
+&quot;English/EnglishAdj.rsl&quot;, and &quot;English/EnglishVerbs.rsl&quot; which define tons of arrays for
 English words and their other varied forms.</p>
 <p>
 </p>
@@ -961,7 +961,8 @@ get some pretty neat effects.</p>
 </p>
 <hr />
 <h1><a name="author">AUTHOR</a></h1>
-<p>Cerone J. Kirsle, kirsle --at-- rainbowboi.com</p>
+<pre>
+  Casey Kirsle, casey at cuvou.net</pre>
 
 </body>
 

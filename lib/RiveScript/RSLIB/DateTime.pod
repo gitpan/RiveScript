@@ -39,7 +39,7 @@ The B<STRING> is a timestamp string. The keywords are:
 
 =head1 AUTHOR
 
-  Cerone Kirsle <kirsle at rainbowboi.com>
+  Casey Kirsle <casey at cuvou.net>
   Created: 4:42 PM 4/4/2006
   Updated: 4:42 PM 4/4/2006
 
@@ -52,7 +52,7 @@ The B<STRING> is a timestamp string. The keywords are:
   ## DateTime.rsp -- Objects for returning formatted  ##
   ## Date and Time strings.                           ##
   ##--------------------------------------------------##
-  ## Author: Cerone Kirsle <kirsle at rainbowboi.com> ##
+  ## Author: Casey Kirsle <casey at cuvou.net>        ##
   ## Created: 4:42 PM 4/4/2006                        ##
   ## Updated: 4:42 PM 4/4/2006                        ##
   ##--------------------------------------------------##

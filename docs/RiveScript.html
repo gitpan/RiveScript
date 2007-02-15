@@ -125,7 +125,7 @@ language specifications are below: see <a href="#rivescript">RIVESCRIPT</a>.</p>
 
 <dd>
 <p>Load a directory of RiveScript files. <code>@EXTS</code> is optionally an array of file extensions
-to load, in the format <code>(.rs .txt .etc)</code>. Default is just ``.rs''</p>
+to load, in the format <code>(.rs .txt .etc)</code>. Default is just &quot;.rs&quot;</p>
 </dd>
 </li>
 <dt><strong><a name="item_loadfile">loadFile ($FILEPATH[, $STREAM])</a></strong>
@@ -186,7 +186,7 @@ replies to the file under their own topics. Comments and other unnessecary infor
 ignored.</p>
 </dd>
 <dd>
-<p>The default path is to ``written.rs'' in the working directory.</p>
+<p>The default path is to &quot;written.rs&quot; in the working directory.</p>
 </dd>
 <dd>
 <p><strong>Note:</strong> This method doesn't honor the <code>%PREVIOUS</code> command in RiveScript.</p>
@@ -471,7 +471,7 @@ time. Their format is as follows:</p>
 multi-word items, use pipe symbols.</p>
 </dd>
 <dd>
-<p><strong>Note:</strong> To delete a variable, set its value to ``undef''</p>
+<p><strong>Note:</strong> To delete a variable, set its value to &quot;undef&quot;</p>
 </dd>
 <dd>
 <p>See also: <a href="#environment_variables">Environment Variables</a> and <a href="#person_substitution">Person Substitution</a>.</p>
@@ -522,7 +522,7 @@ to say to activate the reply set. In the example,</p>
   - Hello human.</pre>
 </dd>
 <dd>
-<p>The user would say ``hello bot'' and get a ``Hello human.'' reply.</p>
+<p>The user would say &quot;hello bot&quot; and get a &quot;Hello human.&quot; reply.</p>
 </dd>
 <dd>
 <p>Triggers are passed through the regexp engine. They should be completely lowercase and
@@ -671,7 +671,7 @@ variable overrides the bot's.</p>
   + is your name still soandso
   * #name = Soandso =&gt; That's still my name.
   - No, I changed it.</pre>
-<p>Here's an example of the ``defined'' condition:</p>
+<p>Here's an example of the &quot;defined&quot; condition:</p>
 <pre>
   // Only use the user's name if they've defined it to us
   + hello bot
@@ -746,7 +746,7 @@ this in mind.</p>
 <dt><strong><a name="item_wildcards_3a"><strong>Wildcards:</strong></a></strong>
 
 <dd>
-<p>You can write open-ended triggers (called ``wildcard triggers''). You can
+<p>You can write open-ended triggers (called &quot;wildcard triggers&quot;). You can
 capture the output of them, in order, by using the tags <code>&lt;star1&gt;</code> to
 <code>&lt;star100&gt;</code>+. Example:</p>
 </dd>
@@ -887,7 +887,7 @@ not be used. Example:</p>
 </p>
 <h2><a name="begin_statement">Begin Statement</a></h2>
 <p><strong>The BEGIN file is the first reply file loaded in a loadDirectory call.</strong> If a
-``begin.rs'' file exists in the directory being loaded, it is included first. This is
+&quot;begin.rs&quot; file exists in the directory being loaded, it is included first. This is
 the best place to put your definitions and include statements.</p>
 <p><strong>Note:</strong> BEGIN statements are not required.</p>
 <p><strong>How to define a BEGIN statement</strong></p>
@@ -912,7 +912,7 @@ replies in the same way. For an example:</p>
 </pre>
 <pre>
   &lt; begin</pre>
-<p>Here is a more complex example using a botvariable ``mood''</p>
+<p>Here is a more complex example using a botvariable &quot;mood&quot;</p>
 <pre>
   <span class="operator">&gt;</span> <span class="variable">begin</span>
     <span class="operator">+</span> <span class="variable">request</span>
@@ -938,7 +938,7 @@ the syntax is as follows:</p>
     ...
   &lt; topic</pre>
 <p>The topic name should be unique and only one word.</p>
-<p><strong>The Default Topic:</strong> The default topic name is ``<code>random</code>''</p>
+<p><strong>The Default Topic:</strong> The default topic name is &quot;<code>random</code>&quot;</p>
 <p><strong>Setting a Topic:</strong> To set a topic, use the <code>{topic}</code> tag (see <a href="#tags">Tags</a> below).</p>
 <pre>
   <span class="operator">+</span> <span class="variable">you</span> <span class="variable">are</span> <span class="variable">stupid</span>
@@ -955,7 +955,7 @@ the syntax is as follows:</p>
 </pre>
 <pre>
   &lt; topic</pre>
-<p>Always set topic back to ``random'' to break out of a topic.</p>
+<p>Always set topic back to &quot;random&quot; to break out of a topic.</p>
 <p>
 </p>
 <h2><a name="object_macros">Object Macros</a></h2>
@@ -1144,7 +1144,7 @@ with, respectively.</p>
 </dd>
 <dd>
 <p>If the variable is undefined, it is set to 0 before the math is done on it. If you try
-to modify a defined, but not numeric, variable (such as ``name'') then <strong>(Var=NaN)</strong> is
+to modify a defined, but not numeric, variable (such as &quot;name&quot;) then <strong>(Var=NaN)</strong> is
 inserted in place of this tag.</p>
 </dd>
 <dd>
@@ -1288,8 +1288,8 @@ as comments.</p>
 <p>
 </p>
 <h2><a name="environment_variables">Environment Variables</a></h2>
-<p>Environment variables are kept as ``botvariables'' and can be retrieved with the
-<a href="#item__3cbot_3e"><code>&lt;bot&gt;</code></a> tags. The variable names are all uppercase and begin with ``ENV_''</p>
+<p>Environment variables are kept as &quot;botvariables&quot; and can be retrieved with the
+<a href="#item__3cbot_3e"><code>&lt;bot&gt;</code></a> tags. The variable names are all uppercase and begin with &quot;ENV_&quot;</p>
 <dl>
 <dt><strong><a name="item_rivescript_environment_variables"><strong>RiveScript Environment Variables</strong></a></strong>
 
@@ -1303,7 +1303,7 @@ as comments.</p>
 <dt><strong><a name="item_perl_environment_variables"><strong>Perl Environment Variables</strong></a></strong>
 
 <dd>
-<p>All Perl variables are prepended with ``ENV_SYS_'', so that ``ENV_SYS_REMOTE_ADDR'' would
+<p>All Perl variables are prepended with &quot;ENV_SYS_&quot;, so that &quot;ENV_SYS_REMOTE_ADDR&quot; would
 contain the user's IP address if RiveScript was used via HTTP CGI.</p>
 </dd>
 </li>
@@ -1339,7 +1339,7 @@ pronouns.</p>
 <pre>
   &quot;Do you think I am a bad person?&quot;
   &quot;What if I do think you are a bad person?&quot;</pre>
-<p>Without the person tags, it would say ``What if I do think I am a bad person?'' and not make very
+<p>Without the person tags, it would say &quot;What if I do think I am a bad person?&quot; and not make very
 much sense.</p>
 <p><strong>Note:</strong> RiveScript does not assume any pre-set substitutions. You must define them in your own
 brains.</p>
@@ -1450,7 +1450,7 @@ returning time stamps.</p>
 <dt><strong><a name="item_rivescript_include_search_path"><strong>RiveScript Include Search Path</strong></a></strong>
 
 <dd>
-<p>The default RiveScript Includes search path is the array of Perl's <code>@INC</code>, with ``/RiveScript''
+<p>The default RiveScript Includes search path is the array of Perl's <code>@INC</code>, with &quot;/RiveScript&quot;
 tacked on to the end of it. Also, the working directory of your script is included in this.</p>
 </dd>
 <dd>
@@ -1496,7 +1496,7 @@ general tips to follow when writing your own brain:</p>
 <dt><strong><a name="item_make_a_config_file_2e"><strong>Make a config file.</strong></a></strong>
 
 <dd>
-<p>This would probably be named ``config.rs'' and it would handle all
+<p>This would probably be named &quot;config.rs&quot; and it would handle all
 your definitions. For example it might look like this:</p>
 </dd>
 <dd>
@@ -1548,7 +1548,7 @@ your definitions. For example it might look like this:</p>
 <dt><strong><a name="item_make_a_begin_file_2e"><strong>Make a begin file.</strong></a></strong>
 
 <dd>
-<p>Create a file called ``begin.rs'' -- there are several reasons for doing so.</p>
+<p>Create a file called &quot;begin.rs&quot; -- there are several reasons for doing so.</p>
 </dd>
 <dd>
 <p>For one, you should use this file for <code>!include</code> statements if you want your brain
@@ -1556,7 +1556,7 @@ to use some common libraries or packages. Secondly, you can use the <strong>&lt;
 to setup a handler for incoming messages.</p>
 </dd>
 <dd>
-<p>Your begin file could check the ``active'' variable we set in the config file to decide if it should give a reply.</p>
+<p>Your begin file could check the &quot;active&quot; variable we set in the config file to decide if it should give a reply.</p>
 </dd>
 <dd>
 <pre>
@@ -1583,6 +1583,14 @@ to setup a handler for incoming messages.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  Version 1.03
+  - Fixed a few bugs:
+    - Fixed a bug in which, if you sent in two sentences at once, the module would return
+      only the answer to the first sentence--twice.
+  - Removed attribute &quot;scalar&quot; to reply(). It now uses wantarray to figure out whether it
+    should return an array or a scalar.
+  - The &quot;Defined&quot; condition ? can now check bot variables too.</pre>
 <pre>
   <span class="variable">Version</span> <span class="number">1.02</span>
   <span class="operator">-</span> <span class="variable">Fixed</span> <span class="variable">several</span> <span class="variable">bugs</span><span class="operator">:</span>
@@ -1757,14 +1765,14 @@ helping so much with RiveScript's development.</p>
 <hr />
 <h1><a name="author">AUTHOR</a></h1>
 <pre>
-  Cerone Kirsle, kirsle --at-- f2mb.com</pre>
+  Casey Kirsle, casey at cuvou.net</pre>
 <p>
 </p>
 <hr />
 <h1><a name="copyright_and_license">COPYRIGHT AND LICENSE</a></h1>
 <pre>
     RiveScript - Rendering Intelligence Very Easily
-    Copyright (C) 2006  Cerone J. Kirsle</pre>
+    Copyright (C) 2007  Casey Kirsle</pre>
 <pre>
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

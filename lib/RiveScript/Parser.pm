@@ -813,12 +813,12 @@ The B<RiveScript> manpage.
 
 =head1 AUTHOR
 
-  Cerone Kirsle, kirsle --at-- rainbowboi.com
+  Casey Kirsle, casey at cuvou.net
 
 =head1 COPYRIGHT AND LICENSE
 
     RiveScript - Rendering Intelligence Very Easily
-    Copyright (C) 2006  Cerone J. Kirsle
+    Copyright (C) 2007  Casey Kirsle
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

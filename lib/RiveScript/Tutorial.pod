@@ -885,4 +885,6 @@ Look at the RiveScript manpage. It would definitely help.
 
 =head1 AUTHOR
 
-Cerone J. Kirsle, kirsle --at-- rainbowboi.com
+  Casey Kirsle, casey at cuvou.net
+
+=cut

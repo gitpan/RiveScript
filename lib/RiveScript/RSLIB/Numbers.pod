@@ -18,7 +18,7 @@ are alternate-cased, i.e. seventyTwo, sixtyFour, oneHundred, etc.
 
 =head1 AUTHOR
 
-  Cerone Kirsle <kirsle at rainbowboi.com>
+  Casey Kirsle <casey at cuvou.net>
   Created: 1:36 PM 4/15/2006
   Updated: 3:05 PM 4/15/2006
 
@@ -30,7 +30,7 @@ are alternate-cased, i.e. seventyTwo, sixtyFour, oneHundred, etc.
   ##--------------------------------------------------##
   ## Numbers.rsl -- Library of Number Names           ##
   ##--------------------------------------------------##
-  ## Author: Cerone Kirsle <kirsle at rainbowboi.com> ##
+  ## Author: Casey Kirsle <casey at cuvou.net>        ##
   ## Created: 1:36 PM 4/15/2006                       ##
   ## Updated: 3:05 PM 4/15/2006                       ##
   ##--------------------------------------------------##

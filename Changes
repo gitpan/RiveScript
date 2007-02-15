@@ -1,5 +1,13 @@
 Revision history for Perl extension RiveScript.
 
+1.03 Thu Feb 15 17:42:30 2007
+	- Fixed a few bugs:
+		- Fixed a bug in which, if you sent in two sentences at once, the module would return
+			only the answer to the first sentence--twice.
+	- Removed attribute "scalar" to reply(). It now uses wantarray to figure out whether it
+		should return an array or a scalar.
+	- The "Defined" condition ? can now check bot variables too.
+
 1.02 Thu Jul 13 15:25:00 2006
 	- Fixed several bugs:
 		- Makefile.PL was unnecessarily requiring a high version of Perl; not it doesn't.

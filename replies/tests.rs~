@@ -1,0 +1,276 @@
+! version = 2.0
+
+////////////////////////////////////////////////////////////////////////////////
+// Atomic Triggers
+////////////////////////////////////////////////////////////////////////////////
+
++ hello bot
+- Hello, human.
+
++ how are you
+- I'm fine, how are you?
+
++ *
+- Unmatched response (well, it matched *). Try again.
+
+////////////////////////////////////////////////////////////////////////////////
+// Atomic Redirections
+////////////////////////////////////////////////////////////////////////////////
+
++ hello
+@ hello bot
+
++ hi
+@ hello bot
+
+////////////////////////////////////////////////////////////////////////////////
+// Trigger Alternations and Optionals
+////////////////////////////////////////////////////////////////////////////////
+
++ what is your (home|office) phone number
+- You can reach me at my <star> number, 555-5555.
+
++ what [is] up
+- Not much, you?
+
++ [how] do you do
+- Good, and how do you do?
+
++ how old are [you]
+- I haven't been born yet.
+
+////////////////////////////////////////////////////////////////////////////////
+// Trigger Wildcards and User Variables
+////////////////////////////////////////////////////////////////////////////////
+
++ my name is *
+- <formal>, nice to meet you.<set name=<formal>>
+
++ who am i
+- You told me your name was <get name>.
+
++ i am * years old
+- <set age=<star>>Okay, I'll remember that you are <get age> years old.
+
++ how old am i
+- You are <get age> years old.
+
++ * told me to talk to * and say *
+- Did you say "<star3>" to {formal}<star2>{/formal} because {formal}<star1>{/formal} told you to?
+
+////////////////////////////////////////////////////////////////////////////////
+// Priority Triggers
+////////////////////////////////////////////////////////////////////////////////
+
++ google *{weight=100}
+- I'll search Google for "<star>" (not really).
+
++ * or something
+- Or something. <@>
+
++ test priority{weight=50}
+- Priority with weight 50 wins.
+
++ test priority{weight=25}
+- Priority with 25 wins (but shouldn't).
+
+////////////////////////////////////////////////////////////////////////////////
+// Random Responses
+////////////////////////////////////////////////////////////////////////////////
+
++ tell me something
+- 2+2 can equal 4 or 22, depending on how you calculate it.
+- #!/usr/bin/perl is the most common shebang line for a Perl script.
+- This response was part of the RiveScript 2 beta testing.
+
++ test weighted reply
+- A. This has a high weight of 50.{weight=50}
+- B. This one's weight is 25.{weight=25}
+- C. This one has the standard weight of 1.
+
+////////////////////////////////////////////////////////////////////////////////
+// Previous Utterances
+////////////////////////////////////////////////////////////////////////////////
+
++ ask me a question
+- Do you like cats?
+- What's your favorite color?
+
++ yes
+% do you like cats
+- I do too. I'm a cat robot.
+
++ no
+% do you like cats
+- Why not? Do you like dogs then?
+
++ yes
+% * do you like dogs then
+- Ick. Dogs are loud and obnoxious.
+
++ no
+% * do you like dogs then
+- I see: so you don't like cats OR dogs.
+
++ *
+% what is your favorite color
+- That's cool: you like <star>. I'm partial to the color "blue", myself.
+
++ test thatstar
+- This is a secret. Say something else to continue.
+
++ *
+% this is a * say something * to continue
+- You said "<star>", but the stars in the %previous were <botstar1> and <botstar2>.
+
+////////////////////////////////////////////////////////////////////////////////
+// Continuations
+////////////////////////////////////////////////////////////////////////////////
+
++ tell me a poem
+- Little Miss Muffet sat on her tuffet,\n
+^ in a nonchalant sort of way.\n
+^ With her forcefield around her,\n
+^ the Spider, the bounder,\n
+^ is not in the picture today.
+- There once was a man named Jim,\s
+^ who never was taught how to swim.\s
+^ He fell off a dock, and sank like a rock,\s
+^ and that was the end of him.
+
++ little miss muffet sat on her tuffet\s
+^ in a nonchalant sort of way
+- Hey, that's the poem that my programmer taught me!
+
+////////////////////////////////////////////////////////////////////////////////
+// Conditional Checking
+////////////////////////////////////////////////////////////////////////////////
+
++ is my name bob
+* <get name> eq undefined => You didn't tell me what your name is.
+* <get name> eq Bob       => Yes, apparently that is your name.
+- No, your name is <get name>.
+
++ can i drink
+* <get age> == undefined => I don't know, you didn't tell me how old you are.
+* <get age> == 21        => Yes, you're just old enough to drink.
+* <get age> <  21        => No, you're younger than 21.
+* <get age> >  21        => Yes, you're older than 21.
+
++ do we have the same name
+* <get name> eq <bot name> => Gee wiz, we do!
+* <get name> ne undefined  => No, your name is <get name>; I am <bot name>.
+- You never told me your name.
+
+////////////////////////////////////////////////////////////////////////////////
+// Object Macros (Perl)
+////////////////////////////////////////////////////////////////////////////////
+
+> object encode perl
+	my ($obj,$method,@args) = @_;
+	my $msg = join(" ",@args);
+
+	use Digest::MD5 qw(md5_hex);
+	use MIME::Base64 qw(encode_base64);
+
+	if ($method eq 'md5') {
+		return md5_hex($msg);
+	}
+	else {
+		return encode_base64($msg);
+	}
+< object
+
++ encode base64 *
+- Base64: <call>encode base64 <star></call>
+
++ encode md5 *
+- MD5: <call>encode md5 <star></call>
+
+////////////////////////////////////////////////////////////////////////////////
+// Other Tags
+////////////////////////////////////////////////////////////////////////////////
+
++ test string cases
+- {uppercase}uppercase{/uppercase},\s
+^ {lowercase}Lower Case{/lowercase},\s
+^ {formal}formalized strings{/formal}.\s
+^ {sentence}also, sentence casing. SHOULD span multiple sentences. DOES IT?{/sentence}
+
++ test history
+- You said "<input2>" and then I said "<reply2>", and then you said "<input1>"\s
+^ and I said "<reply1>".
+
++ test id
+- Your ID is <id>.
+
++ test bot vars
+- My name is <bot name>. I'm allegedly <bot age> years old.
+
++ test env vars
+- Debug mode is currently set to: <env debug>.
+
++ toggle debug
+* <env debug> == 1 => {! global debug = 0}Debug mode disabled.
+* <env debug> == 0 => {! global debug = 1}Debug mode activated.
+- {! global debug = 1}Debug mode activated.
+
++ today is my birthday
+* <get age> == undefined => That means nothing to me (tell me how old you are first!)
+- <add age=1>Happy birthday! Now you're <get age>!
+
++ test math add
+- <add math=15>Added 15 to math. Math=<get math>
+
++ test math sub
+- <sub math=5>Subtracted 5 from math. Math=<get math>
+
++ test math mult
+- <mult math=10>Multiplied 10 * math. Math=<get math>
+
++ test math div
+- <div math=10>Divided math / 10. Math=<get math>
+
++ test math zero
+- <div math=0>Divided math / 0. Math=<get math>
+
++ test math reset
+- <set math=0>Reset math. Math=<get math>.
+
++ test random
+- This {random}sentence statement{/random} has a random {random}set of words|gang of vocabulary{/random}.
+
+// Test for repeating.
++ <input1>{priority=1000}
+* <input1> eq <input9> => Shut up already!
+* <input1> eq <input8> => Sorry, that wasn't an invitation. Please stop.
+* <input1> eq <input7> => You can stop any time you want.
+* <input1> eq <input6> => You're beginning to get on my nerves.
+* <input1> eq <input5> => You don't have to keep repeating yourself.
+* <input1> eq <input4> => You're beginning to repeat yourself.
+* <input1> eq <input3> => Didn't you already say that?
+* <input1> eq <input2> => I heard you the first time.
+- Didn't you just say that?
+
+// Test for echoing.
++ <reply1>
+- Don't repeat me.
+- I don't need an echo.
+- That's what I said.
+
+////////////////////////////////////////////////////////////////////////////////
+// Topic Tests
+////////////////////////////////////////////////////////////////////////////////
+
++ i hate you
+- You're mean. I'm trapping you in topic "apology" until you apologize.{topic=apology}
+
+> topic apology
+	+ *
+	- No, apologize for being mean.
+	- Say you're sorry.
+	- I'm not talking to you.
+
+	+ [*] sorry [*]{weight=10}
+	- Okay, I'll forgive you.{topic=random}
+< topic

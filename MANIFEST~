@@ -4,4 +4,3 @@ MANIFEST
 README
 t/RiveScript.t
 lib/RiveScript.pm
-lib/RiveScript/WD.pm

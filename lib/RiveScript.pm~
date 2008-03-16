@@ -1080,7 +1080,7 @@ sub processTags {
 	# Quick tags.
 	$reply =~ s/\{weight=(\d+)\}//ig; # Remove leftover {weight}s
 	if (scalar(@stars) > 0) {
-		$reply =~ s/<star>/$stars[1]/ig if defined $stars[1];
+		$reply =~ s/<star>/$stars[1]/ig;
 		$reply =~ s/<star(\d+)>/$stars[$1]/ig;
 	}
 	if (scalar(@botstars) > 0) {

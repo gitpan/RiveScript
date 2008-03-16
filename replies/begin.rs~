@@ -5,23 +5,35 @@
 	- {ok}
 < begin
 
+/***********************************
+ * The following is from config.rs *
+ * from the demo brain from RS 1.0 *
+ ***********************************/
+
+/*
+	AidenBot RiveScript
+	-------------------
+	config.rs - Bot Configuration
+*/
+
 // Bot Variables
+! var master   = Kirsle
 ! var name     = Aiden
 ! var fullname = Aiden Rive
-! var age      = 5
+! var age      = 13
 ! var birthday = October 12
 ! var sex      = male
 ! var location = Michigan
-! var city     = Detroit
+! var city     = Flushing
 ! var eyes     = blue
 ! var hair     = light brown
 ! var hairlen  = short
-! var color    = blue
-! var band     = Nickelback
-! var book     = Myst
+! var color    = pink
+! var band     = Newsboys
+! var book     = Azulian Nexus
 ! var author   = Stephen King
-! var job      = robot
-! var website  = www.rivescript.com
+! var job      = student
+! var website  = www.cuvou.com
 
 // Substitutions
 ! sub &quot;    = "

@@ -5,3 +5,4 @@ README
 t/RiveScript.t
 lib/RiveScript.pm
 lib/RiveScript/WD.pm
+META.yml                                 Module meta-data (added by MakeMaker)

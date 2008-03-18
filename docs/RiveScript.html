@@ -1,0 +1,471 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>RiveScript - Rendering Intelligence Very Easily</title>
+<link rel="stylesheet" href="rivescript.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<ul>
+
+		<li><a href="#general">GENERAL</a></li>
+		<li><a href="#loading_and_parsing">LOADING AND PARSING</a></li>
+		<li><a href="#configuration">CONFIGURATION</a></li>
+		<li><a href="#interaction">INTERACTION</a></li>
+		<li><a href="#internal">INTERNAL</a></li>
+	</ul>
+
+	<li><a href="#rivescript">RIVESCRIPT</a></li>
+	<li><a href="#error_messages">ERROR MESSAGES</a></li>
+	<ul>
+
+		<li><a href="#err__deep_recursion_detected_">ERR: Deep Recursion Detected!</a></li>
+		<li><a href="#err__no_reply_matched">ERR: No Reply Matched</a></li>
+		<li><a href="#err__no_reply_found">ERR: No Reply Found</a></li>
+		<li><a href="#_err__can_t_modify_nonnumeric_variable__var_">[ERR: Can't Modify Non-Numeric Variable $var]</a></li>
+		<li><a href="#_err__math_can_t_add_nonnumeric_value__value_">[ERR: Math Can't ``add'' Non-Numeric Value $value]</a></li>
+		<li><a href="#_err__can_t_divide_by_zero_">[ERR: Can't Divide By Zero]</a></li>
+		<li><a href="#_err__object_not_found_">[ERR: Object Not Found]</a></li>
+	</ul>
+
+	<li><a href="#see_also">SEE ALSO</a></li>
+	<li><a href="#changes">CHANGES</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#keywords">KEYWORDS</a></li>
+	<li><a href="#copyright_and_license">COPYRIGHT AND LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>RiveScript - Rendering Intelligence Very Easily</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use RiveScript;</pre>
+<pre>
+  # Create a new RiveScript interpreter.
+  my $rs = new RiveScript;</pre>
+<pre>
+  # Load a directory of replies.
+  $rs-&gt;loadDirectory (&quot;./replies&quot;);</pre>
+<pre>
+  # Load another file.
+  $rs-&gt;loadFile (&quot;./more_replies.rs&quot;);</pre>
+<pre>
+  # Stream in some RiveScript code.
+  $rs-&gt;stream (q~
+    + hello bot
+    - Hello, human.
+  ~);</pre>
+<pre>
+  # Sort all the loaded replies.
+  $rs-&gt;sortReplies;</pre>
+<pre>
+  # Chat with the bot.
+  while (1) {
+    print &quot;You&gt; &quot;;
+    chomp (my $msg = &lt;STDIN&gt;);
+    my $reply = $rs-&gt;reply ('localuser',$msg);
+    print &quot;Bot&gt; $reply\n&quot;;
+  }</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>RiveScript is a simple trigger/response language primarily used for the creation
+of chatting robots. It's designed to have an easy-to-learn syntax but provide a
+lot of power and flexibility. For more information, visit
+<a href="http://www.rivescript.com/">http://www.rivescript.com/</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<p>
+</p>
+<h2><a name="general">GENERAL</a></h2>
+<dl>
+<dt><strong><a name="item_new">new (ARGS)</a></strong>
+
+<dd>
+<p>Create a new instance of a RiveScript interpreter. The instance will become its
+own ``chatterbot,'' with its own set of responses and user variables. You can pass
+in any global variables here. The two standard variables are:</p>
+</dd>
+<dd>
+<pre>
+  debug - Turns on debug mode (a LOT of information will be printed to the
+          terminal!). Default is 0 (disabled).
+  depth - Determines the recursion depth limit when following a trail of replies
+          that point to other replies. Default is 50.</pre>
+</dd>
+<dd>
+<p>It's recommended that if you set any other global variables that you do so by
+calling <a href="#item_setglobal"><code>setGlobal</code></a> or defining it within the RiveScript code. This will avoid
+the possibility of overriding reserved globals. Currently, these variable names
+are reserved:</p>
+</dd>
+<dd>
+<pre>
+  topics  sorted   sortsthat  thats
+  arrays  subs     person     client
+  bot     objects  reserved</pre>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="loading_and_parsing">LOADING AND PARSING</a></h2>
+<dl>
+<dt><strong><a name="item_loaddirectory">loadDirectory ($PATH[,@EXTS])</a></strong>
+
+<dd>
+<p>Load a directory full of RiveScript documents. <code>$PATH</code> must be a path to a
+directory. <code>@EXTS</code> is optionally an array containing file extensions, including
+the dot. By default <code>@EXTS</code> is <code>('.rs')</code>.</p>
+</dd>
+<dd>
+<p>Returns true on success, false on failure.</p>
+</dd>
+</li>
+<dt><strong><a name="item_loadfile">loadFile ($PATH)</a></strong>
+
+<dd>
+<p>Load a single RiveScript document. <code>$PATH</code> should be the path to a valid
+RiveScript file. Returns true on success; false otherwise.</p>
+</dd>
+</li>
+<dt><strong><a name="item_stream">stream ($CODE)</a></strong>
+
+<dd>
+<p>Stream RiveScript code directly into the module. This is for providing RS code
+from within the Perl script instead of from an external file. Returns true on
+success.</p>
+</dd>
+</li>
+<dt><strong><a name="item_sortreplies">sortReplies</a></strong>
+
+<dd>
+<p>Call this method after loading replies to create an internal sort buffer. This
+is necessary for trigger matching purposes. If you fail to call this method
+yourself, RiveScript will call it once when you request a reply. However, it
+will complain loudly about it.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="configuration">CONFIGURATION</a></h2>
+<dl>
+<dt><strong><a name="item_setsubroutine">setSubroutine ($NAME, $CODEREF)</a></strong>
+
+<dd>
+<p>Manually create a RiveScript object (a dynamic bit of Perl code that can be
+provoked in a RiveScript response). <code>$NAME</code> should be a single-word,
+alphanumeric string. <code>$CODEREF</code> should be a pointer to a subroutine or an
+anonymous sub.</p>
+</dd>
+</li>
+<dt><strong><a name="item_setglobal">setGlobal (%DATA)</a></strong>
+
+<dd>
+<p>Set one or more global variables, in hash form, where the keys are the variable
+names and the values are their value. This subroutine will make sure that you
+don't override any reserved global variables, and warn if that happens.</p>
+</dd>
+<dd>
+<p>This is equivalent to <code>! global</code> in RiveScript code.</p>
+</dd>
+</li>
+<dt><strong><a name="item_setvariable">setVariable (%DATA)</a></strong>
+
+<dd>
+<p>Set one or more bot variables (things that describe your bot's personality).</p>
+</dd>
+<dd>
+<p>This is equivalent to <code>! var</code> in RiveScript code.</p>
+</dd>
+</li>
+<dt><strong><a name="item_setsubstitution">setSubstitution (%DATA)</a></strong>
+
+<dd>
+<p>Set one or more substitution patterns. The keys should be the original word, and
+the value should be the word to substitute with it.</p>
+</dd>
+<dd>
+<pre>
+  $rs-&gt;setSubstitution (
+    q{what's}  =&gt; 'what is',
+    q{what're} =&gt; 'what are',
+  );</pre>
+</dd>
+<dd>
+<p>This is equivalent to <code>! sub</code> in RiveScript code.</p>
+</dd>
+</li>
+<dt><strong><a name="item_setperson">setPerson (%DATA)</a></strong>
+
+<dd>
+<p>Set a person substitution. This is equivalent to <code>! person</code> in RiveScript code.</p>
+</dd>
+</li>
+<dt><strong><a name="item_setuservar">setUservar ($USER,%DATA)</a></strong>
+
+<dd>
+<p>Set a variable for a user. <code>$USER</code> should be their User ID, and <code>%DATA</code> is a
+hash containing variable/value pairs.</p>
+</dd>
+<dd>
+<p>This is like <code>&lt;set&gt;</code> for a specific user.</p>
+</dd>
+</li>
+<dt><strong><a name="item_getuservars">getUservars ([$USER])</a></strong>
+
+<dd>
+<p>Get all the variables about a user. If a username is provided, returns a hash
+<strong>reference</strong> containing that user's information. Else, a hash reference of all
+the users and their information is returned.</p>
+</dd>
+<dd>
+<p>This is like <code>&lt;get&gt;</code> for a specific user or for all users.</p>
+</dd>
+</li>
+<dt><strong><a name="item_clearuservars">clearUservars ([$USER])</a></strong>
+
+<dd>
+<p>Clears all variables about <code>$USER</code>. If no <code>$USER</code> is provided, clears all
+variables about all users.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="interaction">INTERACTION</a></h2>
+<dl>
+<dt><strong><a name="item_reply">reply ($USER,$MESSAGE)</a></strong>
+
+<dd>
+<p>Fetch a response to <code>$MESSAGE</code> from user <code>$USER</code>. RiveScript will take care of
+lowercasing, running substitutions, and removing punctuation from the message.</p>
+</dd>
+<dd>
+<p>Returns a response from the RiveScript brain.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="internal">INTERNAL</a></h2>
+<dl>
+<dt><strong><a name="item_debug">debug ($MESSAGE) *Internal</a></strong>
+
+<dd>
+<p>Prints a debug message to the terminal. Called from within in debug mode.</p>
+</dd>
+</li>
+<dt><strong><a name="item_issue">issue ($MESSAGE) *Internal</a></strong>
+
+<dd>
+<p>Called internally to report an issue (similar to a warning). If debug mode is
+active, it will print the issue to STDOUT with a # sign prepended. Otherwise,
+the issue is sent to STDERR via <code>warn</code>.</p>
+</dd>
+</li>
+<dt><strong><a name="item_parse">parse ($FILENAME, $CODE) *Internal</a></strong>
+
+<dd>
+<p>This method is called internally to parse a file or streamed RiveScript code.
+<code>$FILENAME</code> is only there so it can keep internal track of files and line
+numbers, in case syntax errors appear.</p>
+</dd>
+</li>
+<dt><strong><a name="item__getreply">_getreply ($USER,$MSG,%TAGS) *Internal</a></strong>
+
+<dd>
+<p><strong>Do NOT call this method yourself.</strong> This method assumes a few things about the
+user's input that is taken care of by <a href="#item_reply"><code>reply()</code></a>. There is no reason to call
+this method manually.</p>
+</dd>
+</li>
+<dt><strong><a name="item__reply_regexp">_reply_regexp ($USER,$TRIGGER) *Internal</a></strong>
+
+<dd>
+<p>This method takes a raw trigger <code>$TRIGGER</code> and formats it for a matching
+attempt in a regular expression. It removes <code>{weight}</code> tags, processes arrays,
+processes bot variables and other tags, and returns something ready for the
+regular expression engine.</p>
+</dd>
+</li>
+<dt><strong><a name="item_processtags">processTags ($USER,$MSG,$REPLY,$STARS,$BOTSTARS) *Internal</a></strong>
+
+<dd>
+<p>Process tags in the bot's response. <code>$USER</code> and <code>$MSG</code> are the values
+originally passed to the reply engine. <code>$REPLY</code> is the bot's raw response.
+<code>$STARS</code> and <code>$BOTSTARS</code> are array references containing any wildcards matched
+in a trigger or <code>%Previous</code> command, respectively. Returns a reply with all the
+tags processed.</p>
+</dd>
+</li>
+<dt><strong><a name="item__formatmessage">_formatMessage ($STRING) *Internal</a></strong>
+
+<dd>
+<p>Formats a message to prepare it for reply matching. Lowercases the string, runs
+substitutions, and sanitizes what's left.</p>
+</dd>
+</li>
+<dt><strong><a name="item__stringutil">_stringUtil ($TYPE,$STRING) *Internal</a></strong>
+
+<dd>
+<p>Runs string modifiers on <code>$STRING</code> (uppercase, lowercase, sentence, formal).</p>
+</dd>
+</li>
+<dt><strong><a name="item__personsub">_personSub ($STRING) *Internal</a></strong>
+
+<dd>
+<p>Runs person substitutions on <code>$STRING</code>.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="rivescript">RIVESCRIPT</a></h1>
+<p>This interpreter tries its best to follow RiveScript standards. Currently it
+supports RiveScript 2.0 documents. A current copy of the RiveScript working
+draft is included with this package: see <a href="/RiveScript/WD.html">the RiveScript::WD manpage</a>.</p>
+<p>
+</p>
+<hr />
+<h1><a name="error_messages">ERROR MESSAGES</a></h1>
+<p>Most of the Perl warnings that the module will emit are self-explanatory, and
+when parsing RiveScript files, file names and line numbers will be given. This
+section of the manpage instead outlines error strings that may turn up in
+responses to the bot's queries.</p>
+<p>
+</p>
+<h2><a name="err__deep_recursion_detected_">ERR: Deep Recursion Detected!</a></h2>
+<p>The deep recursion depth limit has been reached (a response redirected to a
+different trigger, which redirected somewhere else, etc.).</p>
+<p>How to fix: override the global variable <code>depth</code>. This can be done via
+<a href="#item_setglobal"><code>setGlobal</code></a> or in the RiveScript code:</p>
+<pre>
+  ! global depth = 100</pre>
+<p>
+</p>
+<h2><a name="err__no_reply_matched">ERR: No Reply Matched</a></h2>
+<p>No match was found for the client's message.</p>
+<p>How to fix: create a catch-all trigger of just <code>*</code>.</p>
+<pre>
+  + *
+  - I don't know how to reply to that.</pre>
+<p>
+</p>
+<h2><a name="err__no_reply_found">ERR: No Reply Found</a></h2>
+<p>A match to the client's message was found, but no response to it was found. This
+might mean you had a set of conditionals after it, and no <code>-Reply</code> to fall back
+on, and every conditional returned false.</p>
+<p>How to fix: make sure you have at least one <code>-Reply</code> to every <code>+Trigger</code>, even
+if you don't expect that the <code>-Reply</code> will ever be used.</p>
+<p>
+</p>
+<h2><a name="_err__can_t_modify_nonnumeric_variable__var_">[ERR: Can't Modify Non-Numeric Variable $var]</a></h2>
+<p>You called a math tag on a variable, and the current value of the variable
+contains something that isn't a number.</p>
+<p>How to fix: verify that the variable you're working with is a number. If
+necessary, reset the variable via <code>&lt;set&gt;</code>.</p>
+<p>
+</p>
+<h2><a name="_err__math_can_t_add_nonnumeric_value__value_">[ERR: Math Can't ``add'' Non-Numeric Value $value]</a></h2>
+<p>(``add'' may also be sub, mult, or div). You tried to run a math function on a
+variable, but the value you used wasn't a number.</p>
+<p>How to fix: verify that you're adding, subtracting, multiplying, or dividing
+using numbers.</p>
+<p>
+</p>
+<h2><a name="_err__can_t_divide_by_zero_">[ERR: Can't Divide By Zero]</a></h2>
+<p>A <code>&lt;div&gt;</code> tag was found that attempted to divide a variable by zero.</p>
+<p>How to fix: make sure your division isn't dividing by zero. If you're using a
+variable to provide the divisor, validate that the variable isn't zero by using
+a conditional.</p>
+<pre>
+  * &lt;get divisor&gt; == 0 =&gt; The divisor is zero so I can't do that.
+  - &lt;div myvar=&lt;get divisor&gt;&gt;I divided the variable by &lt;get divisor&gt;.</pre>
+<p>
+</p>
+<h2><a name="_err__object_not_found_">[ERR: Object Not Found]</a></h2>
+<p>RiveScript attempted to call an object that doesn't exist. This may be because a
+syntax error in the object prevented Perl from evaluating it, or the object was
+written in a different programming language.</p>
+<p>How to fix: verify that the called object was loaded properly. You will receive
+notifications on the terminal if the object failed to load for any reason.</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><a href="/RiveScript/WD.html">the RiveScript::WD manpage</a> - A current snapshot of the Working Draft that
+defines the standards of RiveScript.</p>
+<p><a href="http://www.rivescript.com/">http://www.rivescript.com/</a> - The official homepage of RiveScript.</p>
+<p>
+</p>
+<hr />
+<h1><a name="changes">CHANGES</a></h1>
+<pre>
+  Version 1.13
+  - Included an &quot;rsup&quot; script for upgrading old RiveScript code.
+  - Attempted to fix the package for CPAN (1.12 was a broken upload).</pre>
+<pre>
+  Version 1.12
+  - Initial beta release for a RiveScript 2.00 parser.</pre>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<pre>
+  Casey Kirsle, <a href="http://www.cuvou.com/">http://www.cuvou.com/</a></pre>
+<p>
+</p>
+<hr />
+<h1><a name="keywords">KEYWORDS</a></h1>
+<p>bot, chatbot, chatterbot, chatter bot, reply, replies, script, aiml, alpha</p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright_and_license">COPYRIGHT AND LICENSE</a></h1>
+<pre>
+  RiveScript - Rendering Intelligence Very Easily
+  Copyright (C) 2008  Casey Kirsle</pre>
+<pre>
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.</pre>
+<pre>
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.</pre>
+<pre>
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA</pre>
+
+</body>
+
+</html>

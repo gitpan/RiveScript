@@ -4,7 +4,7 @@ use Data::Dumper;
 use strict;
 use warnings;
 
-our $VERSION = '1.12'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.13'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 
 ################################################################################
@@ -1110,6 +1110,10 @@ sub processTags {
 		}
 		$reply =~ s/\{random\}(.+?)\{\/random\}/$output/i;
 	}
+	while ($reply =~ /<bot (.+?)>/i) {
+		my $val = (exists $self->{bot}->{$1} ? $self->{bot}->{$1} : 'undefined');
+		$reply =~ s/<bot (.+?)>/$val/i;
+	}
 	while ($reply =~ /\{\!(.+?)\}/i) {
 		# Just stream this back through.
 		$self->stream ("!$1");
@@ -1167,10 +1171,6 @@ sub processTags {
 	while ($reply =~ /<get (.+?)>/i) {
 		my $val = (exists $self->{client}->{$user}->{$1} ? $self->{client}->{$user}->{$1} : 'undefined');
 		$reply =~ s/<get (.+?)>/$val/i;
-	}
-	while ($reply =~ /<bot (.+?)>/i) {
-		my $val = (exists $self->{bot}->{$1} ? $self->{bot}->{$1} : 'undefined');
-		$reply =~ s/<bot (.+?)>/$val/i;
 	}
 	while ($reply =~ /<env (.+?)>/i) {
 		my $var = $1;
@@ -1627,6 +1627,12 @@ defines the standards of RiveScript.
 L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
+
+  Version 1.13
+  - Included an "rsup" script for upgrading old RiveScript code.
+  - Attempted to fix the package for CPAN (1.12 was a broken upload).
+  - Bugfix: <bot> didn't have higher priority than <set>, so
+    i.e. <set name=<bot name>> wouldn't work as expected. Fixed.
 
   Version 1.12
   - Initial beta release for a RiveScript 2.00 parser.

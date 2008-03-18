@@ -1,6 +1,6 @@
 package RiveScript::WD;
 
-our $VERSION = '1.12';
+our $VERSION = '1.13';
 
 # This is not a real module; it's only a current copy of the RiveScript
 # Working Draft. See the latest version at
@@ -9,7 +9,7 @@ our $VERSION = '1.12';
 
 =head1 NAME
 
-RiveScript 2.00 Working Draft (2008/02/18)
+RiveScript::WD - RiveScript 2.00 Working Draft (2008/02/18)
 
 =head1 DESCRIPTION
 

@@ -2,6 +2,16 @@ Changes
 Makefile.PL
 MANIFEST
 README
+rsdemo
+rsup
+docs/rivescript.css
+docs/RiveScript.html
+docs/RiveScript-WD.html
+rscripteg/admin.rs
+rscripteg/begin.rs
+rscripteg/clients.rs
+rscripteg/eliza.rs
+rscripteg/myself.rs
 t/RiveScript.t
 lib/RiveScript.pm
 lib/RiveScript/WD.pm

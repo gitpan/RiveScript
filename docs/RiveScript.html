@@ -427,11 +427,25 @@ defines the standards of RiveScript.</p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
 <pre>
-  Version 1.13
-  - Included an &quot;rsup&quot; script for upgrading old RiveScript code.
-  - Attempted to fix the package for CPAN (1.12 was a broken upload).</pre>
+  1.14  Apr  2 2008
+  - Bugfix: If a BEGIN/request trigger didn't exist, RiveScript would not fetch
+    any replies for the client's message. Fixed.
+  - Bugfix: Tags weren't being re-processed for the text of the BEGIN statement,
+    so i.e. {uppercase}{ok}{/uppercase} wasn't working as expected. Fixed.
+  - Bugfix: RiveScript wasn't parsing out inline comments properly.
+  - Rearranged tag priorities.
+  - Optimization: When substituting &lt;star&gt;s in, an added bit of code will insert
+    '' (nothing) if the variable is undefined. This prevents Perl warnings that
+    occurred frequently with the Eliza brain.
+  - Updated the RiveScript Working Draft.</pre>
 <pre>
-  Version 1.12
+  1.13  Mar 18 2008
+  - Included an &quot;rsup&quot; script for upgrading old RiveScript code.
+  - Attempted to fix the package for CPAN (1.12 was a broken upload).
+  - Bugfix: &lt;bot&gt; didn't have higher priority than &lt;set&gt;, so
+    i.e. &lt;set name=&lt;bot name&gt;&gt; wouldn't work as expected. Fixed.</pre>
+<pre>
+  1.12  Mar 16 2008
   - Initial beta release for a RiveScript 2.00 parser.</pre>
 <p>
 </p>

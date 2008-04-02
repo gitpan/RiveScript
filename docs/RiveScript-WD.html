@@ -131,7 +131,7 @@
 <p>
 </p>
 <h1><a name="name">NAME</a></h1>
-<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/02/18)</p>
+<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/04/02)</p>
 <p>
 </p>
 <hr />
@@ -321,10 +321,10 @@ the bot, if the bot uses the client's message in the response it should swap
 ``you'' for ``I''.</p>
 <p>Examples:</p>
 <pre>
-  ! sub you are = I am
-  ! sub i am    = you are
-  ! sub you     = I
-  ! sub i       = you</pre>
+  ! person you are = I am
+  ! person i am    = you are
+  ! person you     = I
+  ! person i       = you</pre>
 <p>
 </p>
 <h2><a name="__label">&gt; LABEL</a></h2>
@@ -456,7 +456,7 @@ match both ``are you okay'' and ``are you alright'':</p>
 <h3><a name="trigger_optionals">Trigger Optionals</a></h3>
 <p>Triggers can contain optional words as well. Optionals are written similarly to
 alternations, but they use square braces. The following example would match both
-``what is your phone number'' as well as ``what is your U&lt;home&gt; phone number''</p>
+``what is your phone number'' as well as ``what is your <strong>home</strong> phone number''</p>
 <pre>
   + what is your [home] phone number</pre>
 <p>Optionals do <strong>NOT</strong> match like wildcards do. They do NOT go into the
@@ -603,9 +603,9 @@ and tell me what an odd color that is. However, if I change the topic instead an
 say something else to the bot, it will answer my new question anyway. This is in
 contrast to using topics, where I'd be stuck inside of the topic until the bot
 resets the topic to <code>random</code>.</p>
-<p>Note: while the <code>%</code> command can contain wildcards and other matchable things,
-these values are not matched and put into any <code>&lt;star&gt;</code> tags like they
-are for triggers. They're simply discarded.</p>
+<p>Similarly to the wildcards in <code>+ Trigger</code>, the wildcards matched in the
+<code>% Previous</code> command are put into <code>&lt;botstar&gt;</code>. See <a href="#tags">TAGS</a> for
+more information.</p>
 <p>
 </p>
 <h2><a name="__continue">^ CONTINUE</a></h2>
@@ -725,9 +725,9 @@ MD5 or Base64.</p>
 <pre>
   + encode * in base64
   - The Base64 hash of &quot;&lt;star&gt;&quot; is: &lt;call&gt;encode base64 &lt;star&gt;&lt;/call&gt;</pre>
-<p>In the above examples, <code>&amp;encode</code> calls on the object named ``encode'', which we
+<p>In the above examples, <code>encode</code> calls on the object named ``encode'', which we
 defined above; <code>md5</code> and <code>base64</code> calls on the method name, which is received
-by the object as <code>$method</code>. Finally, <code>$args</code> as received by the object would
+by the object as <code>$method</code>. Finally, <code>@args</code> as received by the object would
 be the value of &lt;star&gt; in this example.</p>
 <p><code>$rs</code> in this example would be a reference to the RiveScript interpreter.</p>
 <p>
@@ -837,7 +837,7 @@ sets that trigger to have a higher matching priority.</p>
 <h2><a name="___________">{@...}, &lt;@&gt;</a></h2>
 <p>Perform an inline redirection. This should work like a regular redirection but
 is embedded within another response. This tag can only be used with
-<code>- Response</code>.</p>
+<code>- Response</code>, and in the response part of a <code>* Condition</code>.</p>
 <p>&lt;@&gt; is an alias for {@&lt;star&gt;}</p>
 <pre>
   + your *
@@ -1077,23 +1077,24 @@ that a tag is allowed is as follows:</p>
   \n          #
   \\          #
   \#          #
+  &lt;person&gt;    # String modifiers
+  &lt;formal&gt;    #
+  &lt;sentence&gt;  #
+  &lt;uppercase&gt; #
+  &lt;lowercase&gt; #
   {random}    # Random text insertion (which may contain other tags)
+  &lt;bot&gt;       # Insert bot variables
+  &lt;env&gt;       # Insert environment variables
   {!}         # Redefine variables
   &lt;set&gt;       # User variable modifiers
   &lt;add&gt;       #
   &lt;sub&gt;       #
   &lt;mult&gt;      #
   &lt;div&gt;       #
-  &lt;get&gt;       # Get user and bot variables
-  &lt;bot&gt;       #
-  &lt;person&gt;    # String modifiers
-  &lt;formal&gt;    #
-  &lt;sentence&gt;  #
-  &lt;uppercase&gt; #
-  &lt;lowercase&gt; #
+  &lt;get&gt;       # Get user variables
   {topic}     # Set user topic
   &lt;@&gt;         # Inline redirection
-  &amp;objects()  # Object macros.</pre>
+  &lt;call&gt;      # Object macros.</pre>
 <p>
 </p>
 <hr />
@@ -1155,6 +1156,19 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.</
 </p>
 <hr />
 <h1><a name="revisions">REVISIONS</a></h1>
+<pre>
+  Apr  2, 2008
+  - Typo fix: under the !person section, the examples were using !sub
+  - Inconsistency fix: under %Previous it was saying the wildcards were
+    unmatchable, but this isn't the case (they go into &lt;botstar&gt;).
+  - Typo fix: under OBJECT MACROS, fixed the explanation of the code to match
+    the new object syntax.
+  - Inconsistency fix: &lt;@&gt; can be used in the response portion of conditionals.
+  - Rearranged the tag priorities:
+    - String modifiers (person - lowercase) come in higher priority than
+      {random}
+    - &lt;env&gt; comes in after &lt;bot&gt;
+  - Typo fix: updated the object syntax (&lt;call&gt;) in the priority list.</pre>
 <pre>
   Feb 18, 2008
   - Moved {random} to higher tag priority.

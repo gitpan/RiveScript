@@ -4,7 +4,7 @@ use Data::Dumper;
 use strict;
 use warnings;
 
-our $VERSION = '1.13'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.14'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 
 ################################################################################
@@ -213,6 +213,10 @@ sub parse {
 		# Separate the command from the data.
 		my ($cmd) = $line =~ /^(.)/i;
 		$line =~ s/^([^\s]+)\s+//i;
+
+		# Ignore inline comments if there's a space before and after
+		# the // or # symbols.
+		($line,undef) = split(/\s+(\#|\/\/)\s+/, $line, 2);
 
 		$self->debug ("\tCmd: $cmd");
 
@@ -735,6 +739,16 @@ sub reply {
 		}
 
 		$reply = $begin;
+
+		# Run more tag substitutions.
+		$reply = $self->processTags ($user,$msg,$reply,[],[]);
+	}
+	else {
+		# Just continue then.
+		$reply = $self->_getreply ($user,$msg,
+			context => 'normal',
+			step    => 0,
+		);
 	}
 
 	# Save their reply history.
@@ -1081,11 +1095,11 @@ sub processTags {
 	$reply =~ s/\{weight=(\d+)\}//ig; # Remove leftover {weight}s
 	if (scalar(@stars) > 0) {
 		$reply =~ s/<star>/$stars[1]/ig if defined $stars[1];
-		$reply =~ s/<star(\d+)>/$stars[$1]/ig;
+		$reply =~ s/<star(\d+)>/(defined $stars[$1] ? $stars[$1] : '')/ieg;
 	}
 	if (scalar(@botstars) > 0) {
 		$reply =~ s/<botstar>/$botstars[1]/ig;
-		$reply =~ s/<botstar(\d+)>/$botstars[$1]/ig;
+		$reply =~ s/<botstar(\d+)>/(defined $botstars[$1] ? $botstars[$1] : '')/ieg;
 	}
 	$reply =~ s/<input>/$lastInput/ig;
 	$reply =~ s/<reply>/$lastReply/ig;
@@ -1097,6 +1111,31 @@ sub processTags {
 	$reply =~ s/\\/\\/ig;
 	$reply =~ s/\\#/#/ig;
 
+	while ($reply =~ /\{person\}(.+?)\{\/person\}/i) {
+		my $person = $1;
+		$person = $self->_personSub ($person);
+		$reply =~ s/\{person\}(.+?)\{\/person\}/$person/i;
+	}
+	while ($reply =~ /\{formal\}(.+?)\{\/formal\}/i) {
+		my $formal = $1;
+		$formal = $self->_stringUtil ('formal',$formal);
+		$reply =~ s/\{formal\}(.+?)\{\/formal\}/$formal/i;
+	}
+	while ($reply =~ /\{sentence\}(.+?)\{\/sentence\}/i) {
+		my $sentence = $1;
+		$sentence = $self->_stringUtil ('sentence',$sentence);
+		$reply =~ s/\{sentence\}(.+?)\{\/sentence\}/$sentence/i;
+	}
+	while ($reply =~ /\{uppercase\}(.+?)\{\/uppercase\}/i) {
+		my $upper = $1;
+		$upper = $self->_stringUtil ('upper',$upper);
+		$reply =~ s/\{uppercase\}(.+?)\{\/uppercase\}/$upper/i;
+	}
+	while ($reply =~ /\{lowercase\}(.+?)\{\/lowercase\}/i) {
+		my $lower = $1;
+		$lower = $self->_stringUtil ('lower',$lower);
+		$reply =~ s/\{lowercase\}(.+?)\{\/lowercase\}/$lower/i;
+	}
 	while ($reply =~ /\{random\}(.+?)\{\/random\}/i) {
 		my $rand = $1;
 		my $output = '';
@@ -1114,9 +1153,23 @@ sub processTags {
 		my $val = (exists $self->{bot}->{$1} ? $self->{bot}->{$1} : 'undefined');
 		$reply =~ s/<bot (.+?)>/$val/i;
 	}
+	while ($reply =~ /<env (.+?)>/i) {
+		my $var = $1;
+		my $val = '';
+		my $reserved = 0;
+		foreach my $res (@{$self->{reserved}}) {
+			if ($res eq $var) {
+				$reserved = 1;
+			}
+		}
+		if (not $reserved) {
+			$val = (exists $self->{$var} ? $self->{$var} : 'undefined');
+		}
+		$reply =~ s/<env (.+?)>/$val/i;
+	}
 	while ($reply =~ /\{\!(.+?)\}/i) {
 		# Just stream this back through.
-		$self->stream ("!$1");
+		$self->stream ("! $1");
 		$reply =~ s/\{\!(.+?)\}//i;
 	}
 	while ($reply =~ /<set (.+?)=(.+?)>/i) {
@@ -1172,45 +1225,6 @@ sub processTags {
 		my $val = (exists $self->{client}->{$user}->{$1} ? $self->{client}->{$user}->{$1} : 'undefined');
 		$reply =~ s/<get (.+?)>/$val/i;
 	}
-	while ($reply =~ /<env (.+?)>/i) {
-		my $var = $1;
-		my $val = '';
-		my $reserved = 0;
-		foreach my $res (@{$self->{reserved}}) {
-			if ($res eq $var) {
-				$reserved = 1;
-			}
-		}
-		if (not $reserved) {
-			$val = (exists $self->{$var} ? $self->{$var} : 'undefined');
-		}
-		$reply =~ s/<env (.+?)>/$val/i;
-	}
-	while ($reply =~ /\{person\}(.+?)\{\/person\}/i) {
-		my $person = $1;
-		$person = $self->_personSub ($person);
-		$reply =~ s/\{person\}(.+?)\{\/person\}/$person/i;
-	}
-	while ($reply =~ /\{formal\}(.+?)\{\/formal\}/i) {
-		my $formal = $1;
-		$formal = $self->_stringUtil ('formal',$formal);
-		$reply =~ s/\{formal\}(.+?)\{\/formal\}/$formal/i;
-	}
-	while ($reply =~ /\{sentence\}(.+?)\{\/sentence\}/i) {
-		my $sentence = $1;
-		$sentence = $self->_stringUtil ('sentence',$sentence);
-		$reply =~ s/\{sentence\}(.+?)\{\/sentence\}/$sentence/i;
-	}
-	while ($reply =~ /\{uppercase\}(.+?)\{\/uppercase\}/i) {
-		my $upper = $1;
-		$upper = $self->_stringUtil ('upper',$upper);
-		$reply =~ s/\{uppercase\}(.+?)\{\/uppercase\}/$upper/i;
-	}
-	while ($reply =~ /\{lowercase\}(.+?)\{\/lowercase\}/i) {
-		my $lower = $1;
-		$lower = $self->_stringUtil ('lower',$lower);
-		$reply =~ s/\{lowercase\}(.+?)\{\/lowercase\}/$lower/i;
-	}
 	if ($reply =~ /\{topic=(.+?)\}/i) {
 		# Set the user's topic.
 		$self->debug ("Topic set to $1");
@@ -1220,6 +1234,7 @@ sub processTags {
 	while ($reply =~ /\{\@(.+?)\}/i) {
 		my $at = $1;
 		$at =~ s/^\s+//ig;
+		$at =~ s/\s+$//ig;
 		my $subreply = $self->_getreply ($user,$at,
 			context => 'normal',
 			step    => 0,
@@ -1628,13 +1643,25 @@ L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
 
-  Version 1.13
+  1.14  Apr  2 2008
+  - Bugfix: If a BEGIN/request trigger didn't exist, RiveScript would not fetch
+    any replies for the client's message. Fixed.
+  - Bugfix: Tags weren't being re-processed for the text of the BEGIN statement,
+    so i.e. {uppercase}{ok}{/uppercase} wasn't working as expected. Fixed.
+  - Bugfix: RiveScript wasn't parsing out inline comments properly.
+  - Rearranged tag priorities.
+  - Optimization: When substituting <star>s in, an added bit of code will insert
+    '' (nothing) if the variable is undefined. This prevents Perl warnings that
+    occurred frequently with the Eliza brain.
+  - Updated the RiveScript Working Draft.
+
+  1.13  Mar 18 2008
   - Included an "rsup" script for upgrading old RiveScript code.
   - Attempted to fix the package for CPAN (1.12 was a broken upload).
   - Bugfix: <bot> didn't have higher priority than <set>, so
     i.e. <set name=<bot name>> wouldn't work as expected. Fixed.
 
-  Version 1.12
+  1.12  Mar 16 2008
   - Initial beta release for a RiveScript 2.00 parser.
 
 =head1 AUTHOR

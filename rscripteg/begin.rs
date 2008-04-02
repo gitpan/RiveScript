@@ -1,8 +1,8 @@
 ! version = 2.0
 
 > begin
-	+ request
-	- {ok}
+	+ request # This trigger is tested first.
+	- {ok}    # An {ok} in the response means it's okay to get a real reply
 < begin
 
 // Bot Variables

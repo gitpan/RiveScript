@@ -1,6 +1,6 @@
 package RiveScript::WD;
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 
 # This is not a real module; it's only a current copy of the RiveScript
 # Working Draft. See the latest version at
@@ -9,7 +9,7 @@ our $VERSION = '1.13';
 
 =head1 NAME
 
-RiveScript::WD - RiveScript 2.00 Working Draft (2008/02/18)
+RiveScript::WD - RiveScript 2.00 Working Draft (2008/04/02)
 
 =head1 DESCRIPTION
 
@@ -198,10 +198,10 @@ the bot, if the bot uses the client's message in the response it should swap
 
 Examples:
 
-  ! sub you are = I am
-  ! sub i am    = you are
-  ! sub you     = I
-  ! sub i       = you
+  ! person you are = I am
+  ! person i am    = you are
+  ! person you     = I
+  ! person i       = you
 
 =head2 E<gt> LABEL
 
@@ -346,7 +346,7 @@ C<E<lt>starE<gt>> tags.
 
 Triggers can contain optional words as well. Optionals are written similarly to
 alternations, but they use square braces. The following example would match both
-"what is your phone number" as well as "what is your U<home> phone number"
+"what is your phone number" as well as "what is your B<home> phone number"
 
   + what is your [home] phone number
 
@@ -506,9 +506,9 @@ say something else to the bot, it will answer my new question anyway. This is in
 contrast to using topics, where I'd be stuck inside of the topic until the bot
 resets the topic to C<random>.
 
-Note: while the C<%> command can contain wildcards and other matchable things,
-these values are not matched and put into any C<E<lt>starE<gt>> tags like they
-are for triggers. They're simply discarded.
+Similarly to the wildcards in C<+ Trigger>, the wildcards matched in the
+C<% Previous> command are put into C<E<lt>botstarE<gt>>. See L<"TAGS"> for
+more information.
 
 =head2 ^ CONTINUE
 
@@ -641,9 +641,9 @@ For example:
   + encode * in base64
   - The Base64 hash of "<star>" is: <call>encode base64 <star></call>
 
-In the above examples, C<&encode> calls on the object named "encode", which we
+In the above examples, C<encode> calls on the object named "encode", which we
 defined above; C<md5> and C<base64> calls on the method name, which is received
-by the object as C<$method>. Finally, C<$args> as received by the object would
+by the object as C<$method>. Finally, C<@args> as received by the object would
 be the value of E<lt>starE<gt> in this example.
 
 C<$rs> in this example would be a reference to the RiveScript interpreter.
@@ -759,7 +759,7 @@ sets that trigger to have a higher matching priority.
 
 Perform an inline redirection. This should work like a regular redirection but
 is embedded within another response. This tag can only be used with
-C<- Response>.
+C<- Response>, and in the response part of a C<* Condition>.
 
 E<lt>@E<gt> is an alias for {@E<lt>starE<gt>}
 
@@ -1015,23 +1015,24 @@ that a tag is allowed is as follows:
   \n          #
   \\          #
   \#          #
+  <person>    # String modifiers
+  <formal>    #
+  <sentence>  #
+  <uppercase> #
+  <lowercase> #
   {random}    # Random text insertion (which may contain other tags)
+  <bot>       # Insert bot variables
+  <env>       # Insert environment variables
   {!}         # Redefine variables
   <set>       # User variable modifiers
   <add>       #
   <sub>       #
   <mult>      #
   <div>       #
-  <get>       # Get user and bot variables
-  <bot>       #
-  <person>    # String modifiers
-  <formal>    #
-  <sentence>  #
-  <uppercase> #
-  <lowercase> #
+  <get>       # Get user variables
   {topic}     # Set user topic
   <@>         # Inline redirection
-  &objects()  # Object macros.
+  <call>      # Object macros.
 
 =head1 REVERSE COMPATIBILITY
 
@@ -1092,6 +1093,19 @@ Or perhaps there will just be a converter tool created that would go through cod
 that it already assumes will be RiveScript 1.x and update it to 2.x standards.
 
 =head1 REVISIONS
+
+  Apr  2, 2008
+  - Typo fix: under the !person section, the examples were using !sub
+  - Inconsistency fix: under %Previous it was saying the wildcards were
+    unmatchable, but this isn't the case (they go into <botstar>).
+  - Typo fix: under OBJECT MACROS, fixed the explanation of the code to match
+    the new object syntax.
+  - Inconsistency fix: <@> can be used in the response portion of conditionals.
+  - Rearranged the tag priorities:
+    - String modifiers (person - lowercase) come in higher priority than
+      {random}
+    - <env> comes in after <bot>
+  - Typo fix: updated the object syntax (<call>) in the priority list.
 
   Feb 18, 2008
   - Moved {random} to higher tag priority.

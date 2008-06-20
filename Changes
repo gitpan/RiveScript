@@ -1,5 +1,14 @@
 Revision history for Perl extension RiveScript.
 
+  1.15  Jun 19 2008
+  - Person substitutions support multiple-word patterns now.
+  - Message substititons also support multiple-word patterns now.
+  - Added syntax tracking, so Deep Recursion errors can give you a filename and
+    line number where the problem occurred.
+  - Added a handler for detecting when a user was put into an empty topic.
+  - Rearranged tag priority.
+  - Updated the RiveScript Working Draft.
+
   1.14  Apr  2 2008
   - Bugfix: If a BEGIN/request trigger didn't exist, RiveScript would not fetch
     any replies for the client's message. Fixed.

@@ -1,10 +1,9 @@
 package RiveScript;
 
-use Data::Dumper;
 use strict;
 use warnings;
 
-our $VERSION = '1.14'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.15'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 
 ################################################################################
@@ -28,9 +27,11 @@ sub new {
 		client    => {}, # User variables
 		bot       => {}, # Bot variables
 		objects   => {}, # Subroutines
+		syntax    => {}, # Syntax tracking
+		sortlist  => {}, # Sorted lists (i.e. person subs)
 		reserved  => [   # Reserved global variable names.
 			qw(topics sorted sortsthat thats arrays subs person
-			client bot objects reserved)
+			client bot objects syntax sortlist reserved)
 		],
 		@_,
 	};
@@ -150,7 +151,7 @@ sub parse {
 	my $isThat  = '';       # Is a %Previous trigger.
 
 	# Split the RS code into lines.
-	$code =~ s~([\x0d\x0a])+~\x0a~ig;
+	$code =~ s/([\x0d\x0a])+/\x0a/ig;
 	my @lines = split(/\x0a/, $code);
 
 	# Read each line.
@@ -435,6 +436,7 @@ sub parse {
 			}
 			else {
 				$self->{topics}->{$topic}->{$line} = {};
+				$self->{syntax}->{$topic}->{$line}->{ref} = "$fname line $lineno";
 			}
 			$ontrig = $line;
 			$repcnt = 0;
@@ -452,6 +454,7 @@ sub parse {
 			}
 			else {
 				$self->{topics}->{$topic}->{$ontrig}->{reply}->{$repcnt} = $line;
+				$self->{syntax}->{$topic}->{$ontrig}->{reply}->{$repcnt}->{ref} = "$fname line $lineno";
 			}
 			$repcnt++;
 		}
@@ -603,7 +606,50 @@ sub sortReplies {
 	# Also sort that's.
 	if ($thats ne 'thats') {
 		$self->sortReplies ('thats');
+
+		# Also sort both kinds of substitutions.
+		$self->sortList ('subs', keys %{$self->{subs}});
+		$self->sortList ('person', keys %{$self->{person}});
 	}
+}
+
+sub sortList {
+	my ($self,$name,@list) = @_;
+
+	# If a sorted list by this name already exists, delete it.
+	if (exists $self->{sortlist}->{$name}) {
+		delete $self->{sortlist}->{$name};
+	}
+
+	# Initialize the sorted list.
+	$self->{sortlist}->{$name} = [];
+
+	# Track by number of words.
+	my $track = {};
+
+	# Loop through each item in the list.
+	foreach my $item (@list) {
+		# Count the words.
+		my @words = split(/\s+/, $item);
+		my $cword = scalar(@words);
+
+		# Store this by group of word counts.
+		if (!exists $track->{$cword}) {
+			$track->{$cword} = [];
+		}
+		push (@{$track->{$cword}}, $item);
+	}
+
+	# Sort them.
+	my @sorted = ();
+	foreach my $count (sort { $b <=> $a } keys %{$track}) {
+		my @items = sort { length $b <=> length $a } @{$track->{$count}};
+		push (@sorted,@items);
+	}
+
+	# Store this list.
+	$self->{sortlist}->{$name} = [ @sorted ];
+	return 1;
 }
 
 ################################################################################
@@ -768,12 +814,6 @@ sub reply {
 sub _getreply {
 	my ($self,$user,$msg,%tags) = @_;
 
-	# Avoid deep recursion.
-	if ($tags{step} > $self->{depth}) {
-		$self->issue ("ERR: Deep Recursion Detected!");
-		return "ERR: Deep Recursion Detected!";
-	}
-
 	# Need to sort replies?
 	if (scalar keys %{$self->{sorted}} == 0) {
 		$self->issue ("ERR: You never called sortReplies()! Start doing that from now on!");
@@ -790,6 +830,23 @@ sub _getreply {
 	}
 	else {
 		$self->{client}->{$user}->{topic} = 'random';
+	}
+
+	# Avoid letting the user fall into a missing topic.
+	if (!exists $self->{topics}->{$topic}) {
+		$self->issue ("User $user was in an empty topic named '$topic'!");
+		$topic = 'random';
+		$self->{client}->{$user}->{topic} = 'random';
+	}
+
+	# Avoid deep recursion.
+	if ($tags{step} > $self->{depth}) {
+		my $ref = '';
+		if (exists $self->{syntax}->{$topic}->{$msg}->{ref}) {
+			$ref = " at $self->{syntax}->{$topic}->{$msg}->{ref}";
+		}
+		$self->issue ("ERR: Deep Recursion Detected$ref!");
+		return "ERR: Deep Recursion Detected$ref!";
 	}
 
 	# Are we in the BEGIN Statement?
@@ -1084,12 +1141,12 @@ sub processTags {
 	unshift(@arrReply,'');
 
 	# Tag Shortcuts.
-	$reply =~ s~<person>~{person}<star>{/person}~ig;
-	$reply =~ s~<\@>~{\@<star>}~ig;
-	$reply =~ s~<formal>~{formal}<star>{/formal}~ig;
-	$reply =~ s~<sentence>~{sentence}<star>{/sentence}~ig;
-	$reply =~ s~<uppercase>~{uppercase}<star>{/uppercase}~ig;
-	$reply =~ s~<lowercase>~{lowercase}<star>{/lowercase}~ig;
+	$reply =~ s/<person>/{person}<star>{\/person}/ig;
+	$reply =~ s/<\@>/{\@<star>}/ig;
+	$reply =~ s/<formal>/{formal}<star>{\/formal}/ig;
+	$reply =~ s/<sentence>/{sentence}<star>{\/sentence}/ig;
+	$reply =~ s/<uppercase>/{uppercase}<star>{\/uppercase}/ig;
+	$reply =~ s/<lowercase>/{lowercase}<star>{\/lowercase}/ig;
 
 	# Quick tags.
 	$reply =~ s/\{weight=(\d+)\}//ig; # Remove leftover {weight}s
@@ -1111,31 +1168,6 @@ sub processTags {
 	$reply =~ s/\\/\\/ig;
 	$reply =~ s/\\#/#/ig;
 
-	while ($reply =~ /\{person\}(.+?)\{\/person\}/i) {
-		my $person = $1;
-		$person = $self->_personSub ($person);
-		$reply =~ s/\{person\}(.+?)\{\/person\}/$person/i;
-	}
-	while ($reply =~ /\{formal\}(.+?)\{\/formal\}/i) {
-		my $formal = $1;
-		$formal = $self->_stringUtil ('formal',$formal);
-		$reply =~ s/\{formal\}(.+?)\{\/formal\}/$formal/i;
-	}
-	while ($reply =~ /\{sentence\}(.+?)\{\/sentence\}/i) {
-		my $sentence = $1;
-		$sentence = $self->_stringUtil ('sentence',$sentence);
-		$reply =~ s/\{sentence\}(.+?)\{\/sentence\}/$sentence/i;
-	}
-	while ($reply =~ /\{uppercase\}(.+?)\{\/uppercase\}/i) {
-		my $upper = $1;
-		$upper = $self->_stringUtil ('upper',$upper);
-		$reply =~ s/\{uppercase\}(.+?)\{\/uppercase\}/$upper/i;
-	}
-	while ($reply =~ /\{lowercase\}(.+?)\{\/lowercase\}/i) {
-		my $lower = $1;
-		$lower = $self->_stringUtil ('lower',$lower);
-		$reply =~ s/\{lowercase\}(.+?)\{\/lowercase\}/$lower/i;
-	}
 	while ($reply =~ /\{random\}(.+?)\{\/random\}/i) {
 		my $rand = $1;
 		my $output = '';
@@ -1171,6 +1203,31 @@ sub processTags {
 		# Just stream this back through.
 		$self->stream ("! $1");
 		$reply =~ s/\{\!(.+?)\}//i;
+	}
+	while ($reply =~ /\{person\}(.+?)\{\/person\}/i) {
+		my $person = $1;
+		$person = $self->_personSub ($person);
+		$reply =~ s/\{person\}(.+?)\{\/person\}/$person/i;
+	}
+	while ($reply =~ /\{formal\}(.+?)\{\/formal\}/i) {
+		my $formal = $1;
+		$formal = $self->_stringUtil ('formal',$formal);
+		$reply =~ s/\{formal\}(.+?)\{\/formal\}/$formal/i;
+	}
+	while ($reply =~ /\{sentence\}(.+?)\{\/sentence\}/i) {
+		my $sentence = $1;
+		$sentence = $self->_stringUtil ('sentence',$sentence);
+		$reply =~ s/\{sentence\}(.+?)\{\/sentence\}/$sentence/i;
+	}
+	while ($reply =~ /\{uppercase\}(.+?)\{\/uppercase\}/i) {
+		my $upper = $1;
+		$upper = $self->_stringUtil ('upper',$upper);
+		$reply =~ s/\{uppercase\}(.+?)\{\/uppercase\}/$upper/i;
+	}
+	while ($reply =~ /\{lowercase\}(.+?)\{\/lowercase\}/i) {
+		my $lower = $1;
+		$lower = $self->_stringUtil ('lower',$lower);
+		$reply =~ s/\{lowercase\}(.+?)\{\/lowercase\}/$lower/i;
 	}
 	while ($reply =~ /<set (.+?)=(.+?)>/i) {
 		# Set a user variable.
@@ -1263,34 +1320,37 @@ sub _formatMessage {
 	$string = lc($string);
 
 	# Run substitutions on it.
-	my @words = split(/\s+/, $string);
-	my @new = ();
-	foreach my $word (@words) {
-		if (exists $self->{subs}->{$word}) {
-			$word = $self->{subs}->{$word};
-		}
-		push (@new,$word);
+	foreach my $pattern (@{$self->{sortlist}->{subs}}) {
+		my $result = $self->{subs}->{$pattern};
+		$result =~ tr/A-Za-z/N-ZA-Mn-za-m/;
+		my $qm = quotemeta($pattern);
+		$string =~ s/^$qm$/<rot13sub>$result<bus31tor>/ig;
+		$string =~ s/^$qm(\W+)/<rot13sub>$result<bus31tor>$1/ig;
+		$string =~ s/(\W+)$qm(\W+)/$1<rot13sub>$result<bus31tor>$2/ig;
+		$string =~ s/(\W+)$qm$/$1<rot13sub>$result<bus31tor>/ig;
+	}
+	while ($string =~ /<rot13sub>(.+?)<bus31tor>/i) {
+		my $rot13 = $1;
+		$rot13 =~ tr/A-Za-z/N-ZA-Mn-za-m/;
+		$string =~ s/<rot13sub>(.+?)<bus31tor>/$rot13/i;
 	}
 
-	# Reconstruct.
-	my $sanitized = join (" ",@new);
-
 	# Format punctuation.
-	$sanitized =~ s/[^A-Za-z0-9 ]//g;
-	$sanitized =~ s/^\s+//g;
-	$sanitized =~ s/\s+$//g;
+	$string =~ s/[^A-Za-z0-9 ]//g;
+	$string =~ s/^\s+//g;
+	$string =~ s/\s+$//g;
 
-	return $sanitized;
+	return $string;
 }
 
 sub _stringUtil {
 	my ($self,$type,$string) = @_;
 
 	if ($type eq 'formal') {
-		$string =~ s~\b(\w+)\b~\L\u$1\E~ig;
+		$string =~ s/\b(\w+)\b/\L\u$1\E/ig;
 	}
 	elsif ($type eq 'sentence') {
-		$string =~ s~\b(\w)(.*?)(\.|\?|\!|$)~\u$1\L$2$3\E~ig;
+		$string =~ s/\b(\w)(.*?)(\.|\?|\!|$)/\u$1\L$2$3\E/ig;
 	}
 	elsif ($type eq 'upper') {
 		$string = uc($string);
@@ -1305,20 +1365,26 @@ sub _stringUtil {
 sub _personSub {
 	my ($self,$string) = @_;
 
-	my @words = split(/\s/, $string);
-	my @new = ();
-	foreach my $word (@words) {
-		foreach my $sub (keys %{$self->{person}}) {
-			my $re = quotemeta($sub);
-			if ($word =~ /$re/i) {
-				$word =~ s/$re/$self->{person}->{$sub}/ig;
-				last;
-			}
-		}
-		push (@new,$word);
+	# Substitute each of the sorted person sub arrays in order,
+	# using a one-way substitution algorithm (read: base13).
+	foreach my $pattern (@{$self->{sortlist}->{person}}) {
+		my $result = $self->{person}->{$pattern};
+		$result =~ tr/A-Za-z/N-ZA-Mn-za-m/;
+		my $qm = quotemeta($pattern);
+		$string =~ s/^$qm$/<rot13sub>$result<bus31tor>/ig;
+		$string =~ s/^$qm(\W+)/<rot13sub>$result<bus31tor>$1/ig;
+		$string =~ s/(\W+)$qm(\W+)/$1<rot13sub>$result<bus31tor>$2/ig;
+		$string =~ s/(\W+)$qm$/$1<rot13sub>$result<bus31tor>/ig;
 	}
 
-	return join (" ",@new);
+	# Now rot13-decode what's left.
+	while ($string =~ /<rot13sub>(.+?)<bus31tor>/i) {
+		my $rot13 = $1;
+		$rot13 =~ tr/A-Za-z/N-ZA-Mn-za-m/;
+		$string =~ s/<rot13sub>(.+?)<bus31tor>/$rot13/i;
+	}
+
+	return $string;
 }
 
 1;
@@ -1521,6 +1587,14 @@ This method is called internally to parse a file or streamed RiveScript code.
 C<$FILENAME> is only there so it can keep internal track of files and line
 numbers, in case syntax errors appear.
 
+=item sortList ($NAME,@LIST) *Internal
+
+This is used internally to sort arrays (namely, person and substitution pattern
+arrays). Sets C<$rs->{sortlist}->{$NAME}> to an array reference of the sorted
+values in C<@LIST>. The values are sorted by number of words from greatest to
+smallest, with each group of same-word-count items sorted by length amongst
+themselves.
+
 =item _getreply ($USER,$MSG,%TAGS) *Internal
 
 B<Do NOT call this method yourself.> This method assumes a few things about the
@@ -1642,6 +1716,15 @@ defines the standards of RiveScript.
 L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
+
+  1.15  Jun 19 2008
+  - Person substitutions support multiple-word patterns now.
+  - Message substititons also support multiple-word patterns now.
+  - Added syntax tracking, so Deep Recursion errors can give you a filename and
+    line number where the problem occurred.
+  - Added a handler for detecting when a user was put into an empty topic.
+  - Rearranged tag priority.
+  - Updated the RiveScript Working Draft.
 
   1.14  Apr  2 2008
   - Bugfix: If a BEGIN/request trigger didn't exist, RiveScript would not fetch

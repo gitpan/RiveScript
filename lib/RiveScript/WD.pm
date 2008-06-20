@@ -9,7 +9,7 @@ our $VERSION = '1.14';
 
 =head1 NAME
 
-RiveScript::WD - RiveScript 2.00 Working Draft (2008/04/02)
+RiveScript::WD - RiveScript 2.00 Working Draft (2008/06/19)
 
 =head1 DESCRIPTION
 
@@ -1015,15 +1015,15 @@ that a tag is allowed is as follows:
   \n          #
   \\          #
   \#          #
+  {random}    # Random text insertion (which may contain other tags)
+  {!}         # Redefine global variables
+  <bot>       # Insert bot variables
+  <env>       # Insert environment variables
   <person>    # String modifiers
   <formal>    #
   <sentence>  #
   <uppercase> #
   <lowercase> #
-  {random}    # Random text insertion (which may contain other tags)
-  <bot>       # Insert bot variables
-  <env>       # Insert environment variables
-  {!}         # Redefine variables
   <set>       # User variable modifiers
   <add>       #
   <sub>       #
@@ -1093,6 +1093,10 @@ Or perhaps there will just be a converter tool created that would go through cod
 that it already assumes will be RiveScript 1.x and update it to 2.x standards.
 
 =head1 REVISIONS
+
+  Jun 19, 2008
+  - Rearranged tag priorities:
+    - <bot> and <env> moved higher up.
 
   Apr  2, 2008
   - Typo fix: under the !person section, the examples were using !sub

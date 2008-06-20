@@ -10,8 +10,10 @@
 
 <body>
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -35,8 +37,8 @@
 		<li><a href="#err__deep_recursion_detected_">ERR: Deep Recursion Detected!</a></li>
 		<li><a href="#err__no_reply_matched">ERR: No Reply Matched</a></li>
 		<li><a href="#err__no_reply_found">ERR: No Reply Found</a></li>
-		<li><a href="#_err__can_t_modify_nonnumeric_variable__var_">[ERR: Can't Modify Non-Numeric Variable $var]</a></li>
-		<li><a href="#_err__math_can_t_add_nonnumeric_value__value_">[ERR: Math Can't ``add'' Non-Numeric Value $value]</a></li>
+		<li><a href="#_err__can_t_modify_non_numeric_variable__var_">[ERR: Can't Modify Non-Numeric Variable $var]</a></li>
+		<li><a href="#_err__math_can_t_add_non_numeric_value__value_">[ERR: Math Can't &quot;add&quot; Non-Numeric Value $value]</a></li>
 		<li><a href="#_err__can_t_divide_by_zero_">[ERR: Can't Divide By Zero]</a></li>
 		<li><a href="#_err__object_not_found_">[ERR: Object Not Found]</a></li>
 	</ul>
@@ -47,9 +49,11 @@
 	<li><a href="#keywords">KEYWORDS</a></li>
 	<li><a href="#copyright_and_license">COPYRIGHT AND LICENSE</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <h1><a name="name">NAME</a></h1>
@@ -102,11 +106,11 @@ lot of power and flexibility. For more information, visit
 </p>
 <h2><a name="general">GENERAL</a></h2>
 <dl>
-<dt><strong><a name="item_new">new (ARGS)</a></strong>
+<dt><strong><a name="new" class="item">new (ARGS)</a></strong>
 
 <dd>
 <p>Create a new instance of a RiveScript interpreter. The instance will become its
-own ``chatterbot,'' with its own set of responses and user variables. You can pass
+own &quot;chatterbot,&quot; with its own set of responses and user variables. You can pass
 in any global variables here. The two standard variables are:</p>
 </dd>
 <dd>
@@ -118,7 +122,7 @@ in any global variables here. The two standard variables are:</p>
 </dd>
 <dd>
 <p>It's recommended that if you set any other global variables that you do so by
-calling <a href="#item_setglobal"><code>setGlobal</code></a> or defining it within the RiveScript code. This will avoid
+calling <a href="#setglobal"><code>setGlobal</code></a> or defining it within the RiveScript code. This will avoid
 the possibility of overriding reserved globals. Currently, these variable names
 are reserved:</p>
 </dd>
@@ -134,7 +138,7 @@ are reserved:</p>
 </p>
 <h2><a name="loading_and_parsing">LOADING AND PARSING</a></h2>
 <dl>
-<dt><strong><a name="item_loaddirectory">loadDirectory ($PATH[,@EXTS])</a></strong>
+<dt><strong><a name="loaddirectory" class="item">loadDirectory ($PATH[,@EXTS])</a></strong>
 
 <dd>
 <p>Load a directory full of RiveScript documents. <code>$PATH</code> must be a path to a
@@ -145,14 +149,14 @@ the dot. By default <code>@EXTS</code> is <code>('.rs')</code>.</p>
 <p>Returns true on success, false on failure.</p>
 </dd>
 </li>
-<dt><strong><a name="item_loadfile">loadFile ($PATH)</a></strong>
+<dt><strong><a name="loadfile" class="item">loadFile ($PATH)</a></strong>
 
 <dd>
 <p>Load a single RiveScript document. <code>$PATH</code> should be the path to a valid
 RiveScript file. Returns true on success; false otherwise.</p>
 </dd>
 </li>
-<dt><strong><a name="item_stream">stream ($CODE)</a></strong>
+<dt><strong><a name="stream" class="item">stream ($CODE)</a></strong>
 
 <dd>
 <p>Stream RiveScript code directly into the module. This is for providing RS code
@@ -160,7 +164,7 @@ from within the Perl script instead of from an external file. Returns true on
 success.</p>
 </dd>
 </li>
-<dt><strong><a name="item_sortreplies">sortReplies</a></strong>
+<dt><strong><a name="sortreplies" class="item">sortReplies</a></strong>
 
 <dd>
 <p>Call this method after loading replies to create an internal sort buffer. This
@@ -174,7 +178,7 @@ will complain loudly about it.</p>
 </p>
 <h2><a name="configuration">CONFIGURATION</a></h2>
 <dl>
-<dt><strong><a name="item_setsubroutine">setSubroutine ($NAME, $CODEREF)</a></strong>
+<dt><strong><a name="setsubroutine" class="item">setSubroutine ($NAME, $CODEREF)</a></strong>
 
 <dd>
 <p>Manually create a RiveScript object (a dynamic bit of Perl code that can be
@@ -183,7 +187,7 @@ alphanumeric string. <code>$CODEREF</code> should be a pointer to a subroutine o
 anonymous sub.</p>
 </dd>
 </li>
-<dt><strong><a name="item_setglobal">setGlobal (%DATA)</a></strong>
+<dt><strong><a name="setglobal" class="item">setGlobal (%DATA)</a></strong>
 
 <dd>
 <p>Set one or more global variables, in hash form, where the keys are the variable
@@ -194,7 +198,7 @@ don't override any reserved global variables, and warn if that happens.</p>
 <p>This is equivalent to <code>! global</code> in RiveScript code.</p>
 </dd>
 </li>
-<dt><strong><a name="item_setvariable">setVariable (%DATA)</a></strong>
+<dt><strong><a name="setvariable" class="item">setVariable (%DATA)</a></strong>
 
 <dd>
 <p>Set one or more bot variables (things that describe your bot's personality).</p>
@@ -203,7 +207,7 @@ don't override any reserved global variables, and warn if that happens.</p>
 <p>This is equivalent to <code>! var</code> in RiveScript code.</p>
 </dd>
 </li>
-<dt><strong><a name="item_setsubstitution">setSubstitution (%DATA)</a></strong>
+<dt><strong><a name="setsubstitution" class="item">setSubstitution (%DATA)</a></strong>
 
 <dd>
 <p>Set one or more substitution patterns. The keys should be the original word, and
@@ -220,13 +224,13 @@ the value should be the word to substitute with it.</p>
 <p>This is equivalent to <code>! sub</code> in RiveScript code.</p>
 </dd>
 </li>
-<dt><strong><a name="item_setperson">setPerson (%DATA)</a></strong>
+<dt><strong><a name="setperson" class="item">setPerson (%DATA)</a></strong>
 
 <dd>
 <p>Set a person substitution. This is equivalent to <code>! person</code> in RiveScript code.</p>
 </dd>
 </li>
-<dt><strong><a name="item_setuservar">setUservar ($USER,%DATA)</a></strong>
+<dt><strong><a name="setuservar" class="item">setUservar ($USER,%DATA)</a></strong>
 
 <dd>
 <p>Set a variable for a user. <code>$USER</code> should be their User ID, and <code>%DATA</code> is a
@@ -236,7 +240,7 @@ hash containing variable/value pairs.</p>
 <p>This is like <code>&lt;set&gt;</code> for a specific user.</p>
 </dd>
 </li>
-<dt><strong><a name="item_getuservars">getUservars ([$USER])</a></strong>
+<dt><strong><a name="getuservars" class="item">getUservars ([$USER])</a></strong>
 
 <dd>
 <p>Get all the variables about a user. If a username is provided, returns a hash
@@ -247,7 +251,7 @@ the users and their information is returned.</p>
 <p>This is like <code>&lt;get&gt;</code> for a specific user or for all users.</p>
 </dd>
 </li>
-<dt><strong><a name="item_clearuservars">clearUservars ([$USER])</a></strong>
+<dt><strong><a name="clearuservars" class="item">clearUservars ([$USER])</a></strong>
 
 <dd>
 <p>Clears all variables about <code>$USER</code>. If no <code>$USER</code> is provided, clears all
@@ -259,7 +263,7 @@ variables about all users.</p>
 </p>
 <h2><a name="interaction">INTERACTION</a></h2>
 <dl>
-<dt><strong><a name="item_reply">reply ($USER,$MESSAGE)</a></strong>
+<dt><strong><a name="reply" class="item">reply ($USER,$MESSAGE)</a></strong>
 
 <dd>
 <p>Fetch a response to <code>$MESSAGE</code> from user <code>$USER</code>. RiveScript will take care of
@@ -274,13 +278,13 @@ lowercasing, running substitutions, and removing punctuation from the message.</
 </p>
 <h2><a name="internal">INTERNAL</a></h2>
 <dl>
-<dt><strong><a name="item_debug">debug ($MESSAGE) *Internal</a></strong>
+<dt><strong><a name="debug" class="item">debug ($MESSAGE) *Internal</a></strong>
 
 <dd>
 <p>Prints a debug message to the terminal. Called from within in debug mode.</p>
 </dd>
 </li>
-<dt><strong><a name="item_issue">issue ($MESSAGE) *Internal</a></strong>
+<dt><strong><a name="issue" class="item">issue ($MESSAGE) *Internal</a></strong>
 
 <dd>
 <p>Called internally to report an issue (similar to a warning). If debug mode is
@@ -288,7 +292,7 @@ active, it will print the issue to STDOUT with a # sign prepended. Otherwise,
 the issue is sent to STDERR via <code>warn</code>.</p>
 </dd>
 </li>
-<dt><strong><a name="item_parse">parse ($FILENAME, $CODE) *Internal</a></strong>
+<dt><strong><a name="parse" class="item">parse ($FILENAME, $CODE) *Internal</a></strong>
 
 <dd>
 <p>This method is called internally to parse a file or streamed RiveScript code.
@@ -296,15 +300,25 @@ the issue is sent to STDERR via <code>warn</code>.</p>
 numbers, in case syntax errors appear.</p>
 </dd>
 </li>
-<dt><strong><a name="item__getreply">_getreply ($USER,$MSG,%TAGS) *Internal</a></strong>
+<dt><strong><a name="sortlist" class="item">sortList ($NAME,@LIST) *Internal</a></strong>
+
+<dd>
+<p>This is used internally to sort arrays (namely, person and substitution pattern
+arrays). Sets <code>$rs-</code>{sortlist}-&gt;{$NAME}&gt; to an array reference of the sorted
+values in <code>@LIST</code>. The values are sorted by number of words from greatest to
+smallest, with each group of same-word-count items sorted by length amongst
+themselves.</p>
+</dd>
+</li>
+<dt><strong><a name="_getreply" class="item">_getreply ($USER,$MSG,%TAGS) *Internal</a></strong>
 
 <dd>
 <p><strong>Do NOT call this method yourself.</strong> This method assumes a few things about the
-user's input that is taken care of by <a href="#item_reply"><code>reply()</code></a>. There is no reason to call
+user's input that is taken care of by <a href="#reply"><code>reply()</code></a>. There is no reason to call
 this method manually.</p>
 </dd>
 </li>
-<dt><strong><a name="item__reply_regexp">_reply_regexp ($USER,$TRIGGER) *Internal</a></strong>
+<dt><strong><a name="_reply_regexp" class="item">_reply_regexp ($USER,$TRIGGER) *Internal</a></strong>
 
 <dd>
 <p>This method takes a raw trigger <code>$TRIGGER</code> and formats it for a matching
@@ -313,7 +327,7 @@ processes bot variables and other tags, and returns something ready for the
 regular expression engine.</p>
 </dd>
 </li>
-<dt><strong><a name="item_processtags">processTags ($USER,$MSG,$REPLY,$STARS,$BOTSTARS) *Internal</a></strong>
+<dt><strong><a name="processtags" class="item">processTags ($USER,$MSG,$REPLY,$STARS,$BOTSTARS) *Internal</a></strong>
 
 <dd>
 <p>Process tags in the bot's response. <code>$USER</code> and <code>$MSG</code> are the values
@@ -323,20 +337,20 @@ in a trigger or <code>%Previous</code> command, respectively. Returns a reply wi
 tags processed.</p>
 </dd>
 </li>
-<dt><strong><a name="item__formatmessage">_formatMessage ($STRING) *Internal</a></strong>
+<dt><strong><a name="_formatmessage" class="item">_formatMessage ($STRING) *Internal</a></strong>
 
 <dd>
 <p>Formats a message to prepare it for reply matching. Lowercases the string, runs
 substitutions, and sanitizes what's left.</p>
 </dd>
 </li>
-<dt><strong><a name="item__stringutil">_stringUtil ($TYPE,$STRING) *Internal</a></strong>
+<dt><strong><a name="_stringutil" class="item">_stringUtil ($TYPE,$STRING) *Internal</a></strong>
 
 <dd>
 <p>Runs string modifiers on <code>$STRING</code> (uppercase, lowercase, sentence, formal).</p>
 </dd>
 </li>
-<dt><strong><a name="item__personsub">_personSub ($STRING) *Internal</a></strong>
+<dt><strong><a name="_personsub" class="item">_personSub ($STRING) *Internal</a></strong>
 
 <dd>
 <p>Runs person substitutions on <code>$STRING</code>.</p>
@@ -364,7 +378,7 @@ responses to the bot's queries.</p>
 <p>The deep recursion depth limit has been reached (a response redirected to a
 different trigger, which redirected somewhere else, etc.).</p>
 <p>How to fix: override the global variable <code>depth</code>. This can be done via
-<a href="#item_setglobal"><code>setGlobal</code></a> or in the RiveScript code:</p>
+<a href="#setglobal"><code>setGlobal</code></a> or in the RiveScript code:</p>
 <pre>
   ! global depth = 100</pre>
 <p>
@@ -385,15 +399,15 @@ on, and every conditional returned false.</p>
 if you don't expect that the <code>-Reply</code> will ever be used.</p>
 <p>
 </p>
-<h2><a name="_err__can_t_modify_nonnumeric_variable__var_">[ERR: Can't Modify Non-Numeric Variable $var]</a></h2>
+<h2><a name="_err__can_t_modify_non_numeric_variable__var_">[ERR: Can't Modify Non-Numeric Variable $var]</a></h2>
 <p>You called a math tag on a variable, and the current value of the variable
 contains something that isn't a number.</p>
 <p>How to fix: verify that the variable you're working with is a number. If
 necessary, reset the variable via <code>&lt;set&gt;</code>.</p>
 <p>
 </p>
-<h2><a name="_err__math_can_t_add_nonnumeric_value__value_">[ERR: Math Can't ``add'' Non-Numeric Value $value]</a></h2>
-<p>(``add'' may also be sub, mult, or div). You tried to run a math function on a
+<h2><a name="_err__math_can_t_add_non_numeric_value__value_">[ERR: Math Can't &quot;add&quot; Non-Numeric Value $value]</a></h2>
+<p>(&quot;add&quot; may also be sub, mult, or div). You tried to run a math function on a
 variable, but the value you used wasn't a number.</p>
 <p>How to fix: verify that you're adding, subtracting, multiplying, or dividing
 using numbers.</p>
@@ -426,6 +440,15 @@ defines the standards of RiveScript.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  1.15  Jun 19 2008
+  - Person substitutions support multiple-word patterns now.
+  - Message substititons also support multiple-word patterns now.
+  - Added syntax tracking, so Deep Recursion errors can give you a filename and
+    line number where the problem occurred.
+  - Added a handler for detecting when a user was put into an empty topic.
+  - Rearranged tag priority.
+  - Updated the RiveScript Working Draft.</pre>
 <pre>
   1.14  Apr  2 2008
   - Bugfix: If a BEGIN/request trigger didn't exist, RiveScript would not fetch

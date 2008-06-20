@@ -5,6 +5,13 @@ use warnings;
 use lib "./lib";
 use RiveScript;
 
+print "Welcome to the Perl RiveScript Interpreter. This script is a demonstration\n"
+	. "of RiveScript. The bot's replies are taken from the files in the\n"
+	. "'rscripteg' directory, which by default are based on some of Eliza's\n"
+	. "triggers and responses.\n\n"
+	. "You\'re now chatting with the RiveScript bot. Why not say hello? When\n"
+	. "you get tired of this, type \"quit\" to exit this demonstration.\n\n";
+
 my $rs = new RiveScript();
 
 # Read the test directory.
@@ -14,6 +21,10 @@ $rs->sortReplies();
 while (1) {
 	print "You> ";
 	chomp (my $msg = <STDIN>);
+
+	if ($msg =~ /^quit/i) {
+		exit(0);
+	}
 
 	my $reply = $rs->reply ('localuser',$msg);
 

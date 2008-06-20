@@ -10,8 +10,10 @@
 
 <body>
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -54,7 +56,7 @@
 			<li><a href="#priority_triggers">Priority Triggers</a></li>
 		</ul>
 
-		<li><a href="#_response">- RESPONSE</a></li>
+		<li><a href="#__response">- RESPONSE</a></li>
 		<ul>
 
 			<li><a href="#atomic_response">Atomic Response</a></li>
@@ -73,9 +75,9 @@
 	<li><a href="#tags">TAGS</a></li>
 	<ul>
 
-		<li><a href="#_star____star1____starn_">&lt;star&gt;, &lt;star1&gt; - &lt;starN&gt;</a></li>
-		<li><a href="#_botstar____botstar1____botstarn_">&lt;botstar&gt;, &lt;botstar1&gt; - &lt;botstarN&gt;</a></li>
-		<li><a href="#_input1____input9____reply1____reply9__">&lt;input1&gt; - &lt;input9&gt;; &lt;reply1&gt; - &lt;reply9&gt;.</a></li>
+		<li><a href="#_star____star1_____starn_">&lt;star&gt;, &lt;star1&gt; - &lt;starN&gt;</a></li>
+		<li><a href="#_botstar____botstar1_____botstarn_">&lt;botstar&gt;, &lt;botstar1&gt; - &lt;botstarN&gt;</a></li>
+		<li><a href="#_input1_____input9____reply1_____reply9__">&lt;input1&gt; - &lt;input9&gt;; &lt;reply1&gt; - &lt;reply9&gt;.</a></li>
 		<li><a href="#_id_">&lt;id&gt;</a></li>
 		<li><a href="#_bot_">&lt;bot&gt;</a></li>
 		<li><a href="#_env_">&lt;env&gt;</a></li>
@@ -125,13 +127,15 @@
 	<li><a href="#revisions">REVISIONS</a></li>
 	<li><a href="#disclaimer">DISCLAIMER</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <h1><a name="name">NAME</a></h1>
-<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/04/02)</p>
+<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/06/19)</p>
 <p>
 </p>
 <hr />
@@ -155,42 +159,42 @@ and manage.</p>
 <hr />
 <h1><a name="vocabulary">VOCABULARY</a></h1>
 <dl>
-<dt><strong><a name="item_rivescript">RiveScript</a></strong>
+<dt><strong><a name="rivescript" class="item">RiveScript</a></strong>
 
 <dd>
 <p>RiveScript is the name of the scripting language that this document explains.</p>
 </dd>
 </li>
-<dt><strong><a name="item_interpreter">Interpreter</a></strong>
+<dt><strong><a name="interpreter" class="item">Interpreter</a></strong>
 
 <dd>
 <p>The RiveScript interpreter is a program or library in another programming
 language that loads and parses a RiveScript document.</p>
 </dd>
 </li>
-<dt><strong><a name="item_rivescript_document">RiveScript Document</a></strong>
+<dt><strong><a name="rivescript_document" class="item">RiveScript Document</a></strong>
 
 <dd>
 <p>A RiveScript Document is a text file containing RiveScript code.</p>
 </dd>
 </li>
-<dt><strong><a name="item_bot">Bot</a></strong>
+<dt><strong><a name="bot" class="item">Bot</a></strong>
 
 <dd>
 <p>A Bot (short for robot) is the artificial entity that is represented by an
 instance of a RiveScript Interpreter object. That is, when you create a new
 Interpreter object and load a set of RiveScript Documents, that becomes the
-``brain'' of the bot.</p>
+&quot;brain&quot; of the bot.</p>
 </dd>
 </li>
-<dt><strong><a name="item_bot_variable">Bot Variable</a></strong>
+<dt><strong><a name="bot_variable" class="item">Bot Variable</a></strong>
 
 <dd>
 <p>A variable that describes the bot, such as its name, age, or other details
 you want to define for the bot.</p>
 </dd>
 </li>
-<dt><strong><a name="item_client_variable">Client Variable</a></strong>
+<dt><strong><a name="client_variable" class="item">Client Variable</a></strong>
 
 <dd>
 <p>A variable that the bot keeps about a specific client, or user of the bot.
@@ -258,7 +262,7 @@ own version numbers.</p>
 </p>
 <h3><a name="global">global</a></h3>
 <p>This should override a global variable at the interpreter level. The obvious
-variable name might be ``debug'' (to enable/disable debugging within the
+variable name might be &quot;debug&quot; (to enable/disable debugging within the
 RiveScript interpreter).</p>
 <p>The interpreter should take extra care not to allow reserved globals to be
 overridden by this command in ways that might break the interpreter.</p>
@@ -268,7 +272,7 @@ overridden by this command in ways that might break the interpreter.</p>
 <p>
 </p>
 <h3><a name="var">var</a></h3>
-<p>This should define a ``bot variable'' for the bot. This should only be used in an
+<p>This should define a &quot;bot variable&quot; for the bot. This should only be used in an
 initialization sense; that is, as the interpreter loads the document, it should
 define the bot variable as it reads in this line. If you'd want to redefine or
 alter the value of a bot variable, you should do so using a tag inside of a
@@ -316,9 +320,9 @@ patterns.</p>
 <p>The <code>person</code> variables work a lot like <code>sub</code>s do, but these are run against
 the bot's response, specifically within <code>&lt;person&gt;</code> tags (See <a href="#tags">TAGS</a>).</p>
 <p>Person substitutions should swap first- and second-person pronouns. This is so
-that ex. if the client asks the bot a direct question using ``you'' when addressing
+that ex. if the client asks the bot a direct question using &quot;you&quot; when addressing
 the bot, if the bot uses the client's message in the response it should swap
-``you'' for ``I''.</p>
+&quot;you&quot; for &quot;I&quot;.</p>
 <p>Examples:</p>
 <pre>
   ! person you are = I am
@@ -402,7 +406,7 @@ RiveScript document. The trigger command is what matches the user's message to
 a response.</p>
 <p>The trigger's text should be entirely lowercase and not contain any symbols
 (except those used for matching complicated messages). That is, a trigger that
-wants to match ``<code>what's your name</code>'' shoudldn't be used; you should use a
+wants to match &quot;<code>what's your name</code>&quot; shoudldn't be used; you should use a
 <a href="#sub">sub</a>stitution to convert <code>what's</code> into <code>what is</code> ahead of time.</p>
 <p>Example:</p>
 <pre>
@@ -437,7 +441,7 @@ order that the wildcard appeared. <code>&lt;star&gt;</code> is an alias for <cod
 <h3><a name="trigger_alternations">Trigger Alternations</a></h3>
 <p>An alternation in a trigger is a sub-set of strings, in which any one of the
 strings will still match the trigger. For example, the following trigger should
-match both ``are you okay'' and ``are you alright'':</p>
+match both &quot;are you okay&quot; and &quot;are you alright&quot;:</p>
 <pre>
   + are you (okay|alright)</pre>
 <p>Alternations can contain spaces in them, too.</p>
@@ -456,7 +460,7 @@ match both ``are you okay'' and ``are you alright'':</p>
 <h3><a name="trigger_optionals">Trigger Optionals</a></h3>
 <p>Triggers can contain optional words as well. Optionals are written similarly to
 alternations, but they use square braces. The following example would match both
-``what is your phone number'' as well as ``what is your <strong>home</strong> phone number''</p>
+&quot;what is your phone number&quot; as well as &quot;what is your <strong>home</strong> phone number&quot;</p>
 <pre>
   + what is your [home] phone number</pre>
 <p>Optionals do <strong>NOT</strong> match like wildcards do. They do NOT go into the
@@ -492,7 +496,7 @@ be matched into a <code>&lt;star&gt;</code> tag.</p>
 When the interpreter sorts all the loaded triggers into a search sequence, any
 triggers that have a priority defined will be sorted with higher priority
 triggers first.</p>
-<p>The idea is to have ``important'' triggers that should always be matched before a
+<p>The idea is to have &quot;important&quot; triggers that should always be matched before a
 different trigger, which may have been a better match, can be tried. The best
 example would be for commands. For example:</p>
 <pre>
@@ -503,10 +507,10 @@ example would be for commands. For example:</p>
   - Or yes. &lt;@&gt;</pre>
 <p>In that example, if the bot had a Google search function and the user wanted to
 search for whether or not Perl is a superior programming language to PHP, the
-user might ask ``<code>google is perl better than php or not</code>''. However, without
-priorities in effect, that question would actually match the ``<code>* or not</code>''
-trigger, because that trigger has more words than ``<code>google *</code>'' does.</p>
-<p>Adding a priority to the ``<code>google *</code>'' trigger would ensure that conflicts like
+user might ask &quot;<code>google is perl better than php or not</code>&quot;. However, without
+priorities in effect, that question would actually match the &quot;<code>* or not</code>&quot;
+trigger, because that trigger has more words than &quot;<code>google *</code>&quot; does.</p>
+<p>Adding a priority to the &quot;<code>google *</code>&quot; trigger would ensure that conflicts like
 this don't happen, by always sorting the Google search trigger with higher
 priority than the other.</p>
 <pre>
@@ -518,11 +522,11 @@ prioritized triggers by each number group. Only add priorities to triggers that
 need them.</p>
 <p>
 </p>
-<h2><a name="_response">- RESPONSE</a></h2>
+<h2><a name="__response">- RESPONSE</a></h2>
 <p>The <code>-</code> tag is used to indicate a response to a matched trigger. A single
-response to a single trigger is called an ``atomic response.'' When more than one
+response to a single trigger is called an &quot;atomic response.&quot; When more than one
 response is given to a single trigger, the collection of responses become a
-``random response,'' where a response is chosen randomly from the list. Random
+&quot;random response,&quot; where a response is chosen randomly from the list. Random
 responses can also use a <code>{weight}</code> tag to improve the likelihood of one response
 being randomly chosen over another.</p>
 <p>
@@ -559,8 +563,8 @@ respond pretty much the same way each time the trigger is matched.</p>
 <h3><a name="weighted_random_response">Weighted Random Response</a></h3>
 <p>When using random responses, it's possible to give weight to them to change the
 likelihood that a response will be chosen. In this example, the response of
-``Hello there'' will be much more likely to be chosen than would the response of
-``Hi''.</p>
+&quot;Hello there&quot; will be much more likely to be chosen than would the response of
+&quot;Hi&quot;.</p>
 <pre>
   + hello
   - Hello there!{weight=50}
@@ -597,7 +601,7 @@ the last thing that the <em>bot</em> sent to you.</p>
   + (@colors)
   % what color is it
   - That's an odd color for a dog.</pre>
-<p>In that case, if the client says ``I have a dog,'' the bot will reply asking what
+<p>In that case, if the client says &quot;I have a dog,&quot; the bot will reply asking what
 color it is. Now, if I tell it the color in my next message, it will reply back
 and tell me what an odd color that is. However, if I change the topic instead and
 say something else to the bot, it will answer my new question anyway. This is in
@@ -632,9 +636,9 @@ client asked an entirely different question. For example:</p>
 <pre>
   + call me *
   @ my name is &lt;star&gt;</pre>
-<p>If the client says ``call me John'', the bot will redirect it as though the client
-actually said ``my name is John'' and give the response of ``Nice to meet you,
-John.''</p>
+<p>If the client says &quot;call me John&quot;, the bot will redirect it as though the client
+actually said &quot;my name is John&quot; and give the response of &quot;Nice to meet you,
+John.&quot;</p>
 <p>
 </p>
 <h2><a name="__condition">* CONDITION</a></h2>
@@ -691,7 +695,7 @@ escape them with a <code>\</code>. Example: <code>\#</code> or <code>\//</code>.
 <hr />
 <h1><a name="object_macros">OBJECT MACROS</a></h1>
 <p>An <code>object macro</code> is a piece of program code that is processed by the interpreter
-to give a little more ``kick'' to the RiveScript. All objects are required to define
+to give a little more &quot;kick&quot; to the RiveScript. All objects are required to define
 the programming language they use. Ones that don't should result in vociferous
 warnings by the interpreter.</p>
 <p>Objects should be able to be declared inline within RiveScript code, however they
@@ -725,7 +729,7 @@ MD5 or Base64.</p>
 <pre>
   + encode * in base64
   - The Base64 hash of &quot;&lt;star&gt;&quot; is: &lt;call&gt;encode base64 &lt;star&gt;&lt;/call&gt;</pre>
-<p>In the above examples, <code>encode</code> calls on the object named ``encode'', which we
+<p>In the above examples, <code>encode</code> calls on the object named &quot;encode&quot;, which we
 defined above; <code>md5</code> and <code>base64</code> calls on the method name, which is received
 by the object as <code>$method</code>. Finally, <code>@args</code> as received by the object would
 be the value of &lt;star&gt; in this example.</p>
@@ -744,13 +748,13 @@ circumstances.</p>
 command.</p>
 <p>
 </p>
-<h2><a name="_star____star1____starn_">&lt;star&gt;, &lt;star1&gt; - &lt;starN&gt;</a></h2>
+<h2><a name="_star____star1_____starn_">&lt;star&gt;, &lt;star1&gt; - &lt;starN&gt;</a></h2>
 <p>The <code>&lt;star&gt;</code> tags are used for matching responses. See
 <a href="#__trigger">+ TRIGGER</a> for usage examples.</p>
 <p>The <code>&lt;star&gt;</code> tags can NOT be used within <code>+ Trigger</code>.</p>
 <p>
 </p>
-<h2><a name="_botstar____botstar1____botstarn_">&lt;botstar&gt;, &lt;botstar1&gt; - &lt;botstarN&gt;</a></h2>
+<h2><a name="_botstar____botstar1_____botstarn_">&lt;botstar&gt;, &lt;botstar1&gt; - &lt;botstarN&gt;</a></h2>
 <p>If the trigger included a <code>% Previous</code> command, <code>&lt;botstar&gt;</code> will match
 any wildcards that matched the bot's previous response.</p>
 <pre>
@@ -762,7 +766,7 @@ any wildcards that matched the bot's previous response.</p>
   - I wouldn't like &lt;star&gt; as a color for my &lt;botstar&gt;.</pre>
 <p>
 </p>
-<h2><a name="_input1____input9____reply1____reply9__">&lt;input1&gt; - &lt;input9&gt;; &lt;reply1&gt; - &lt;reply9&gt;.</a></h2>
+<h2><a name="_input1_____input9____reply1_____reply9__">&lt;input1&gt; - &lt;input9&gt;; &lt;reply1&gt; - &lt;reply9&gt;.</a></h2>
 <p>The input and reply tags insert the previous 1 to 9 things the client said, and
 the last 1 to 9 things the bot said, respectively. When these tags are used with
 <code>+ Trigger</code>, they should be formatted against substitutions first. This way, the
@@ -867,8 +871,8 @@ spaces and multi-word groups with pipes).</p>
 <pre>
   + say *
   - Umm... &quot;&lt;person&gt;&quot;</pre>
-<p>In that example, if the client says ``say you are a robot'', the bot should reply,
-``Umm... ''I am a robot.``''</p>
+<p>In that example, if the client says &quot;say you are a robot&quot;, the bot should reply,
+&quot;Umm... &quot;I am a robot.&quot;&quot;</p>
 <p>&lt;person&gt; is an alias for {person}&lt;star&gt;{/person}.</p>
 <p>
 </p>
@@ -897,7 +901,7 @@ of the first word of each sentence).</p>
 <p>
 </p>
 <h2><a name="_ok_">{ok}</a></h2>
-<p>This is used only with the ``request'' trigger within the BEGIN block. It tells
+<p>This is used only with the &quot;request&quot; trigger within the BEGIN block. It tells
 the interpreter that it's okay to go and get a real response to the client's
 message.</p>
 <p>
@@ -954,7 +958,7 @@ store them in an efficient way in which replies can be looked up quickly.</p>
 <p>
 </p>
 <h3><a name="sorting__triggers">Sorting +Triggers</a></h3>
-<p>Triggers should be sorted in a ``most specific first'' order. That is:</p>
+<p>Triggers should be sorted in a &quot;most specific first&quot; order. That is:</p>
 <pre>
   1. Atomic triggers first. Sort them so that the triggers with the most amount
      of words are on top. For multiple triggers with the same amount of words,
@@ -986,12 +990,12 @@ location where the problem occurred.</p>
 </p>
 <h2><a name="reply_fetching">REPLY FETCHING</a></h2>
 <p>When attempting to get a response to a client's message, the interpreter should
-support the sending of a ``sender ID'' along with the message. This would preferably
+support the sending of a &quot;sender ID&quot; along with the message. This would preferably
 be a screen name or handle of the client who is sending the message, and the
 interpreter should be able to keep different groups of user variables for each
 user ID. The &lt;id&gt; tag should substitute for the user's ID.</p>
 <p>If the BEGIN block was defined in any of the loaded RiveScript documents, it should
-be tried for the ``request'' trigger. That is, this trigger should be matched:</p>
+be tried for the &quot;request&quot; trigger. That is, this trigger should be matched:</p>
 <pre>
   &gt; begin
     + request
@@ -1038,7 +1042,7 @@ defined under <a href="#tag_priority">TAG PRIORITY</a>.</p>
 <p>
 </p>
 <h3><a name="within_begin_request">Within BEGIN/Request</a></h3>
-<p>Within the ``request'' response of the BEGIN block, the following tags can be
+<p>Within the &quot;request&quot; response of the BEGIN block, the following tags can be
 executed prior to getting a real response for the client's message:</p>
 <pre>
   {topic}
@@ -1077,15 +1081,15 @@ that a tag is allowed is as follows:</p>
   \n          #
   \\          #
   \#          #
+  {random}    # Random text insertion (which may contain other tags)
+  {!}         # Redefine global variables
+  &lt;bot&gt;       # Insert bot variables
+  &lt;env&gt;       # Insert environment variables
   &lt;person&gt;    # String modifiers
   &lt;formal&gt;    #
   &lt;sentence&gt;  #
   &lt;uppercase&gt; #
   &lt;lowercase&gt; #
-  {random}    # Random text insertion (which may contain other tags)
-  &lt;bot&gt;       # Insert bot variables
-  &lt;env&gt;       # Insert environment variables
-  {!}         # Redefine variables
   &lt;set&gt;       # User variable modifiers
   &lt;add&gt;       #
   &lt;sub&gt;       #
@@ -1156,6 +1160,10 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.</
 </p>
 <hr />
 <h1><a name="revisions">REVISIONS</a></h1>
+<pre>
+  Jun 19, 2008
+  - Rearranged tag priorities:
+    - &lt;bot&gt; and &lt;env&gt; moved higher up.</pre>
 <pre>
   Apr  2, 2008
   - Typo fix: under the !person section, the examples were using !sub

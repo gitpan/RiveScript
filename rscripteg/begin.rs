@@ -71,14 +71,19 @@
 ! sub didn't    = did not
 ! sub it's      = it is
 ! sub could've  = could have
+! sub couldn't  = could not
 ! sub should've = should have
+! sub shouldn't = should not
 ! sub would've  = would have
+! sub wouldn't  = would not
 ! sub when's    = when is
 ! sub when're   = when are
 ! sub when'd    = when did
+! sub y         = why
 ! sub u         = you
 ! sub ur        = your
 ! sub r         = are
+! sub n         = and
 ! sub im        = i am
 ! sub wat       = what
 ! sub wats      = what is
@@ -158,6 +163,16 @@
 ! sub (k)       = kissyface
 ! sub (f)       = rose
 ! sub (w)       = wilted rose
+
+// Person substitutions
+! person i am    = you are
+! person you are = I am
+! person i'm     = you're
+! person you're  = I'm
+! person my      = your
+! person your    = my
+! person you     = I
+! person i       = you
 
 // Set arrays
 ! array malenoun   = male guy boy dude boi man men gentleman gentlemen

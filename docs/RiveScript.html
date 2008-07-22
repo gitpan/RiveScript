@@ -115,10 +115,16 @@ in any global variables here. The two standard variables are:</p>
 </dd>
 <dd>
 <pre>
-  debug - Turns on debug mode (a LOT of information will be printed to the
-          terminal!). Default is 0 (disabled).
-  depth - Determines the recursion depth limit when following a trail of replies
-          that point to other replies. Default is 50.</pre>
+  debug     - Turns on debug mode (a LOT of information will be printed to the
+              terminal!). Default is 0 (disabled).
+  verbose   - When debug mode is on, all debug output will be printed to the
+              terminal if 'verbose' is also true. The default value is 1.
+  debugfile - Optional: paired with debug mode, all debug output is also written
+              to this file name. Since debug mode prints such a large amount of
+              data, it is often more practical to have the output go to an
+              external file for later review. Default is '' (no file).
+  depth     - Determines the recursion depth limit when following a trail of replies
+              that point to other replies. Default is 50.</pre>
 </dd>
 <dd>
 <p>It's recommended that if you set any other global variables that you do so by
@@ -130,7 +136,12 @@ are reserved:</p>
 <pre>
   topics  sorted   sortsthat  thats
   arrays  subs     person     client
-  bot     objects  reserved</pre>
+  bot     objects  reserved   debugopts</pre>
+</dd>
+<dd>
+<p>Note: the options &quot;verbose&quot; and &quot;debugfile&quot;, when provided, are noted and then
+deleted from the root object space, so that if your RiveScript code uses variables
+by the same values it won't conflict with the values that you passed here.</p>
 </dd>
 </li>
 </dl>
@@ -300,6 +311,48 @@ the issue is sent to STDERR via <code>warn</code>.</p>
 numbers, in case syntax errors appear.</p>
 </dd>
 </li>
+<dt><strong><a name="sortthattriggers_internal" class="item">sortThatTriggers *Internal</a></strong>
+
+<dd>
+<p>This method sorts all the <code>+Trigger</code> lines that are paired with a common
+<code>%Previous</code> line. This is necessary for when one question by the bot could
+have multiple replies. I found a bug with the following RS code:</p>
+</dd>
+<dd>
+<pre>
+  + how [are] you [doing]
+  - I'm doing great, how are you?
+  - Good -- how are you?
+  - Fine, how are you?</pre>
+</dd>
+<dd>
+<pre>
+  + [*] @good [*]
+  % * how are you
+  - That's good. :-)</pre>
+</dd>
+<dd>
+<pre>
+  + [*] @bad [*]
+  % * how are you
+  - Aww. :-( What's the matter?</pre>
+</dd>
+<dd>
+<pre>
+  + *
+  % * how are you
+  - I see...</pre>
+</dd>
+<dd>
+<p>The effective trigger order was &quot;<code>[*] @good [*]</code>&quot;, &quot;<code>*</code>&quot;, &quot;<code>[*] @bad [*]</code>&quot;,
+because there was no sort buffer and it was relying on Perl's hash sorting.
+This method was introduced to fix that problem and sort these triggers too.</p>
+</dd>
+<dd>
+<p>You don't need to call this method yourself; it is called automatically
+on a <a href="#sortreplies"><code>sortReplies()</code></a> request.</p>
+</dd>
+</li>
 <dt><strong><a name="sortlist" class="item">sortList ($NAME,@LIST) *Internal</a></strong>
 
 <dd>
@@ -440,6 +493,25 @@ defines the standards of RiveScript.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  1.16  Jul 22 2008
+  - New options to the constructor: 'verbose' and 'debugfile'. See the new()
+    constructor for details.
+  - Added new wildcard variants:
+    * matches anything (previous behavior)
+    # matches only numbers
+    _ matches only letters
+    So you can have a trigger like &quot;+ i am # years old&quot; and &quot;+ i am * years old&quot;,
+    with the latter trigger telling them to try that again and use a NUMBER this
+    time. :)
+  - Bugfix: when there were multiple +trigger's that had a common %previous,
+    there was no internal sort buffer for those +trigger's. As a result, matching
+    wasn't very efficient. Added the method sortThatTriggers() to fix this.
+  - Bugfix: tags weren't being processed in @Redirects when they really
+    should've!
+  - Bugfix: The ^Continue lookahead code wouldn't work if the next line began
+    with a tab. Fixed!
+  - Updated the RiveScript Working Draft.</pre>
 <pre>
   1.15  Jun 19 2008
   - Person substitutions support multiple-word patterns now.

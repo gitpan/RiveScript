@@ -1,5 +1,24 @@
 Revision history for Perl extension RiveScript.
 
+  1.16  Jul 22 2008
+  - New options to the constructor: 'verbose' and 'debugfile'. See the new()
+    constructor for details.
+  - Added new wildcard variants:
+    * matches anything (previous behavior)
+    # matches only numbers
+    _ matches only letters
+    So you can have a trigger like "+ i am # years old" and "+ i am * years old",
+    with the latter trigger telling them to try that again and use a NUMBER this
+    time. :)
+  - Bugfix: when there were multiple +trigger's that had a common %previous,
+    there was no internal sort buffer for those +trigger's. As a result, matching
+    wasn't very efficient. Added the method sortThatTriggers() to fix this.
+  - Bugfix: tags weren't being processed in @Redirects when they really
+    should've!
+  - Bugfix: The ^Continue lookahead code wouldn't work if the next line began
+    with a tab. Fixed!
+  - Updated the RiveScript Working Draft.
+
   1.15  Jun 19 2008
   - Person substitutions support multiple-word patterns now.
   - Message substititons also support multiple-word patterns now.

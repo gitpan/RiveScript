@@ -3,7 +3,7 @@ package RiveScript;
 use strict;
 use warnings;
 
-our $VERSION = '1.15'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.16'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 
 ################################################################################
@@ -15,27 +15,40 @@ sub new {
 	my $class = ref($proto) || $proto || 'RiveScript';
 
 	my $self = {
-		debug     => 0,
-		depth     => 50, # Recursion depth allowed.
-		topics    => {}, # Loaded replies under topics
-		sorted    => {}, # Sorted triggers
-		sortsthat => {}, # Sorted %previous's.
-		thats     => {}, # Reverse mapping for %previous, under topics
-		arrays    => {}, # Arrays
-		subs      => {}, # Substitutions
-		person    => {}, # Person substitutions
-		client    => {}, # User variables
-		bot       => {}, # Bot variables
-		objects   => {}, # Subroutines
-		syntax    => {}, # Syntax tracking
-		sortlist  => {}, # Sorted lists (i.e. person subs)
-		reserved  => [   # Reserved global variable names.
-			qw(topics sorted sortsthat thats arrays subs person
-			client bot objects syntax sortlist reserved)
+		debug      => 0,
+		debugopts  => {
+			verbose => 1,  # Print to the terminal
+			file    => '', # Print to a filename
+		},
+		depth      => 50, # Recursion depth allowed.
+		topics     => {}, # Loaded replies under topics
+		sorted     => {}, # Sorted triggers
+		sortsthat  => {}, # Sorted %previous's.
+		sortedthat => {}, # Sorted triggers that go with %previous's
+		thats      => {}, # Reverse mapping for %previous, under topics
+		arrays     => {}, # Arrays
+		subs       => {}, # Substitutions
+		person     => {}, # Person substitutions
+		client     => {}, # User variables
+		bot        => {}, # Bot variables
+		objects    => {}, # Subroutines
+		syntax     => {}, # Syntax tracking
+		sortlist   => {}, # Sorted lists (i.e. person subs)
+		reserved   => [   # Reserved global variable names.
+			qw(topics sorted sortsthat sortedthat thats arrays subs person
+			client bot objects syntax sortlist reserved debugopts)
 		],
 		@_,
 	};
 	bless ($self,$class);
+
+	# See if any additional debug options were provided.
+	if (exists $self->{verbose}) {
+		$self->{debugopts}->{verbose} = delete $self->{verbose};
+	}
+	if (exists $self->{debugfile}) {
+		$self->{debugopts}->{file} = delete $self->{debugfile};
+	}
 
 	$self->debug ("RiveScript $VERSION Initialized");
 
@@ -45,7 +58,20 @@ sub new {
 sub debug {
 	my ($self,$msg) = @_;
 	if ($self->{debug}) {
-		print "RiveScript: $msg\n";
+		# Verbose debugging?
+		if ($self->{debugopts}->{verbose}) {
+			print "RiveScript: $msg\n";
+		}
+
+		# Debugging to a file?
+		if (length $self->{debugopts}->{file}) {
+			# Get a real quick timestamp.
+			my @time = localtime(time());
+			my $stamp = join(":",$time[2],$time[1],$time[0]);
+			open (WRITE, ">>$self->{debugopts}->{file}");
+			print WRITE "[$stamp] RiveScript: $msg\n";
+			close (WRITE);
+		}
 	}
 }
 
@@ -75,15 +101,24 @@ sub loadDirectory {
 
 	$self->debug ("loadDirectory: Open $dir");
 
+	# If a begin.rs file exists, load it first.
+	if (-f "$dir/begin.rs") {
+		$self->debug ("loadDirectory: Read begin.rs");
+		$self->loadFile ("$dir/begin.rs");
+	}
+
 	opendir (DIR, $dir);
 	foreach my $file (readdir(DIR)) {
 		next if $file eq '.';
 		next if $file eq '..';
 		next if $file =~ /\~$/i; # Skip backup files
+		next if $file eq 'begin.rs';
+		my $badExt = 0;
 		foreach (@exts) {
 			my $re = quotemeta($_);
-			next unless $file =~ /$re$/;
+			$badExt = 1 unless $file =~ /$re$/;
 		}
+		next if $badExt;
 
 		$self->debug ("loadDirectory: Read $file");
 
@@ -217,13 +252,14 @@ sub parse {
 
 		# Ignore inline comments if there's a space before and after
 		# the // or # symbols.
-		($line,undef) = split(/\s+(\#|\/\/)\s+/, $line, 2);
+		($line,undef) = split(/\s+(\#|\/\/)\s+/, $line, 2) unless $cmd eq '+';
 
 		$self->debug ("\tCmd: $cmd");
 
 		# Do a lookahead for ^Continue and %Previous commands.
 		for (my $i = ($lp + 1); $i < scalar(@lines); $i++) {
 			my $lookahead = $lines[$i];
+			$lookahead =~ s/^[\s\t]+//g;
 			my ($lookCmd) = $lookahead =~ /^(.)/i;
 			$lookahead =~ s/^([^\s]+)\s+//i;
 
@@ -547,12 +583,42 @@ sub sortReplies {
 			my $track = {
 				atomic => {}, # Sort by # of whole words
 				option => {}, # Sort optionals by # of words
+				alpha  => {}, # Sort alpha wildcards by # of words
+				number => {}, # Sort numeric wildcards by # of words
 				wild   => {}, # Sort wildcards by # of words
 				star   => [], # Triggers of just *
 			};
 
 			foreach my $trig (@{$prior->{$p}}) {
-				if ($trig =~ /\*/) {
+				if ($trig =~ /\_/) {
+					# Alphabetic wildcard included.
+					my @words = split(/\s+/, $trig);
+					my $cnt = scalar(@words);
+					if ($cnt > 1) {
+						if (!exists $track->{alpha}->{$cnt}) {
+							$track->{alpha}->{$cnt} = [];
+						}
+						push (@{$track->{alpha}->{$cnt}}, $trig);
+					}
+					else {
+						# Lone wildcard triggers must be * only.
+					}
+				}
+				elsif ($trig =~ /\#/) {
+					# Numeric wildcard included.
+					my @words = split(/\s+/, $trig);
+					my $cnt = scalar(@words);
+					if ($cnt > 1) {
+						if (!exists $track->{number}->{$cnt}) {
+							$track->{number}->{$cnt} = [];
+						}
+						push (@{$track->{number}->{$cnt}}, $trig);
+					}
+					else {
+						# Lone wildcard triggers must be * only.
+					}
+				}
+				elsif ($trig =~ /\*/) {
 					# Wildcards included.
 					my @words = split(/\s+/, $trig);
 					my $cnt = scalar(@words);
@@ -593,6 +659,12 @@ sub sortReplies {
 			foreach my $i (sort { $b <=> $a } keys %{$track->{option}}) {
 				push (@running,@{$track->{option}->{$i}});
 			}
+			foreach my $i (sort { $b <=> $a } keys %{$track->{alpha}}) {
+				push (@running,@{$track->{alpha}->{$i}});
+			}
+			foreach my $i (sort { $b <=> $a } keys %{$track->{number}}) {
+				push (@running,@{$track->{number}->{$i}});
+			}
 			foreach my $i (sort { $b <=> $a } keys %{$track->{wild}}) {
 				push (@running,@{$track->{wild}->{$i}});
 			}
@@ -605,11 +677,162 @@ sub sortReplies {
 
 	# Also sort that's.
 	if ($thats ne 'thats') {
+		# This will sort the %previous lines to best match the bot's last reply.
 		$self->sortReplies ('thats');
+
+		# If any of those %previous's had more than one +trigger for them, this
+		# will sort all those +trigger's to pair back the best human interaction.
+		$self->sortThatTriggers;
 
 		# Also sort both kinds of substitutions.
 		$self->sortList ('subs', keys %{$self->{subs}});
 		$self->sortList ('person', keys %{$self->{person}});
+	}
+}
+
+sub sortThatTriggers {
+	my ($self) = @_;
+
+	# Usage case: if you have more than one +trigger with the same %previous,
+	# this will create a sort buffer for all those +trigger's.
+	# Ex:
+	#
+	# + how [are] you [doing]
+	# - I'm doing great, how are you?
+	# - Good -- how are you?
+	# - Fine, how are you?
+	#
+	# + [*] @good [*]
+	# % * how are you
+	# - That's good. :-)
+	#
+	# 	# // TODO: why isn't this ever called?
+	# + [*] @bad [*]
+	# % * how are you
+	# - Aww. :-( What's the matter?
+	#
+	# + *
+	# % * how are you
+	# - I see...
+
+	# The sort buffer for this.
+	$self->{sortedthat} = {};
+	# Eventual structure:
+	# $self->{sortedthat} = {
+	#	random => {
+	#		'* how are you' => [
+	#			'[*] @good [*]',
+	#			'[*] @bad [*]',
+	#			'*',
+	#		],
+	#	},
+	# };
+
+	$self->debug ("Sorting reverse triggers for %previous groups...");
+
+	foreach my $topic (keys %{$self->{thats}}) {
+		# Create a running list of the sort buffer for this topic.
+		my @running = ();
+
+		$self->debug ("Sorting the 'that' triggers for topic $topic");
+		foreach my $that (keys %{$self->{thats}->{$topic}}) {
+			$self->debug ("Sorting triggers that go with the 'that' of \"$that\"");
+			# Loop through and categorize these triggers.
+			my $track = {
+				atomic => {}, # Sort by # of whole words
+				option => {}, # Sort optionals by # of words
+				alpha  => {}, # Sort letters by # of words
+				number => {}, # Sort numbers by # of words
+				wild   => {}, # Sort wildcards by # of words
+				star   => [], # Triggers of just *
+			};
+
+			# Loop through all the triggers for this %previous.
+			foreach my $trig (keys %{$self->{thats}->{$topic}->{$that}}) {
+				if ($trig =~ /\_/) {
+					# Alphabetic wildcard included.
+					my @words = split(/\s+/, $trig);
+					my $cnt = scalar(@words);
+					if ($cnt > 1) {
+						if (!exists $track->{alpha}->{$cnt}) {
+							$track->{alpha}->{$cnt} = [];
+						}
+						push (@{$track->{alpha}->{$cnt}}, $trig);
+					}
+					else {
+						# Lone wildcard triggers must be * only.
+					}
+				}
+				elsif ($trig =~ /\#/) {
+					# Numeric wildcard included.
+					my @words = split(/\s+/, $trig);
+					my $cnt = scalar(@words);
+					if ($cnt > 1) {
+						if (!exists $track->{number}->{$cnt}) {
+							$track->{number}->{$cnt} = [];
+						}
+						push (@{$track->{number}->{$cnt}}, $trig);
+					}
+					else {
+						# Lone wildcard triggers must be * only.
+					}
+				}
+				elsif ($trig =~ /\*/) {
+					# Wildcards included.
+					my @words = split(/\s+/, $trig);
+					my $cnt = scalar(@words);
+					if ($cnt > 1) {
+						if (!exists $track->{wild}->{$cnt}) {
+							$track->{wild}->{$cnt} = [];
+						}
+						push (@{$track->{wild}->{$cnt}}, $trig);
+					}
+					else {
+						push (@{$track->{star}}, $trig);
+					}
+				}
+				elsif ($trig =~ /\[(.+?)\]/) {
+					# Optionals included.
+					my @words = split(/\s+/, $trig);
+					my $cnt = scalar(@words);
+					if (!exists $track->{option}->{$cnt}) {
+						$track->{option}->{$cnt} = [];
+					}
+					push (@{$track->{option}->{$cnt}}, $trig);
+				}
+				else {
+					# Totally atomic.
+					my @words = split(/\s+/, $trig);
+					my $cnt = scalar(@words);
+					if (!exists $track->{atomic}->{$cnt}) {
+						$track->{atomic}->{$cnt} = [];
+					}
+					push (@{$track->{atomic}->{$cnt}}, $trig);
+				}
+			}
+
+			# Add this group to the sort list.
+			my @running = ();
+			foreach my $i (sort { $b <=> $a } keys %{$track->{atomic}}) {
+				push (@running,@{$track->{atomic}->{$i}});
+			}
+			foreach my $i (sort { $b <=> $a } keys %{$track->{option}}) {
+				push (@running,@{$track->{option}->{$i}});
+			}
+			foreach my $i (sort { $b <=> $a } keys %{$track->{alpha}}) {
+				push (@running,@{$track->{alpha}->{$i}});
+			}
+			foreach my $i (sort { $b <=> $a } keys %{$track->{number}}) {
+				push (@running,@{$track->{number}->{$i}});
+			}
+			foreach my $i (sort { $b <=> $a } keys %{$track->{wild}}) {
+				push (@running,@{$track->{wild}->{$i}});
+			}
+			push (@running,@{$track->{star}});
+
+			# Keep this buffer.
+			$self->{sortedthat}->{$topic}->{$that} = [ @running ];
+		}
 	}
 }
 
@@ -896,7 +1119,7 @@ sub _getreply {
 				if ($lastReply =~ /^$botside$/i) {
 					# Found a match! See if our message is correct too.
 					(@thatstars) = ($lastReply =~ /^$botside$/i);
-					foreach my $subtrig (keys %{$self->{thats}->{$topic}->{$trig}}) {
+					foreach my $subtrig (@{$self->{sortedthat}->{$topic}->{$trig}}) {
 						my $humanside = $self->_reply_regexp ($user,$subtrig);
 
 						$self->debug ("Now try to match $msg to $humanside");
@@ -921,7 +1144,7 @@ sub _getreply {
 			# Process the triggers.
 			my $regexp = $self->_reply_regexp ($user,$trig);
 
-			$self->debug ("Trying to match \"$msg\" against $trig");
+			$self->debug ("Trying to match \"$msg\" against $trig ($regexp)");
 
 			if ($msg =~ /^$regexp$/i) {
 				$self->debug ("Found a match!");
@@ -939,7 +1162,10 @@ sub _getreply {
 		# See if there are any hard redirects.
 		if (exists $matched->{redirect}) {
 			$self->debug ("Redirecting us to $matched->{redirect}");
-			$reply = $self->_getreply ($user,$matched->{redirect},
+			my $redirect = $matched->{redirect};
+			$redirect = $self->processTags ($user,$msg,$redirect,[@stars],[@thatstars]);
+			$self->debug ("Pretend user asked: $redirect");
+			$reply = $self->_getreply ($user,$redirect,
 				context => $tags{context},
 				step    => ($tags{step} + 1),
 			);
@@ -1062,7 +1288,9 @@ sub _getreply {
 sub _reply_regexp {
 	my ($self,$user,$regexp) = @_;
 
-	$regexp =~ s/\*/(.+?)/ig;       # Convert * into (.+?)
+	$regexp =~ s/\*/(.+?)/ig;        # Convert * into (.+?)
+	$regexp =~ s/\#/(\\d+?)/ig;    # Convert # into ([0-9]+?)
+	$regexp =~ s/\_/(\\w+?)/ig; # Convert _ into ([A-Za-z]+?)
 	$regexp =~ s/\{weight=\d+\}//ig; # Remove {weight} tags.
 	while ($regexp =~ /\[(.+?)\]/i) { # Optionals
 		my @parts = split(/\|/, $1);
@@ -1443,10 +1671,16 @@ Create a new instance of a RiveScript interpreter. The instance will become its
 own "chatterbot," with its own set of responses and user variables. You can pass
 in any global variables here. The two standard variables are:
 
-  debug - Turns on debug mode (a LOT of information will be printed to the
-          terminal!). Default is 0 (disabled).
-  depth - Determines the recursion depth limit when following a trail of replies
-          that point to other replies. Default is 50.
+  debug     - Turns on debug mode (a LOT of information will be printed to the
+              terminal!). Default is 0 (disabled).
+  verbose   - When debug mode is on, all debug output will be printed to the
+              terminal if 'verbose' is also true. The default value is 1.
+  debugfile - Optional: paired with debug mode, all debug output is also written
+              to this file name. Since debug mode prints such a large amount of
+              data, it is often more practical to have the output go to an
+              external file for later review. Default is '' (no file).
+  depth     - Determines the recursion depth limit when following a trail of replies
+              that point to other replies. Default is 50.
 
 It's recommended that if you set any other global variables that you do so by
 calling C<setGlobal> or defining it within the RiveScript code. This will avoid
@@ -1455,7 +1689,11 @@ are reserved:
 
   topics  sorted   sortsthat  thats
   arrays  subs     person     client
-  bot     objects  reserved
+  bot     objects  reserved   debugopts
+
+Note: the options "verbose" and "debugfile", when provided, are noted and then
+deleted from the root object space, so that if your RiveScript code uses variables
+by the same values it won't conflict with the values that you passed here.
 
 =back
 
@@ -1587,6 +1825,36 @@ This method is called internally to parse a file or streamed RiveScript code.
 C<$FILENAME> is only there so it can keep internal track of files and line
 numbers, in case syntax errors appear.
 
+=item sortThatTriggers *Internal
+
+This method sorts all the C<+Trigger> lines that are paired with a common
+C<%Previous> line. This is necessary for when one question by the bot could
+have multiple replies. I found a bug with the following RS code:
+
+  + how [are] you [doing]
+  - I'm doing great, how are you?
+  - Good -- how are you?
+  - Fine, how are you?
+
+  + [*] @good [*]
+  % * how are you
+  - That's good. :-)
+
+  + [*] @bad [*]
+  % * how are you
+  - Aww. :-( What's the matter?
+
+  + *
+  % * how are you
+  - I see...
+
+The effective trigger order was "C<[*] @good [*]>", "C<*>", "C<[*] @bad [*]>",
+because there was no sort buffer and it was relying on Perl's hash sorting.
+This method was introduced to fix that problem and sort these triggers too.
+
+You don't need to call this method yourself; it is called automatically
+on a C<sortReplies()> request.
+
 =item sortList ($NAME,@LIST) *Internal
 
 This is used internally to sort arrays (namely, person and substitution pattern
@@ -1716,6 +1984,25 @@ defines the standards of RiveScript.
 L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
+
+  1.16  Jul 22 2008
+  - New options to the constructor: 'verbose' and 'debugfile'. See the new()
+    constructor for details.
+  - Added new wildcard variants:
+    * matches anything (previous behavior)
+    # matches only numbers
+    _ matches only letters
+    So you can have a trigger like "+ i am # years old" and "+ i am * years old",
+    with the latter trigger telling them to try that again and use a NUMBER this
+    time. :)
+  - Bugfix: when there were multiple +trigger's that had a common %previous,
+    there was no internal sort buffer for those +trigger's. As a result, matching
+    wasn't very efficient. Added the method sortThatTriggers() to fix this.
+  - Bugfix: tags weren't being processed in @Redirects when they really
+    should've!
+  - Bugfix: The ^Continue lookahead code wouldn't work if the next line began
+    with a tab. Fixed!
+  - Updated the RiveScript Working Draft.
 
   1.15  Jun 19 2008
   - Person substitutions support multiple-word patterns now.

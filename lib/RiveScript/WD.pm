@@ -1,6 +1,6 @@
 package RiveScript::WD;
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # This is not a real module; it's only a current copy of the RiveScript
 # Working Draft. See the latest version at
@@ -9,7 +9,7 @@ our $VERSION = '1.14';
 
 =head1 NAME
 
-RiveScript::WD - RiveScript 2.00 Working Draft (2008/06/19)
+RiveScript::WD - RiveScript 2.00 Working Draft (2008/07/22)
 
 =head1 DESCRIPTION
 
@@ -316,6 +316,17 @@ the user says in place of the wildcard may still match the trigger. For example:
   + my name is *
   - Pleased to meet you, <star>.
 
+An asterisk (C<*>) will match any character (numbers and letters). If you want
+to only match numbers, use C<#>, and to match only letters use C<_>. Example:
+
+  // This will ONLY take a number as the wildcard.
+  + i am # years old
+  - I will remember that you are <star> years old.
+
+  // This will ONLY take letters but not numbers.
+  + my name is _
+  - Nice to meet you, <star>.
+
 The values matched by the wildcards can be retrieved in the responses by using
 the tags C<E<lt>star1E<gt>>, C<E<lt>star2E<gt>>, C<E<lt>star3E<gt>>, etc. in the
 order that the wildcard appeared. C<E<lt>starE<gt>> is an alias for C<E<lt>star1E<gt>>.
@@ -595,6 +606,10 @@ Comments on their own line should be ignored by all interpreters. Inline comment
 (comments next to RiveScript commands) should be ignored only if the comment
 symbol is not touching the text of the RiveScript command. There should be at
 least one space before the C<#> or C<//> command.
+
+Of special note, the C<#> comment character cannot be used inline next to a
+C<+> command, to avoid confusion when a C<#> wildcard was intended. See
+L<"Trigger Wildcards">.
 
 To explicitely use the characters C<#> or C<//> in a RiveScript command, you must
 escape them with a C<\>. Example: C<\#> or C<\//>.
@@ -894,7 +909,12 @@ Triggers should be sorted in a "most specific first" order. That is:
   2. Sort triggers that contain optionals in their triggers next. Sort them in
      the same manner as the atomic triggers.
   3. Sort triggers containing wildcards next. Sort them by the number of words
-     that aren't wildcards.
+     that aren't wildcards. The order of wildcard sorting should be as follows:
+
+     A. Alphabetic wildcards (_)
+     B. Numeric wildcards (#)
+     C. Global wildcards (*)
+
   4. The very bottom of the list will be a trigger that simply matches * by
      itself, if it exists.
 
@@ -1093,6 +1113,10 @@ Or perhaps there will just be a converter tool created that would go through cod
 that it already assumes will be RiveScript 1.x and update it to 2.x standards.
 
 =head1 REVISIONS
+
+  Jul 22, 2008
+  - Added two new variants of the wildcard: # will match only numbers and _ will
+    match only letters. * will still match anything at all.
 
   Jun 19, 2008
   - Rearranged tag priorities:

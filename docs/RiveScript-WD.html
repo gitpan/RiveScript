@@ -135,7 +135,7 @@
 <p>
 </p>
 <h1><a name="name">NAME</a></h1>
-<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/07/22)</p>
+<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/09/15)</p>
 <p>
 </p>
 <hr />
@@ -698,9 +698,15 @@ C-style <code>//</code> and <code>/* */</code> syntax is also supported for comm
 (comments next to RiveScript commands) should be ignored only if the comment
 symbol is not touching the text of the RiveScript command. There should be at
 least one space before the <code>#</code> or <code>//</code> command.</p>
-<p>Of special note, the <code>#</code> comment character cannot be used inline next to a
-<code>+</code> command, to avoid confusion when a <code>#</code> wildcard was intended. See
-<a href="#trigger_wildcards">Trigger Wildcards</a>.</p>
+<p>Of special note, if the <code>#</code> comment character is to be used inline next to a
+<code>+</code> trigger, there should be <strong>two</strong> spaces before the <code>#</code> symbol to avoid
+interpreter confusion, since <code>#</code> is also a wildcard symbol in triggers.</p>
+<pre>
+  Bad:
+  + request # This trigger is tested first
+  Good:
+  + request  # This trigger is tested first (2 spaces before, 1+ space(s) after)
+  + request // This trigger is tested first (only 1 space is needed for // syntax)</pre>
 <p>To explicitely use the characters <code>#</code> or <code>//</code> in a RiveScript command, you must
 escape them with a <code>\</code>. Example: <code>\#</code> or <code>\//</code>.</p>
 <p>
@@ -987,7 +993,8 @@ store them in an efficient way in which replies can be looked up quickly.</p>
      C. Global wildcards (*)</pre>
 <pre>
   4. The very bottom of the list will be a trigger that simply matches * by
-     itself, if it exists.</pre>
+     itself, if it exists. If triggers of only _ or only # exist, sort them in
+     the same order as in step 3.</pre>
 <p>
 </p>
 <h3><a name="sorting__previous">Sorting %Previous</a></h3>
@@ -1178,6 +1185,11 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.</
 </p>
 <hr />
 <h1><a name="revisions">REVISIONS</a></h1>
+<pre>
+  Sep 15, 2008
+  - Updated the section about # for inline comments: when used next to a
+    +Trigger, there should be at least 2 spaces before the # symbol and 1 space
+    after, to avoid confusion with # as a wildcard character.</pre>
 <pre>
   Jul 22, 2008
   - Added two new variants of the wildcard: # will match only numbers and _ will

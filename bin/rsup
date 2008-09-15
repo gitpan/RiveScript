@@ -340,64 +340,80 @@ sub usage {
 }
 
 sub help {
-	print qq~Usage: rsup [--out --ext --backup --dontfixperl] <docs or directories>
-
-NAME
-
-	rsup - Upgrade RiveScript 1.x documents to RS 2.0 standards.
-	Version: $VERSION
-
-OPTIONS
-
-	--out <directory>
-	-o
-
-		Specify a directory to output the new documents. If not
-		specified, the files being read from will be replaced with the
-		new documents.
-
-	--ext <extension=.rs>
-	-x
-
-		For any arguments that are directories, all files in that
-		directory ending with this extension are read. Default ".rs"
-
-	--backup
-	--bak
-	-b
-
-		Specify this flag if you want backup files (such as those
-		created by Emacs and gEdit) to be processed. The default is to
-		not read these files.
-
-	--dontfixperl
-	-p
-
-		When reading in Perl objects, rsup will, by default, attempt to
-		fix the \@_ line to include \$rs, the reference to the RS
-		instance. Since this will modify the code of your object, you
-		can specify this flag to disable this feature.
-
-	<directories or documents>
-
-		After specifying any command-line arguments, give rsup a list of
-		directories or files to work on. For directories, they are
-		opened and any RiveScript documents inside are automatically
-		read. For individual files, just these files are read.
-
-CAVEATS
-
-	This program is still under development. It tries its best to upgrade
-	old RiveScript code to the new standards, but it\'s not perfect. It will
-	output everything it changes to the terminal, but you may need to go
-	through and make some custom tweaks to fix anything that it didn\'t
-	translate properly.
-
-AUTHOR
-
-	Casey Kirsle
-	<rivescript.com>
-~;
-
 	exit(0);
 }
+
+=head1 NAME
+
+rsup - Upgrade RiveScript 1.x documents to the new 2.x standards.
+
+=head1 SYNOPSIS
+
+  rsup [--out --ext --backup --dontfixperl] <files or folders>
+
+=head1 DESCRIPTION
+
+When RiveScript was rewritten to a new standard, a certain areas of backwards
+compatibility became broken. See the L<RiveScript::WD> document for details of
+the incompatible changes.
+
+This command-line tool can upgrade obsolete RiveScript code to fix these
+incompatibilities and allow it to be parsed by a RiveScript 2 interpreter.
+
+=head1 OPTIONS
+
+=over 4
+
+=item --out <directory>
+
+=item -o
+
+Specify a directory to output the new documents. If not specified, the files
+being read from will be replaced with the new documents.
+
+=item --ext <extension=.rs>
+
+=item -x
+
+For any arguments that are directories, all files in that directory ending with
+this extension are read. Default is C<.rs>
+
+=item --backup
+
+=item --bak
+
+=item -b
+
+Specify this flag if you want backup files (such as those created by Emacs
+or gEdit) to be processed. The default is to B<not> read these files.
+
+=item --dontfixperl
+
+=item -p
+
+When reading in Perl objects, C<rsup> will, by default, attempt to fix the C<@_>
+lines to include C<$rs>, the reference to the RS instance. Since this will
+modify the code of your object, you can specify this flag to disable this
+feature.
+
+=item directories or documents
+
+After specifying command-line arguments, give C<rsup> a list of directories or
+files to work on. For directories, they are opened and any RiveScript documents
+inside are automatically processed. For individual files, just these files will
+be processed.
+
+=back
+
+=head1 CAVEATS
+
+This program is still under development. It tries its best to upgrade old
+RiveScript code to the new standards, but it's not perfect. It will output
+everything it changes to the terminal, but you may need to go through and make
+some custom tweaks to fix anything that it didn't translate properly.
+
+=head1 AUTHOR
+
+Casey Kirsle, http://www.rivescript.com/
+
+=cut

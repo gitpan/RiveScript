@@ -3,8 +3,9 @@ package RiveScript;
 use strict;
 use warnings;
 
-our $VERSION = '1.16'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.17'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
+our $basedir = (__FILE__ =~ /^(.+?)\.pm$/i ? $1 : '.');
 
 ################################################################################
 ## Constructor and Debug Methods                                              ##
@@ -108,7 +109,7 @@ sub loadDirectory {
 	}
 
 	opendir (DIR, $dir);
-	foreach my $file (readdir(DIR)) {
+	foreach my $file (sort { $a cmp $b } readdir(DIR)) {
 		next if $file eq '.';
 		next if $file eq '..';
 		next if $file =~ /\~$/i; # Skip backup files
@@ -252,43 +253,54 @@ sub parse {
 
 		# Ignore inline comments if there's a space before and after
 		# the // or # symbols.
-		($line,undef) = split(/\s+(\#|\/\/)\s+/, $line, 2) unless $cmd eq '+';
+		my $inline_comment_regexp = "\\s+(\\#|\\/\\/)\\s+";
+		if ($cmd eq '+') {
+			$inline_comment_regexp = "\\s(\\s\\#|\\/\\/)\\s+";
+		}
+		if ($line =~ /$inline_comment_regexp/) {
+			my ($left,$comment) = split(/$inline_comment_regexp/, $line, 2);
+			$left =~ s/\s+$//g;
+			$line = $left;
+		}
 
 		$self->debug ("\tCmd: $cmd");
 
 		# Do a lookahead for ^Continue and %Previous commands.
 		for (my $i = ($lp + 1); $i < scalar(@lines); $i++) {
 			my $lookahead = $lines[$i];
-			$lookahead =~ s/^[\s\t]+//g;
+			$lookahead =~ s/^(\t|\x0a|\x0d|\s)+//g;
 			my ($lookCmd) = $lookahead =~ /^(.)/i;
 			$lookahead =~ s/^([^\s]+)\s+//i;
 
-			if ($cmd eq '+') {
-				# Look for %Previous.
-				if ($lookCmd eq '%') {
-					$self->debug ("\tIs a %previous ($lookahead)");
-					$isThat = $lookahead;
-					last;
+			# Only continue if the lookahead line has any data.
+			if (defined $lookahead && length $lookahead > 0) {
+				if ($cmd eq '+') {
+					# Look for %Previous.
+					if ($lookCmd eq '%') {
+						$self->debug ("\tIs a %previous ($lookahead)");
+						$isThat = $lookahead;
+						last;
+					}
+					else {
+						$isThat = '';
+					}
 				}
-				else {
-					$isThat = '';
-				}
-			}
 
-			if ($cmd ne '^' && $lookCmd ne '%') {
-				if ($lookCmd eq '^') {
-					$self->debug ("\t^ [$lp;$i] $lookahead");
-					$line .= $lookahead;
-				}
-				else {
-					last;
+				if ($cmd ne '^' && $lookCmd ne '%') {
+					if ($lookCmd eq '^') {
+						$self->debug ("\t^ [$lp;$i] $lookahead");
+						$line .= $lookahead;
+					}
+					else {
+						last;
+					}
 				}
 			}
 		}
 
 		if ($cmd eq '!') {
 			# ! DEFINE
-			my ($left,$value) = split(/\s*=\s*/, $line);
+			my ($left,$value) = split(/\s*=\s*/, $line, 2);
 			my ($type,$var) = split(/\s+/, $left, 2);
 			$ontrig = '';
 			$self->debug ("\t! DEFINE");
@@ -586,13 +598,15 @@ sub sortReplies {
 				alpha  => {}, # Sort alpha wildcards by # of words
 				number => {}, # Sort numeric wildcards by # of words
 				wild   => {}, # Sort wildcards by # of words
+				pound  => [], # Triggers of just #
+				under  => [], # Triggers of just _
 				star   => [], # Triggers of just *
 			};
 
 			foreach my $trig (@{$prior->{$p}}) {
 				if ($trig =~ /\_/) {
 					# Alphabetic wildcard included.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{alpha}->{$cnt}) {
@@ -601,12 +615,12 @@ sub sortReplies {
 						push (@{$track->{alpha}->{$cnt}}, $trig);
 					}
 					else {
-						# Lone wildcard triggers must be * only.
+						push (@{$track->{under}}, $trig);
 					}
 				}
 				elsif ($trig =~ /\#/) {
 					# Numeric wildcard included.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{number}->{$cnt}) {
@@ -615,12 +629,12 @@ sub sortReplies {
 						push (@{$track->{number}->{$cnt}}, $trig);
 					}
 					else {
-						# Lone wildcard triggers must be * only.
+						push (@{$track->{pound}}, $trig);
 					}
 				}
 				elsif ($trig =~ /\*/) {
 					# Wildcards included.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{wild}->{$cnt}) {
@@ -634,7 +648,7 @@ sub sortReplies {
 				}
 				elsif ($trig =~ /\[(.+?)\]/) {
 					# Optionals included.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if (!exists $track->{option}->{$cnt}) {
 						$track->{option}->{$cnt} = [];
@@ -643,7 +657,7 @@ sub sortReplies {
 				}
 				else {
 					# Totally atomic.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if (!exists $track->{atomic}->{$cnt}) {
 						$track->{atomic}->{$cnt} = [];
@@ -668,6 +682,8 @@ sub sortReplies {
 			foreach my $i (sort { $b <=> $a } keys %{$track->{wild}}) {
 				push (@running,@{$track->{wild}->{$i}});
 			}
+			push (@running,@{$track->{under}});
+			push (@running,@{$track->{pound}});
 			push (@running,@{$track->{star}});
 		}
 
@@ -744,6 +760,8 @@ sub sortThatTriggers {
 				alpha  => {}, # Sort letters by # of words
 				number => {}, # Sort numbers by # of words
 				wild   => {}, # Sort wildcards by # of words
+				pound  => [], # Triggers of just #
+				under  => [], # Triggers of just _
 				star   => [], # Triggers of just *
 			};
 
@@ -751,7 +769,7 @@ sub sortThatTriggers {
 			foreach my $trig (keys %{$self->{thats}->{$topic}->{$that}}) {
 				if ($trig =~ /\_/) {
 					# Alphabetic wildcard included.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{alpha}->{$cnt}) {
@@ -760,12 +778,12 @@ sub sortThatTriggers {
 						push (@{$track->{alpha}->{$cnt}}, $trig);
 					}
 					else {
-						# Lone wildcard triggers must be * only.
+						push (@{$track->{under}}, $trig);
 					}
 				}
 				elsif ($trig =~ /\#/) {
 					# Numeric wildcard included.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{number}->{$cnt}) {
@@ -774,12 +792,12 @@ sub sortThatTriggers {
 						push (@{$track->{number}->{$cnt}}, $trig);
 					}
 					else {
-						# Lone wildcard triggers must be * only.
+						push (@{$track->{pound}}, $trig);
 					}
 				}
 				elsif ($trig =~ /\*/) {
 					# Wildcards included.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{wild}->{$cnt}) {
@@ -793,7 +811,7 @@ sub sortThatTriggers {
 				}
 				elsif ($trig =~ /\[(.+?)\]/) {
 					# Optionals included.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if (!exists $track->{option}->{$cnt}) {
 						$track->{option}->{$cnt} = [];
@@ -802,7 +820,7 @@ sub sortThatTriggers {
 				}
 				else {
 					# Totally atomic.
-					my @words = split(/\s+/, $trig);
+					my @words = split(/[\s\*\#\_]/, $trig);
 					my $cnt = scalar(@words);
 					if (!exists $track->{atomic}->{$cnt}) {
 						$track->{atomic}->{$cnt} = [];
@@ -828,6 +846,8 @@ sub sortThatTriggers {
 			foreach my $i (sort { $b <=> $a } keys %{$track->{wild}}) {
 				push (@running,@{$track->{wild}->{$i}});
 			}
+			push (@running,@{$track->{under}});
+			push (@running,@{$track->{pound}});
 			push (@running,@{$track->{star}});
 
 			# Keep this buffer.
@@ -1185,6 +1205,10 @@ sub _getreply {
 				$left = $self->processTags ($user,$msg,$left,[@stars],[@thatstars]);
 				$right = $self->processTags ($user,$msg,$right,[@stars],[@thatstars]);
 
+				# Revert them to undefined values.
+				$left = 'undefined' if $left eq '';
+				$right = 'undefined' if $right eq '';
+
 				$self->debug ("\t\tCheck if \"$left\" $eq \"$right\"");
 
 				# Validate the expression.
@@ -1289,8 +1313,8 @@ sub _reply_regexp {
 	my ($self,$user,$regexp) = @_;
 
 	$regexp =~ s/\*/(.+?)/ig;        # Convert * into (.+?)
-	$regexp =~ s/\#/(\\d+?)/ig;    # Convert # into ([0-9]+?)
-	$regexp =~ s/\_/(\\w+?)/ig; # Convert _ into ([A-Za-z]+?)
+	$regexp =~ s/\#/(\\d+)/ig;    # Convert # into ([0-9]+?)
+	$regexp =~ s/\_/(\\w+)/ig; # Convert _ into ([A-Za-z]+?)
 	$regexp =~ s/\{weight=\d+\}//ig; # Remove {weight} tags.
 	while ($regexp =~ /\[(.+?)\]/i) { # Optionals
 		my @parts = split(/\|/, $1);
@@ -1300,7 +1324,15 @@ sub _reply_regexp {
 			push (@new,$p);
 		}
 		push (@new,'\s*');
-		my $rep = '(?:' . join ("|",@new) . ")";
+
+		# If this optional had a star or anything in it, e.g. [*],
+		# make that non-matching.
+		my $pipes = join("|",@new);
+		$pipes =~ s/\(\.\+\?\)/(?:.+?)/ig; # (.+?) --> (?:.+?)
+		$pipes =~ s/\(\\d\+\)/(?:\\d+)/ig; # (\d+) --> (?:\d+)
+		$pipes =~ s/\(\\w\+\)/(?:\\w+)/ig; # (\w+) --> (?:\w+)
+
+		my $rep = "(?:$pipes)";
 		$regexp =~ s/\s*\[(.+?)\]\s*/$rep/i;
 	}
 
@@ -1984,6 +2016,26 @@ defines the standards of RiveScript.
 L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
+
+  1.17  Sep 15 2008
+  - Updated the rsdemo tool to be more flexible as a general debugging and
+    developing program. Also updated rsdemo and rsup to include POD documentation
+    that can be read via `perldoc`.
+  - Added a global variable $RiveScript::basedir which is the the path to your
+    Perl lib/RiveScript folder. This is used by `rsdemo` as its default location
+    to search for replies.
+  - Tweak: Triggers of only # and _ can exist now alongside the old single-wildcard
+    trigger of *.
+  - Bugfix: The lookahead code would throw Perl warnings if the following line
+    had a single space in it, but was otherwise empty.
+  - Bugfix: Inline comment removing has been fixed.
+  - Bugfix: In conditionals, any blank side of the equality will get a default
+    value of "undefined". This way you can use a matching array inside an optional
+    and check if that <star> tag is defined.
+    + i am wearing a [(@colors)] shirt
+    * <star> ne undefined => Why are you wearing a <star> shirt?
+    - What color is it?
+  - Updated the RiveScript Working Draft.
 
   1.16  Jul 22 2008
   - New options to the constructor: 'verbose' and 'debugfile'. See the new()

@@ -1,9 +1,14 @@
 ! version = 2.0
 
 > begin
-	+ request # This trigger is tested first.
-	- {ok}    # An {ok} in the response means it's okay to get a real reply
+	+ request // This trigger is tested first.
+	- {ok}    // An {ok} in the response means it's okay to get a real reply
 < begin
+
+> topic bogus
+	+ *
+	- wtf
+< topic
 
 // Bot Variables
 ! var name     = Aiden

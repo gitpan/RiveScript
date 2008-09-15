@@ -1,6 +1,6 @@
 package RiveScript::WD;
 
-our $VERSION = '1.16';
+our $VERSION = '1.17';
 
 # This is not a real module; it's only a current copy of the RiveScript
 # Working Draft. See the latest version at
@@ -9,7 +9,7 @@ our $VERSION = '1.16';
 
 =head1 NAME
 
-RiveScript::WD - RiveScript 2.00 Working Draft (2008/07/22)
+RiveScript::WD - RiveScript 2.00 Working Draft (2008/09/15)
 
 =head1 DESCRIPTION
 
@@ -607,9 +607,15 @@ Comments on their own line should be ignored by all interpreters. Inline comment
 symbol is not touching the text of the RiveScript command. There should be at
 least one space before the C<#> or C<//> command.
 
-Of special note, the C<#> comment character cannot be used inline next to a
-C<+> command, to avoid confusion when a C<#> wildcard was intended. See
-L<"Trigger Wildcards">.
+Of special note, if the C<#> comment character is to be used inline next to a
+C<+> trigger, there should be B<two> spaces before the C<#> symbol to avoid
+interpreter confusion, since C<#> is also a wildcard symbol in triggers.
+
+  Bad:
+  + request # This trigger is tested first
+  Good:
+  + request  # This trigger is tested first (2 spaces before, 1+ space(s) after)
+  + request // This trigger is tested first (only 1 space is needed for // syntax)
 
 To explicitely use the characters C<#> or C<//> in a RiveScript command, you must
 escape them with a C<\>. Example: C<\#> or C<\//>.
@@ -916,7 +922,8 @@ Triggers should be sorted in a "most specific first" order. That is:
      C. Global wildcards (*)
 
   4. The very bottom of the list will be a trigger that simply matches * by
-     itself, if it exists.
+     itself, if it exists. If triggers of only _ or only # exist, sort them in
+     the same order as in step 3.
 
 =head3 Sorting %Previous
 
@@ -1113,6 +1120,11 @@ Or perhaps there will just be a converter tool created that would go through cod
 that it already assumes will be RiveScript 1.x and update it to 2.x standards.
 
 =head1 REVISIONS
+
+  Sep 15, 2008
+  - Updated the section about # for inline comments: when used next to a
+    +Trigger, there should be at least 2 spaces before the # symbol and 1 space
+    after, to avoid confusion with # as a wildcard character.
 
   Jul 22, 2008
   - Added two new variants of the wildcard: # will match only numbers and _ will

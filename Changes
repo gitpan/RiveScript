@@ -1,5 +1,25 @@
 Revision history for Perl extension RiveScript.
 
+  1.17  Sep 15 2008
+  - Updated the rsdemo tool to be more flexible as a general debugging and
+    developing program. Also updated rsdemo and rsup to include POD documentation
+    that can be read via `perldoc`.
+  - Added a global variable $RiveScript::basedir which is the the path to your
+    Perl lib/RiveScript folder. This is used by `rsdemo` as its default location
+    to search for replies.
+  - Tweak: Triggers of only # and _ can exist now alongside the old single-wildcard
+    trigger of *.
+  - Bugfix: The lookahead code would throw Perl warnings if the following line
+    had a single space in it, but was otherwise empty.
+  - Bugfix: Inline comment removing has been fixed.
+  - Bugfix: In conditionals, any blank side of the equality will get a default
+    value of "undefined". This way you can use a matching array inside an optional
+    and check if that <star> tag is defined.
+    + i am wearing a [(@colors)] shirt
+    * <star> ne undefined => Why are you wearing a <star> shirt?
+    - What color is it?
+  - Updated the RiveScript Working Draft.
+
   1.16  Jul 22 2008
   - New options to the constructor: 'verbose' and 'debugfile'. See the new()
     constructor for details.

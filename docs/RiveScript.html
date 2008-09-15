@@ -494,6 +494,26 @@ defines the standards of RiveScript.</p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
 <pre>
+  1.17  Sep 15 2008
+  - Updated the rsdemo tool to be more flexible as a general debugging and
+    developing program. Also updated rsdemo and rsup to include POD documentation
+    that can be read via `perldoc`.
+  - Added a global variable $RiveScript::basedir which is the the path to your
+    Perl lib/RiveScript folder. This is used by `rsdemo` as its default location
+    to search for replies.
+  - Tweak: Triggers of only # and _ can exist now alongside the old single-wildcard
+    trigger of *.
+  - Bugfix: The lookahead code would throw Perl warnings if the following line
+    had a single space in it, but was otherwise empty.
+  - Bugfix: Inline comment removing has been fixed.
+  - Bugfix: In conditionals, any blank side of the equality will get a default
+    value of &quot;undefined&quot;. This way you can use a matching array inside an optional
+    and check if that &lt;star&gt; tag is defined.
+    + i am wearing a [(@colors)] shirt
+    * &lt;star&gt; ne undefined =&gt; Why are you wearing a &lt;star&gt; shirt?
+    - What color is it?
+  - Updated the RiveScript Working Draft.</pre>
+<pre>
   1.16  Jul 22 2008
   - New options to the constructor: 'verbose' and 'debugfile'. See the new()
     constructor for details.

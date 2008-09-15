@@ -2,17 +2,20 @@ Changes
 Makefile.PL
 MANIFEST
 README
-rsdemo
-rsup
+LICENSE
+bin/rsdemo
+bin/rsup
 docs/rivescript.css
 docs/RiveScript.html
 docs/RiveScript-WD.html
-rscripteg/admin.rs
-rscripteg/begin.rs
-rscripteg/clients.rs
-rscripteg/eliza.rs
-rscripteg/myself.rs
+docs/rsdemo.html
+docs/rsup.html
 t/RiveScript.t
 lib/RiveScript.pm
 lib/RiveScript/WD.pm
+lib/RiveScript/demo/admin.rs
+lib/RiveScript/demo/begin.rs
+lib/RiveScript/demo/clients.rs
+lib/RiveScript/demo/eliza.rs
+lib/RiveScript/demo/myself.rs
 META.yml                                 Module meta-data (added by MakeMaker)

@@ -3,6 +3,7 @@ Makefile.PL
 MANIFEST
 README
 LICENSE
+testsuite.rs
 bin/rsdemo
 bin/rsup
 docs/rivescript.css

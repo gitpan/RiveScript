@@ -5,10 +5,8 @@
 	- {ok}    // An {ok} in the response means it's okay to get a real reply
 < begin
 
-> topic bogus
-	+ *
-	- wtf
-< topic
+// The Botmaster's Name
+! var master = localuser
 
 // Bot Variables
 ! var name     = Aiden

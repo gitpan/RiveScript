@@ -1,6 +1,6 @@
 package RiveScript::WD;
 
-our $VERSION = '1.17';
+our $VERSION = '1.18';
 
 # This is not a real module; it's only a current copy of the RiveScript
 # Working Draft. See the latest version at
@@ -9,7 +9,7 @@ our $VERSION = '1.17';
 
 =head1 NAME
 
-RiveScript::WD - RiveScript 2.00 Working Draft (2008/09/15)
+RiveScript::WD - RiveScript 2.00 Working Draft (2008/12/04)
 
 =head1 DESCRIPTION
 
@@ -165,6 +165,34 @@ Examples:
   ! array be     = is are was were
   ! array whatis = what is|what are|what was|what were
 
+Arrays have special treatment when spanned over multiple lines. Each extension
+of the array data is treated individually. For example, to break an array of
+many single-words into multiple lines of RiveScript code:
+
+  ! array colors = red green blue cyan
+  ^ magenta yellow black white
+  ^ orange brown
+
+The data structure pulled from that code would be identical to the previous
+example above for this array.
+
+Since each extension line is processed individually, you can combine the
+space-delimited and pipe-delimited formats. In this case, we can add some color
+names to our list that have multiple words in them.
+
+  ! array colors = red green blue cyan magenta yellow
+  ^ light red|light green|light blue|light cyan|light magenta|light yellow
+  ^ dark red|dark green|dark blue|dark cyan|dark magenta|dark yellow
+  ^ white orange teal brown pink
+  ^ dark white|dark orange|dark teal|dark brown|dark pink
+
+Finally, if your array consists of almost entirely single-word items, and you
+want to add in just one multi-word item, but don't want to require an extra line
+of RiveScript code to accomplish this, just use the C<\s> tag where you need
+spaces to go.
+
+  ! array blues = azure blue aqua cyan baby\sblue sky\sblue
+
 =head3 sub
 
 The C<sub> variables are for defining substitutions that should be run against
@@ -231,7 +259,10 @@ A topic is a smaller set of responses to which the client will be bound until
 the topic is changed to something else. The default topic is C<random>.
 
 The C<topic> label only requires one additional argument, which is the name of
-the topic. The topic's name should be one word and lowercase.
+the topic. The topic's name should be one word and lowercase. If the topic
+should inherit the triggers that belong in a different topic, the second
+argument should be "C<inherits>" followed by at least one additional argument
+that defines the list of topics to inherit.
 
 Example:
 
@@ -248,6 +279,64 @@ Example:
     - Okay. I guess I'll forgive you then.{topic=random}
 
   < topic
+
+A practical example of how topic inheritence works might be when creating a
+kind of text-based roleplaying game: you could have global triggers such as
+"C<help>" and "C<inventory>" that are available regardless of what world or room
+the player is currently in.
+
+  > topic rpg_global
+    + help
+    - <call>help</call>
+
+    + inventory
+    - <call>inventory</call>
+
+    + quit
+    - {topic=random}Game ended.
+
+    + _ [*]
+    - You don't need to use the word "<star>" in this game.
+  < topic
+
+  > topic rpg_earth inherits rpg_global
+    + equip astronaut suit
+    - There is breathable oxygen here, so that isn't necessary.
+  < topic
+
+  > topic room1 inherits rpg_earth
+    + north
+    - {topic=room2}{@look}
+
+    + east
+    - {topic=room3}{@look}
+
+    + look
+    - You're in the first room. Exits are north and east.
+  < topic
+
+  > topic room2 inherits rpg_earth
+    + south
+    - {topic=room1}{@look}
+
+    + look
+    - You're in the second room. Only exit is south.
+  < topic
+
+  // etc...
+
+Here, all the rooms inherit triggers from the "C<rpg_earth>" topic. The
+C<rpg_earth> topic in turn inherits triggers from C<rpg_global>. So commands
+like "help" and "inventory" are also available in every other topic that
+inherits it.
+
+For a topic to inherit triggers from more than one topic, it only needs to list
+all of the topics to inherit from as follows:
+
+  > topic alpha inherits beta delta gamma
+
+Here, the topic C<alpha> inherits the triggers present in the topics named
+C<beta>, C<delta>, and C<gamma>.
 
 =head3 object
 
@@ -597,28 +686,29 @@ of the conditionals return false.
 B<NOTE:> Conditionals are tried in the order they appear in the RiveScript
 document, and the next condition is tried when the previous ones are false.
 
-=head2 # COMMENT
+=head2 // COMMENT
 
-The C<#> command is for putting comments into your RiveScript document. The
-C-style C<//> and C</* */> syntax is also supported for commenting.
+The C<//> command is for putting comments into your RiveScript document. The
+C-style multiline comment syntax C</* */> is also supported.
 
-Comments on their own line should be ignored by all interpreters. Inline comments
-(comments next to RiveScript commands) should be ignored only if the comment
-symbol is not touching the text of the RiveScript command. There should be at
-least one space before the C<#> or C<//> command.
+Comments on their own line should be ignored by all interpreters. For inline
+comments, only the C<//> format is acceptable. If you want a literal C<//> in
+your RiveScript data, escape at least one of the symbols, i.e. C<\//> or C<\/\/>
+or C</\/>.
 
-Of special note, if the C<#> comment character is to be used inline next to a
-C<+> trigger, there should be B<two> spaces before the C<#> symbol to avoid
-interpreter confusion, since C<#> is also a wildcard symbol in triggers.
+Examples:
 
-  Bad:
-  + request # This trigger is tested first
-  Good:
-  + request  # This trigger is tested first (2 spaces before, 1+ space(s) after)
-  + request // This trigger is tested first (only 1 space is needed for // syntax)
+  // A single regular comment
 
-To explicitely use the characters C<#> or C<//> in a RiveScript command, you must
-escape them with a C<\>. Example: C<\#> or C<\//>.
+  /*
+    This comment can span
+    multiple lines
+  */
+
+  > begin // The "BEGIN" block
+    + request // This is required
+    - {ok}    // An {ok} means to get a real reply
+  < begin//End the begin block
 
 =head1 OBJECT MACROS
 
@@ -667,7 +757,7 @@ defined above; C<md5> and C<base64> calls on the method name, which is received
 by the object as C<$method>. Finally, C<@args> as received by the object would
 be the value of E<lt>starE<gt> in this example.
 
-C<$rs> in this example would be a reference to the RiveScript interpreter.
+C<$obj> in this example would be a reference to the RiveScript interpreter.
 
 =head1 TAGS
 
@@ -1087,6 +1177,7 @@ documents. Here is a full breakdown of the differences:
     - New way: > object encode perl
   - The ^CONTINUE command can extend every command.
   - Most tags can be used with almost every command.
+  - Topics can inherit triggers from other topics now.
 
   INCOMPATIBLE CHANGES:
 
@@ -1121,20 +1212,28 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.
 
 =head1 REVISIONS
 
-  Sep 15, 2008
+  Rev 7 - Dec  4, 2008
+  - Topics are able to inherit additional triggers that belong to different
+    topics, in the "> topic alpha inherits beta" syntax.
+  - Added more documentation to the "! array" section of the document. Also
+    check that section for some changes to the way arrays should be processed by
+    the interpreter.
+  - Deprecated the # command for inline comments. Use only // and /* */.
+
+  Rev 6 - Sep 15, 2008
   - Updated the section about # for inline comments: when used next to a
     +Trigger, there should be at least 2 spaces before the # symbol and 1 space
     after, to avoid confusion with # as a wildcard character.
 
-  Jul 22, 2008
+  Rev 5 - Jul 22, 2008
   - Added two new variants of the wildcard: # will match only numbers and _ will
     match only letters. * will still match anything at all.
 
-  Jun 19, 2008
+  Rev 4 - Jun 19, 2008
   - Rearranged tag priorities:
     - <bot> and <env> moved higher up.
 
-  Apr  2, 2008
+  Rev 3 - Apr  2, 2008
   - Typo fix: under the !person section, the examples were using !sub
   - Inconsistency fix: under %Previous it was saying the wildcards were
     unmatchable, but this isn't the case (they go into <botstar>).
@@ -1147,13 +1246,13 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.
     - <env> comes in after <bot>
   - Typo fix: updated the object syntax (<call>) in the priority list.
 
-  Feb 18, 2008
+  Rev 2 - Feb 18, 2008
   - Moved {random} to higher tag priority.
   - Change the &object syntax to <call>
   - Added the <env> variable.
   - Added the <botstar> variable.
 
-  Jan 15, 2008
+  Rev 1 - Jan 15, 2008
   - Added the {priority} tag to triggers, to increase a trigger's matching
     priority over others, even when another trigger might be a better match
     to the client's message.

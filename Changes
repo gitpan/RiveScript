@@ -1,5 +1,25 @@
 Revision history for Perl extension RiveScript.
 
+  1.18  Dec 31 2008
+  - Added support for topics to inherit their triggers from other topics.
+    e.g. > topic alpha inherits beta
+  - Fixed some bugs related to !array with ^continue's, and expanded its
+    functionality therein.
+  - Updated the getUservars() function to optionally be able to get just a specific
+    variable from the user's data. Added getUservar() as a grammatically correct
+    alias to this new functionality.
+  - Added the functions freezeUservars() and thawUservars() to back up and
+    restore a user's variables.
+  - Added the function lastMatch(), which returns the text of the trigger that
+    matched the user's last message.
+  - The # command for RiveScript comments has been deprecated in revision 7 of
+    the RiveScript Working Draft. The Perl module will now emit warnings each
+    time the # comments are processed.
+  - Modified a couple of triggers in the default Eliza brain to improve matching
+    issues therein.
+  - +Triggers can contain user <get> tags now.
+  - Updated the RiveScript Working Draft.
+
   1.17  Sep 15 2008
   - Updated the rsdemo tool to be more flexible as a general debugging and
     developing program. Also updated rsdemo and rsup to include POD documentation

@@ -73,7 +73,7 @@
 - Don't you know?
 - How likely, would you estimate?
 
-+ [*] (hello|hi|hey|howdy|hola|hai|yo) [*]
++ (hello|hi|hey|howdy|hola|hai|yo) [*]
 - How do you do. Please state your problem.
 - Hi. What seems to be your problem?
 
@@ -105,7 +105,7 @@
 - Do you sometimes wish you were <star2>?
 - Perhaps you would like to be <star2>.
 
-+ [*] are *
++ * are *
 - Did you think they might not be <star2>?
 - Would you like it if they were not <star2>?
 - What if they were not <star2>?
@@ -218,11 +218,14 @@
 - I see.
 - I understand.
 
-+ [*] (no|nope|nah) [*]
++ [*] (nope|nah) [*]
 - Are you saying no just to be negative?
 - Does this make you feel unhappy?
 - Why not?
 - Why 'no'?
+
++ no
+@ nope
 
 + no one *
 - Are you sure, no one <star2>?

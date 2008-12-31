@@ -3,7 +3,7 @@ package RiveScript;
 use strict;
 use warnings;
 
-our $VERSION = '1.17'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.18'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 our $basedir = (__FILE__ =~ /^(.+?)\.pm$/i ? $1 : '.');
 
@@ -23,6 +23,7 @@ sub new {
 		},
 		depth      => 50, # Recursion depth allowed.
 		topics     => {}, # Loaded replies under topics
+		lineage    => {}, # Keep track of topics that inherit other topics
 		sorted     => {}, # Sorted triggers
 		sortsthat  => {}, # Sorted %previous's.
 		sortedthat => {}, # Sorted triggers that go with %previous's
@@ -31,13 +32,14 @@ sub new {
 		subs       => {}, # Substitutions
 		person     => {}, # Person substitutions
 		client     => {}, # User variables
+		frozen     => {}, # Frozen (backed-up) user variables
 		bot        => {}, # Bot variables
 		objects    => {}, # Subroutines
 		syntax     => {}, # Syntax tracking
 		sortlist   => {}, # Sorted lists (i.e. person subs)
 		reserved   => [   # Reserved global variable names.
 			qw(topics sorted sortsthat sortedthat thats arrays subs person
-			client bot objects syntax sortlist reserved debugopts)
+			client bot objects syntax sortlist reserved debugopts frozen)
 		],
 		@_,
 	};
@@ -202,7 +204,7 @@ sub parse {
 		$line =~ s/^(\t|\x0a|\x0d|\s)+//ig;
 		$line =~ s/(\t|\x0a|\x0d|\s)+$//ig;
 
-		$self->debug ("Line: $line");
+		$self->debug ("Line: $line (topic: $topic)");
 
 		# In an object?
 		if ($inobj) {
@@ -230,6 +232,10 @@ sub parse {
 
 		# Look for comments.
 		if ($line =~ /^(\/\/|#)/i) {
+			# The "#" format for comments is deprecated.
+			if ($line =~ /^#/) {
+				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno.");
+			}
 			next;
 		}
 		elsif ($line =~ /^\/\*/) {
@@ -249,13 +255,25 @@ sub parse {
 
 		# Separate the command from the data.
 		my ($cmd) = $line =~ /^(.)/i;
-		$line =~ s/^([^\s]+)\s+//i;
+		$line =~ s/^.//i;
+		$line =~ s/^\s+?//ig;
 
 		# Ignore inline comments if there's a space before and after
 		# the // or # symbols.
-		my $inline_comment_regexp = "\\s+(\\#|\\/\\/)\\s+";
+		my $inline_comment_regexp = "(\\s+\\#\\s+|\\/\\/)";
+		$line =~ s/\\\/\//\\\/\\\//g; # Turn \// into \/\/
 		if ($cmd eq '+') {
-			$inline_comment_regexp = "\\s(\\s\\#|\\/\\/)\\s+";
+			$inline_comment_regexp = "(\\s\\s\\#|\\/\\/)";
+			if ($line =~ /\s\s#/) {
+				# Deprecated.
+				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno.");
+			}
+		}
+		else {
+			if ($line =~ /\s#/) {
+				# Deprecated.
+				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno.");
+			}
 		}
 		if ($line =~ /$inline_comment_regexp/) {
 			my ($left,$comment) = split(/$inline_comment_regexp/, $line, 2);
@@ -264,6 +282,11 @@ sub parse {
 		}
 
 		$self->debug ("\tCmd: $cmd");
+
+		# Reset the %previous state if this is a new +Trigger.
+		if ($cmd eq '+') {
+			$isThat = '';
+		}
 
 		# Do a lookahead for ^Continue and %Previous commands.
 		for (my $i = ($lp + 1); $i < scalar(@lines); $i++) {
@@ -274,6 +297,14 @@ sub parse {
 
 			# Only continue if the lookahead line has any data.
 			if (defined $lookahead && length $lookahead > 0) {
+				# The lookahead command has to be either a % or a ^.
+				if ($lookCmd ne '^' && $lookCmd ne '%') {
+					#$isThat = '';
+					last;
+				}
+
+				# If the current command is a +, see if the following command
+				# is a % (previous)
 				if ($cmd eq '+') {
 					# Look for %Previous.
 					if ($lookCmd eq '%') {
@@ -286,6 +317,23 @@ sub parse {
 					}
 				}
 
+				# If the current command is a ! and the next command(s) are
+				# ^, we'll tack each extension on as a line break (which is
+				# useful information for arrays; everything else is gonna ditch
+				# this info).
+				if ($cmd eq '!') {
+					if ($lookCmd eq '^') {
+						$self->debug ("\t^ [$lp;$i] $lookahead");
+						$line .= "<crlf>$lookahead";
+						$self->debug ("\tLine: $line");
+					}
+					next;
+				}
+
+				# If the current command is not a ^ and the line after is
+				# not a %, but the line after IS a ^, then tack it onto the
+				# end of the current line (this is fine for every other type
+				# of command that doesn't require special treatment).
 				if ($cmd ne '^' && $lookCmd ne '%') {
 					if ($lookCmd eq '^') {
 						$self->debug ("\t^ [$lp;$i] $lookahead");
@@ -304,6 +352,11 @@ sub parse {
 			my ($type,$var) = split(/\s+/, $left, 2);
 			$ontrig = '';
 			$self->debug ("\t! DEFINE");
+
+			# Remove line breaks unless this is an array.
+			if ($type ne 'array') {
+				$value =~ s/<crlf>//ig;
+			}
 
 			if ($type eq 'version') {
 				$self->debug ("\tUsing RiveScript version $value");
@@ -378,13 +431,25 @@ sub parse {
 					next;
 				}
 
-				# Split at pipes or spaces?
+				# Did this have multiple lines?
+				my @parts = split(/<crlf>/i, $value);
+				$self->debug("Array lines: " . join(";",@parts));
+
+				# Process each line of array data.
 				my @fields = ();
-				if ($value =~ /\|/) {
-					@fields = split(/\|/, $value);
+				foreach my $val (@parts) {
+					# Split at pipes or spaces?
+					if ($val =~ /\|/) {
+						push (@fields,split(/\|/, $val));
+					}
+					else {
+						push (@fields,split(/\s+/, $val));
+					}
 				}
-				else {
-					@fields = split(/\s+/, $value);
+
+				# Convert any remaining \s escape codes into spaces.
+				foreach my $f (@fields) {
+					$f =~ s/\\s/ /ig;
 				}
 
 				$self->{arrays}->{$var} = [ @fields ];
@@ -429,7 +494,7 @@ sub parse {
 		}
 		elsif ($cmd eq '>') {
 			# > LABEL
-			my ($type,$name,$lang) = split(/\s+/, $line, 3);
+			my ($type,$name,@fields) = split(/\s+/, $line);
 			$type = lc($type);
 
 			# Handle the label types.
@@ -444,8 +509,21 @@ sub parse {
 				$self->debug ("Set topic to $name.");
 				$ontrig = '';
 				$topic = $name;
+
+				# Does this topic inherit another one?
+				if (scalar(@fields) >= 2 && $fields[0] =~ /^inherits$/i) {
+					# Inheriting multiple topics and the topics must be separated
+					# by spaces.
+					for (my $i = 1; $i < scalar(@fields); $i++) {
+						my $inherits = $fields[$i];
+						$self->{lineage}->{$name}->{$inherits} = 1;
+					}
+				}
 			}
 			if ($type eq 'object') {
+				# If a field was provided, it should be the programming language.
+				my $lang = (scalar(@fields) ? $fields[0] : undef);
+
 				# Only try to parse a language we support.
 				$ontrig = '';
 				if (not defined $lang) {
@@ -480,11 +558,14 @@ sub parse {
 			# + TRIGGER
 			$self->debug ("\tTrigger pattern: $line");
 			if (length $isThat) {
+				$self->debug ("\t\tInitializing the \%previous structure.");
 				$self->{thats}->{$topic}->{$isThat}->{$line} = {};
 			}
 			else {
 				$self->{topics}->{$topic}->{$line} = {};
 				$self->{syntax}->{$topic}->{$line}->{ref} = "$fname line $lineno";
+				$self->debug ("\t\tSaved to \$self->{topics}->{$topic}->{$line}: "
+					. "$self->{topics}->{$topic}->{$line}");
 			}
 			$ontrig = $line;
 			$repcnt = 0;
@@ -503,6 +584,8 @@ sub parse {
 			else {
 				$self->{topics}->{$topic}->{$ontrig}->{reply}->{$repcnt} = $line;
 				$self->{syntax}->{$topic}->{$ontrig}->{reply}->{$repcnt}->{ref} = "$fname line $lineno";
+				$self->debug ("\t\tSaved to \$self->{topics}->{$topic}->{$ontrig}->{reply}->{$repcnt}: "
+					. "$self->{topics}->{$topic}->{$ontrig}->{reply}->{$repcnt}");
 			}
 			$repcnt++;
 		}
@@ -569,7 +652,13 @@ sub sortReplies {
 		my $prior = {
 			0 => [], # Default
 		};
-		foreach my $trig (keys %{$triglvl->{$topic}}) {
+
+		# Collect a list of all the triggers we're going to need to
+		# worry about. If this topic inherits another topic, we need to
+		# recursively add those to the list.
+		my @alltrig = $self->_topicTriggers($topic,$triglvl,0);
+		#foreach my $trig (keys %{$triglvl->{$topic}}) {
+		foreach my $trig (@alltrig) {
 			if ($trig =~ /\{weight=(\d+)\}/i) {
 				my $weight = $1;
 
@@ -895,6 +984,71 @@ sub sortList {
 	return 1;
 }
 
+# Given one topic, walk the inheritence tree and return an array of all topics.
+sub _getTopicTree {
+	my ($self,$topic,$depth) = @_;
+
+	# Break if we're in too deep.
+	if ($depth > $self->{depth}) {
+		$self->issue ("Deep recursion while scanning topic inheritance (topic $topic was involved)");
+		return ();
+	}
+
+	# Collect an array of topics.
+	my @topics = ($topic);
+
+	$self->debug ("_getTopicTree depth $depth; topics: @topics");
+
+	# Does this topic inherit others?
+	if (exists $self->{lineage}->{$topic}) {
+		# Try each of these.
+		foreach my $inherits (sort { $a cmp $b } keys %{$self->{lineage}->{$topic}}) {
+			$self->debug ("Topic $topic inherits $inherits");
+			push (@topics, $self->_getTopicTree($inherits,($depth + 1)));
+		}
+		$self->debug ("_getTopicTree depth $depth (b); topics: @topics");
+	}
+
+	# Return them.
+	return (@topics);
+}
+
+# Gather an array of all triggers in a topic. If the topic inherits other
+# topics, recursively collect those triggers too. Take care about recursion.
+sub _topicTriggers {
+	my ($self,$topic,$triglvl,$depth) = @_;
+
+	# Break if we're in too deep.
+	if ($depth > $self->{depth}) {
+		$self->issue ("Deep recursion while scanning topic inheritance (topic $topic was involved)");
+		return ();
+	}
+
+	$self->debug ("Collecting trigger list for topic $topic");
+
+	# topic:   the name of the topic
+	# triglvl: either $self->{topics} or $self->{thats}
+	# depth:   starts at 0 and ++'s with each recursion
+
+	# Collect an array of triggers to return.
+	my @triggers = ();
+
+	# Does this topic inherit others?
+	if (exists $self->{lineage}->{$topic}) {
+		# Check every inherited topic.
+		foreach my $inherits (sort { $a cmp $b } keys %{$self->{lineage}->{$topic}}) {
+			$self->debug ("Topic $topic inherits $inherits");
+			push (@triggers, $self->_topicTriggers($inherits,$triglvl,($depth + 1)));
+		}
+	}
+
+	# Collect the triggers.
+	push (@triggers, keys %{$triglvl->{$topic}});
+
+	# Return them.
+	return (@triggers);
+}
+
 ################################################################################
 ## Configuration Methods                                                      ##
 ################################################################################
@@ -962,9 +1116,26 @@ sub setUservar {
 	return 1;
 }
 
-sub getUservars {
+sub getUservar {
+	# Alias for getUservars.
 	my $self = shift;
-	my $user = shift || '';
+	return $self->getUservars (@_);
+}
+
+sub getUservars {
+	my ($self,$user,$var) = @_;
+	$user = '' unless defined $user;
+	$var  = '' unless defined $var;
+
+	# Did they want a specific variable?
+	if (length $user && length $var) {
+		if (exists $self->{client}->{$user}->{$var}) {
+			return $self->{client}->{$user}->{$var};
+		}
+		else {
+			return undef;
+		}
+	}
 
 	if (length $user) {
 		return $self->{client}->{$user};
@@ -994,6 +1165,102 @@ sub clearUservars {
 	}
 
 	return 1;
+}
+
+sub freezeUservars {
+	my ($self,$user) = @_;
+	$user = '' unless defined $user;
+
+	if (length $user && exists $self->{client}->{$user}) {
+		# Freeze their variables. First unfreeze the last copy if they
+		# exist.
+		if (exists $self->{frozen}->{$user}) {
+			$self->thawUservars ($user, discard => 1);
+		}
+
+		# Back up all our variables.
+		foreach my $var (keys %{$self->{client}->{$user}}) {
+			next if $var eq "__history__";
+			my $value = $self->{client}->{$user}->{$var};
+			$self->{frozen}->{$user}->{$var} = $value;
+		}
+
+		# Back up the history.
+		$self->{frozen}->{$user}->{__history__}->{input} = [
+			@{$self->{client}->{$user}->{__history__}->{input}},
+		];
+		$self->{frozen}->{$user}->{__history__}->{reply} = [
+			@{$self->{client}->{$user}->{__history__}->{reply}},
+		];
+
+		return 1;
+	}
+
+	return undef;
+}
+
+sub thawUservars {
+	my ($self,$user,%args) = @_;
+	$user = '' unless defined $user;
+
+	if (length $user && exists $self->{frozen}->{$user}) {
+		# What are we doing?
+		my $restore = 1;
+		my $discard = 1;
+		if (exists $args{discard}) {
+			# Just discard the variables.
+			$restore = 0;
+			$discard = 1;
+		}
+		elsif (exists $args{keep}) {
+			# Keep the cache afterwards.
+			$restore = 1;
+			$discard = 0;
+		}
+
+		# Restore the state?
+		if ($restore) {
+			# Clear the client's current information.
+			$self->clearUservars ($user);
+
+			# Restore all our variables.
+			foreach my $var (keys %{$self->{frozen}->{$user}}) {
+				next if $var eq "__history__";
+				my $value = $self->{frozen}->{$user}->{$var};
+				$self->{client}->{$user}->{$var} = $value;
+			}
+
+			# Restore the history.
+			$self->{client}->{$user}->{__history__}->{input} = [
+				@{$self->{frozen}->{$user}->{__history__}->{input}},
+			];
+			$self->{client}->{$user}->{__history__}->{reply} = [
+				@{$self->{frozen}->{$user}->{__history__}->{reply}},
+			];
+		}
+
+		# Discard the cache?
+		if ($discard) {
+			foreach my $var (keys %{$self->{frozen}->{$user}}) {
+				delete $self->{frozen}->{$user}->{$var};
+			}
+		}
+		return 1;
+	}
+
+	return undef;
+}
+
+sub lastMatch {
+	my ($self,$user) = @_;
+	$user = '' unless defined $user;
+
+	# Get this user's last matched trigger.
+	if (length $user && exists $self->{client}->{$user}->{__lastmatch__}) {
+		return $self->{client}->{$user}->{__lastmatch__};
+	}
+
+	return undef;
 }
 
 ################################################################################
@@ -1114,43 +1381,52 @@ sub _getreply {
 
 	# Create a pointer for the matched data (be it %previous or +trigger).
 	my $matched = {};
+	my $matchedTrigger = undef;
 	my $foundMatch = 0;
 
-	# See if there are any %previous's in this topic.
-	if (exists $self->{sortsthat}->{$topic}) {
-		$self->debug ("There's a %previous in this topic");
+	# See if there are any %previous's in this topic, or any topic related to it.
+	my @allTopics = ($topic);
+	if (exists $self->{lineage}->{$topic}) {
+		(@allTopics) = $self->_getTopicTree ($topic,0);
+	}
+	foreach my $top (@allTopics) {
+		$self->debug ("Checking topic $top for any %previous's.");
+		if (exists $self->{sortsthat}->{$top}) {
+			$self->debug ("There's a %previous in this topic");
 
-		# Do we have history yet?
-		if (scalar @{$self->{client}->{$user}->{__history__}->{reply}} > 0) {
-			my $lastReply = $self->{client}->{$user}->{__history__}->{reply}->[0];
+			# Do we have history yet?
+			if (scalar @{$self->{client}->{$user}->{__history__}->{reply}} > 0) {
+				my $lastReply = $self->{client}->{$user}->{__history__}->{reply}->[0];
 
-			# Format the bot's last reply the same as the human's.
-			$lastReply = $self->_formatMessage ($lastReply);
+				# Format the bot's last reply the same as the human's.
+				$lastReply = $self->_formatMessage ($lastReply);
 
-			$self->debug ("lastReply: $lastReply");
+				$self->debug ("lastReply: $lastReply");
 
-			# See if we find a match.
-			foreach my $trig (@{$self->{sortsthat}->{$topic}}) {
-				my $botside = $self->_reply_regexp ($user,$trig);
+				# See if we find a match.
+				foreach my $trig (@{$self->{sortsthat}->{$top}}) {
+					my $botside = $self->_reply_regexp ($user,$trig);
 
-				$self->debug ("Try to match lastReply to $botside");
+					$self->debug ("Try to match lastReply ($lastReply) to $botside");
 
-				# Look for a match.
-				if ($lastReply =~ /^$botside$/i) {
-					# Found a match! See if our message is correct too.
-					(@thatstars) = ($lastReply =~ /^$botside$/i);
-					foreach my $subtrig (@{$self->{sortedthat}->{$topic}->{$trig}}) {
-						my $humanside = $self->_reply_regexp ($user,$subtrig);
+					# Look for a match.
+					if ($lastReply =~ /^$botside$/i) {
+						# Found a match! See if our message is correct too.
+						(@thatstars) = ($lastReply =~ /^$botside$/i);
+						foreach my $subtrig (@{$self->{sortedthat}->{$top}->{$trig}}) {
+							my $humanside = $self->_reply_regexp ($user,$subtrig);
 
-						$self->debug ("Now try to match $msg to $humanside");
+							$self->debug ("Now try to match $msg to $humanside");
 
-						if ($msg =~ /^$humanside$/i) {
-							$matched = $self->{thats}->{$topic}->{$trig}->{$subtrig};
-							$foundMatch = 1;
+							if ($msg =~ /^$humanside$/i) {
+								$matched = $self->{thats}->{$top}->{$trig}->{$subtrig};
+								$matchedTrigger = $top;
+								$foundMatch = 1;
 
-							# Get the stars.
-							(@stars) = ($msg =~ /^$humanside$/i);
-							last;
+								# Get the stars.
+								(@stars) = ($msg =~ /^$humanside$/i);
+								last;
+							}
 						}
 					}
 				}
@@ -1168,8 +1444,20 @@ sub _getreply {
 
 			if ($msg =~ /^$regexp$/i) {
 				$self->debug ("Found a match!");
-				$matched = $self->{topics}->{$topic}->{$trig};
+
+				# We found a match, but what if the trigger we matched belongs to
+				# an inherited topic? Check for that.
+				if (exists $self->{topics}->{$topic}->{$trig}) {
+					# No, the trigger does belong to our own topic.
+					$matched = $self->{topics}->{$topic}->{$trig};
+				}
+				else {
+					# Our topic doesn't have this trigger. Check inheritence.
+					$matched = $self->_findTriggerByInheritence ($topic,$trig,0);
+				}
+
 				$foundMatch = 1;
+				$matchedTrigger = $trig;
 
 				# Get the stars.
 				(@stars) = ($msg =~ /^$regexp$/i);
@@ -1177,6 +1465,10 @@ sub _getreply {
 			}
 		}
 	}
+
+	# Store what trigger they matched on (if $matched is undef, this will be
+	# too, which is great).
+	$self->{client}->{$user}->{__lastmatch__} = $matchedTrigger;
 
 	for (defined $matched) {
 		# See if there are any hard redirects.
@@ -1309,13 +1601,59 @@ sub _getreply {
 	return $reply;
 }
 
+sub _findTriggerByInheritence {
+	my ($self,$topic,$trig,$depth) = @_;
+
+	# This sub was called because the user matched a trigger from the
+	# sorted array, but the trigger doesn't exist under the topic of
+	# which the user currently belongs. It probably was a trigger
+	# inherited from another topic. This subroutine finds that out,
+	# recursively, following the inheritence trail.
+
+	# Take care to prevent infinite recursion.
+	if ($depth > $self->{depth}) {
+		$self->issue("Deep recursion detected while following an inheritence trail (involving topic $topic and trigger $trig)");
+		return undef;
+	}
+
+	# See if this topic has an "inherits".
+	if (exists $self->{lineage}->{$topic}) {
+		foreach my $inherits (sort { $a cmp $b } keys %{$self->{lineage}->{$topic}}) {
+
+			# See if this inherited topic has our trigger.
+			if (exists $self->{topics}->{$inherits}->{$trig}) {
+				# Great!
+				return $self->{topics}->{$inherits}->{$trig};
+			}
+			else {
+				# Check what this topic inherits from.
+				my $match = $self->_findTriggerByInheritence (
+					$inherits, $trig, ($depth + 1),
+				);
+				if (defined $match) {
+					# Finally got a match.
+					return $match;
+				}
+			}
+		}
+	}
+
+	# Don't know what else we can do.
+	return undef;
+}
+
 sub _reply_regexp {
 	my ($self,$user,$regexp) = @_;
+
+	# If the trigger is simply /^\*$/ (+ *) then the * there needs to
+	# become (.*?) to match the blank string too.
+	$regexp =~ s/^\*$/<zerowidthstar>/i;
 
 	$regexp =~ s/\*/(.+?)/ig;        # Convert * into (.+?)
 	$regexp =~ s/\#/(\\d+)/ig;    # Convert # into ([0-9]+?)
 	$regexp =~ s/\_/(\\w+)/ig; # Convert _ into ([A-Za-z]+?)
 	$regexp =~ s/\{weight=\d+\}//ig; # Remove {weight} tags.
+	$regexp =~ s/<zerowidthstar>/(.*?)/i;
 	while ($regexp =~ /\[(.+?)\]/i) { # Optionals
 		my @parts = split(/\|/, $1);
 		my @new = ();
@@ -1356,6 +1694,18 @@ sub _reply_regexp {
 			$rep = lc($rep);
 		}
 		$regexp =~ s/<bot (.+?)>/$rep/i;
+	}
+
+	# Filter in user variables.
+	while ($regexp =~ /<get (.+?)>/i) {
+		my $var = $1;
+		my $rep = '';
+		if (exists $self->{client}->{$user}->{$var}) {
+			$rep = $self->{client}->{$user}->{$var};
+			$rep =~ s/[^A-Za-z0-9 ]//ig;
+			$rep = lc($rep);
+		}
+		$regexp =~ s/<get (.+?)>/$rep/i;
 	}
 
 	# Filter input tags.
@@ -1719,9 +2069,10 @@ calling C<setGlobal> or defining it within the RiveScript code. This will avoid
 the possibility of overriding reserved globals. Currently, these variable names
 are reserved:
 
-  topics  sorted   sortsthat  thats
-  arrays  subs     person     client
-  bot     objects  reserved   debugopts
+  topics   sorted  sortsthat  sortedthat  thats
+  arrays   subs    person     client      bot
+  objects  syntax  sortlist   reserved    debugopts
+  frozen
 
 Note: the options "verbose" and "debugfile", when provided, are noted and then
 deleted from the root object space, so that if your RiveScript code uses variables
@@ -1809,11 +2160,19 @@ hash containing variable/value pairs.
 
 This is like C<E<lt>setE<gt>> for a specific user.
 
-=item getUservars ([$USER])
+=item getUservar ($USER, $VAR)
+
+This is an alias for getUservars, and is here because it makes more grammatical
+sense.
+
+=item getUservars ([$USER][, $VAR])
 
 Get all the variables about a user. If a username is provided, returns a hash
 B<reference> containing that user's information. Else, a hash reference of all
 the users and their information is returned.
+
+You can optionally pass a second argument, C<$VAR>, to get a specific variable
+that belongs to the user. For instance, C<getUservars ("soandso", "age")>.
 
 This is like C<E<lt>getE<gt>> for a specific user or for all users.
 
@@ -1821,6 +2180,43 @@ This is like C<E<lt>getE<gt>> for a specific user or for all users.
 
 Clears all variables about C<$USER>. If no C<$USER> is provided, clears all
 variables about all users.
+
+=item freezeUservars ($USER)
+
+Freeze the current state of variables for user C<$USER>. This will back up the
+user's current state (their variables and reply history). This won't statically
+prevent the user's state from changing; it merely saves its current state. Then
+use thawUservars() to revert back to this previous state.
+
+=item thawUservars ($USER[, %OPTIONS])
+
+If the variables for C<$USER> were previously frozen, this method will restore
+them to the state they were in when they were last frozen. It will then delete
+the stored cache by default. The following options are accepted as an additional
+hash of parameters (these options are mutually exclusive and you shouldn't use
+both of them at the same time. If you do, "discard" will win.):
+
+  discard: Don't restore the user's state from the frozen copy, just delete the
+           frozen copy.
+  keep:    Keep the frozen copy even after restoring the user's state. With this
+           you can repeatedly thawUservars on the same user to revert their state
+           without having to keep freezing them again. On the next freeze, the
+           last frozen state will be replaced with the new current state.
+
+Examples:
+
+  # Delete the frozen cache but don't modify the user's variables.
+  $rs->thawUservars ("soandso", discard => 1);
+
+  # Restore the user's state from cache, but don't delete the cache.
+  $rs->thawUservars ("soandso", keep => 1);
+
+=item lastMatch ($USER)
+
+After fetching a reply for user C<$USER>, the C<lastMatch> method will return the
+raw text of the trigger that the user has matched with their reply. This function
+may return undef in the event that the user B<did not> match any trigger at all
+(likely the last reply was "C<ERR: No Reply Matched>" as well).
 
 =back
 
@@ -2016,6 +2412,26 @@ defines the standards of RiveScript.
 L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
+
+  1.18  Dec 31 2008
+  - Added support for topics to inherit their triggers from other topics.
+    e.g. > topic alpha inherits beta
+  - Fixed some bugs related to !array with ^continue's, and expanded its
+    functionality therein.
+  - Updated the getUservars() function to optionally be able to get just a specific
+    variable from the user's data. Added getUservar() as a grammatically correct
+    alias to this new functionality.
+  - Added the functions freezeUservars() and thawUservars() to back up and
+    restore a user's variables.
+  - Added the function lastMatch(), which returns the text of the trigger that
+    matched the user's last message.
+  - The # command for RiveScript comments has been deprecated in revision 7 of
+    the RiveScript Working Draft. The Perl module will now emit warnings each
+    time the # comments are processed.
+  - Modified a couple of triggers in the default Eliza brain to improve matching
+    issues therein.
+  - +Triggers can contain user <get> tags now.
+  - Updated the RiveScript Working Draft.
 
   1.17  Sep 15 2008
   - Updated the rsdemo tool to be more flexible as a general debugging and

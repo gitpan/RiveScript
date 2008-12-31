@@ -50,23 +50,23 @@
 + my (girlfriend|boyfriend)* name is *
 - <set spouse=<formal>>That's a nice name.
 
-+ (what is my name|who am i|do you know my name|do you know who i am)
++ (what is my name|who am i|do you know my name|do you know who i am){weight=10}
 - Your name is <get name>.
 - You told me your name is <get name>.
 - Aren't you <get name>?
 
-+ (how old am i|do you know how old i am|do you know my age)
++ (how old am i|do you know how old i am|do you know my age){weight=10}
 - You are <get age> years old.
 - You're <get age>.
 
-+ am i a (@malenoun) or a (@femalenoun)
++ am i a (@malenoun) or a (@femalenoun){weight=10}
 - You're a <get sex>.
 
-+ am i (@malenoun) or (@femalenoun)
++ am i (@malenoun) or (@femalenoun){weight=10}
 - You're a <get sex>.
 
-+ what is my favorite *
++ what is my favorite *{weight=10}
 - Your favorite <star> is <get fav<star>>
 
-+ who is my (boyfriend|girlfriend|spouse)
++ who is my (boyfriend|girlfriend|spouse){weight=10}
 - <get spouse>

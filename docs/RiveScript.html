@@ -134,9 +134,10 @@ are reserved:</p>
 </dd>
 <dd>
 <pre>
-  topics  sorted   sortsthat  thats
-  arrays  subs     person     client
-  bot     objects  reserved   debugopts</pre>
+  topics   sorted  sortsthat  sortedthat  thats
+  arrays   subs    person     client      bot
+  objects  syntax  sortlist   reserved    debugopts
+  frozen</pre>
 </dd>
 <dd>
 <p>Note: the options &quot;verbose&quot; and &quot;debugfile&quot;, when provided, are noted and then
@@ -251,12 +252,23 @@ hash containing variable/value pairs.</p>
 <p>This is like <code>&lt;set&gt;</code> for a specific user.</p>
 </dd>
 </li>
-<dt><strong><a name="getuservars" class="item">getUservars ([$USER])</a></strong>
+<dt><strong><a name="getuservar" class="item">getUservar ($USER, $VAR)</a></strong>
+
+<dd>
+<p>This is an alias for getUservars, and is here because it makes more grammatical
+sense.</p>
+</dd>
+</li>
+<dt><strong><a name="getuservars" class="item">getUservars ([$USER][, $VAR])</a></strong>
 
 <dd>
 <p>Get all the variables about a user. If a username is provided, returns a hash
 <strong>reference</strong> containing that user's information. Else, a hash reference of all
 the users and their information is returned.</p>
+</dd>
+<dd>
+<p>You can optionally pass a second argument, <code>$VAR</code>, to get a specific variable
+that belongs to the user. For instance, <a href="#getuservars"><code>getUservars (&quot;soandso&quot;, &quot;age&quot;)</code></a>.</p>
 </dd>
 <dd>
 <p>This is like <code>&lt;get&gt;</code> for a specific user or for all users.</p>
@@ -267,6 +279,56 @@ the users and their information is returned.</p>
 <dd>
 <p>Clears all variables about <code>$USER</code>. If no <code>$USER</code> is provided, clears all
 variables about all users.</p>
+</dd>
+</li>
+<dt><strong><a name="freezeuservars" class="item">freezeUservars ($USER)</a></strong>
+
+<dd>
+<p>Freeze the current state of variables for user <code>$USER</code>. This will back up the
+user's current state (their variables and reply history). This won't statically
+prevent the user's state from changing; it merely saves its current state. Then
+use <a href="#thawuservars"><code>thawUservars()</code></a> to revert back to this previous state.</p>
+</dd>
+</li>
+<dt><strong><a name="thawuservars" class="item">thawUservars ($USER[, %OPTIONS])</a></strong>
+
+<dd>
+<p>If the variables for <code>$USER</code> were previously frozen, this method will restore
+them to the state they were in when they were last frozen. It will then delete
+the stored cache by default. The following options are accepted as an additional
+hash of parameters (these options are mutually exclusive and you shouldn't use
+both of them at the same time. If you do, &quot;discard&quot; will win.):</p>
+</dd>
+<dd>
+<pre>
+  discard: Don't restore the user's state from the frozen copy, just delete the
+           frozen copy.
+  keep:    Keep the frozen copy even after restoring the user's state. With this
+           you can repeatedly thawUservars on the same user to revert their state
+           without having to keep freezing them again. On the next freeze, the
+           last frozen state will be replaced with the new current state.</pre>
+</dd>
+<dd>
+<p>Examples:</p>
+</dd>
+<dd>
+<pre>
+  # Delete the frozen cache but don't modify the user's variables.
+  $rs-&gt;thawUservars (&quot;soandso&quot;, discard =&gt; 1);</pre>
+</dd>
+<dd>
+<pre>
+  # Restore the user's state from cache, but don't delete the cache.
+  $rs-&gt;thawUservars (&quot;soandso&quot;, keep =&gt; 1);</pre>
+</dd>
+</li>
+<dt><strong><a name="lastmatch" class="item">lastMatch ($USER)</a></strong>
+
+<dd>
+<p>After fetching a reply for user <code>$USER</code>, the <a href="#lastmatch"><code>lastMatch</code></a> method will return the
+raw text of the trigger that the user has matched with their reply. This function
+may return undef in the event that the user <strong>did not</strong> match any trigger at all
+(likely the last reply was &quot;<code>ERR: No Reply Matched</code>&quot; as well).</p>
 </dd>
 </li>
 </dl>
@@ -493,6 +555,26 @@ defines the standards of RiveScript.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  1.18  Dec 31 2008
+  - Added support for topics to inherit their triggers from other topics.
+    e.g. &gt; topic alpha inherits beta
+  - Fixed some bugs related to !array with ^continue's, and expanded its
+    functionality therein.
+  - Updated the getUservars() function to optionally be able to get just a specific
+    variable from the user's data. Added getUservar() as a grammatically correct
+    alias to this new functionality.
+  - Added the functions freezeUservars() and thawUservars() to back up and
+    restore a user's variables.
+  - Added the function lastMatch(), which returns the text of the trigger that
+    matched the user's last message.
+  - The # command for RiveScript comments has been deprecated in revision 7 of
+    the RiveScript Working Draft. The Perl module will now emit warnings each
+    time the # comments are processed.
+  - Modified a couple of triggers in the default Eliza brain to improve matching
+    issues therein.
+  - +Triggers can contain user &lt;get&gt; tags now.
+  - Updated the RiveScript Working Draft.</pre>
 <pre>
   1.17  Sep 15 2008
   - Updated the rsdemo tool to be more flexible as a general debugging and

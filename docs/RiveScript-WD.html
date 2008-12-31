@@ -68,7 +68,7 @@
 		<li><a href="#__continue">^ CONTINUE</a></li>
 		<li><a href="#__redirect">@ REDIRECT</a></li>
 		<li><a href="#__condition">* CONDITION</a></li>
-		<li><a href="#__comment"># COMMENT</a></li>
+		<li><a href="#___comment">// COMMENT</a></li>
 	</ul>
 
 	<li><a href="#object_macros">OBJECT MACROS</a></li>
@@ -135,7 +135,7 @@
 <p>
 </p>
 <h1><a name="name">NAME</a></h1>
-<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/09/15)</p>
+<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/12/04)</p>
 <p>
 </p>
 <hr />
@@ -296,6 +296,30 @@ in them, separate the entries with a pipe symbol (<code>&quot;|&quot;</code>).</
   ! array colors = red green blue cyan magenta yellow black white orange brown
   ! array be     = is are was were
   ! array whatis = what is|what are|what was|what were</pre>
+<p>Arrays have special treatment when spanned over multiple lines. Each extension
+of the array data is treated individually. For example, to break an array of
+many single-words into multiple lines of RiveScript code:</p>
+<pre>
+  ! array colors = red green blue cyan
+  ^ magenta yellow black white
+  ^ orange brown</pre>
+<p>The data structure pulled from that code would be identical to the previous
+example above for this array.</p>
+<p>Since each extension line is processed individually, you can combine the
+space-delimited and pipe-delimited formats. In this case, we can add some color
+names to our list that have multiple words in them.</p>
+<pre>
+  ! array colors = red green blue cyan magenta yellow
+  ^ light red|light green|light blue|light cyan|light magenta|light yellow
+  ^ dark red|dark green|dark blue|dark cyan|dark magenta|dark yellow
+  ^ white orange teal brown pink
+  ^ dark white|dark orange|dark teal|dark brown|dark pink</pre>
+<p>Finally, if your array consists of almost entirely single-word items, and you
+want to add in just one multi-word item, but don't want to require an extra line
+of RiveScript code to accomplish this, just use the <code>\s</code> tag where you need
+spaces to go.</p>
+<pre>
+  ! array blues = azure blue aqua cyan baby\sblue sky\sblue</pre>
 <p>
 </p>
 <h3><a name="sub">sub</a></h3>
@@ -356,7 +380,10 @@ response in there determines whether or not to get an actual reply.</p>
 <p>A topic is a smaller set of responses to which the client will be bound until
 the topic is changed to something else. The default topic is <code>random</code>.</p>
 <p>The <code>topic</code> label only requires one additional argument, which is the name of
-the topic. The topic's name should be one word and lowercase.</p>
+the topic. The topic's name should be one word and lowercase. If the topic
+should inherit the triggers that belong in a different topic, the second
+argument should be &quot;<code>inherits</code>&quot; followed by at least one additional argument
+that defines the list of topics to inherit.</p>
 <p>Example:</p>
 <pre>
   + i hate you
@@ -372,6 +399,60 @@ the topic. The topic's name should be one word and lowercase.</p>
     - Okay. I guess I'll forgive you then.{topic=random}</pre>
 <pre>
   &lt; topic</pre>
+<p>A practical example of how topic inheritence works might be when creating a
+kind of text-based roleplaying game: you could have global triggers such as
+&quot;<code>help</code>&quot; and &quot;<code>inventory</code>&quot; that are available regardless of what world or room
+the player is currently in.</p>
+<pre>
+  &gt; topic rpg_global
+    + help
+    - &lt;call&gt;help&lt;/call&gt;</pre>
+<pre>
+    + inventory
+    - &lt;call&gt;inventory&lt;/call&gt;</pre>
+<pre>
+    + quit
+    - {topic=random}Game ended.</pre>
+<pre>
+    + _ [*]
+    - You don't need to use the word &quot;&lt;star&gt;&quot; in this game.
+  &lt; topic</pre>
+<pre>
+  &gt; topic rpg_earth inherits rpg_global
+    + equip astronaut suit
+    - There is breathable oxygen here, so that isn't necessary.
+  &lt; topic</pre>
+<pre>
+  &gt; topic room1 inherits rpg_earth
+    + north
+    - {topic=room2}{@look}</pre>
+<pre>
+    + east
+    - {topic=room3}{@look}</pre>
+<pre>
+    + look
+    - You're in the first room. Exits are north and east.
+  &lt; topic</pre>
+<pre>
+  &gt; topic room2 inherits rpg_earth
+    + south
+    - {topic=room1}{@look}</pre>
+<pre>
+    + look
+    - You're in the second room. Only exit is south.
+  &lt; topic</pre>
+<pre>
+  // etc...</pre>
+<p>Here, all the rooms inherit triggers from the &quot;<code>rpg_earth</code>&quot; topic. The
+<code>rpg_earth</code> topic in turn inherits triggers from <code>rpg_global</code>. So commands
+like &quot;help&quot; and &quot;inventory&quot; are also available in every other topic that
+inherits it.</p>
+<p>For a topic to inherit triggers from more than one topic, it only needs to list
+all of the topics to inherit from as follows:</p>
+<pre>
+  &gt; topic alpha inherits beta delta gamma</pre>
+<p>Here, the topic <code>alpha</code> inherits the triggers present in the topics named
+<code>beta</code>, <code>delta</code>, and <code>gamma</code>.</p>
 <p>
 </p>
 <h3><a name="object">object</a></h3>
@@ -691,24 +772,26 @@ of the conditionals return false.</p>
 document, and the next condition is tried when the previous ones are false.</p>
 <p>
 </p>
-<h2><a name="__comment"># COMMENT</a></h2>
-<p>The <code>#</code> command is for putting comments into your RiveScript document. The
-C-style <code>//</code> and <code>/* */</code> syntax is also supported for commenting.</p>
-<p>Comments on their own line should be ignored by all interpreters. Inline comments
-(comments next to RiveScript commands) should be ignored only if the comment
-symbol is not touching the text of the RiveScript command. There should be at
-least one space before the <code>#</code> or <code>//</code> command.</p>
-<p>Of special note, if the <code>#</code> comment character is to be used inline next to a
-<code>+</code> trigger, there should be <strong>two</strong> spaces before the <code>#</code> symbol to avoid
-interpreter confusion, since <code>#</code> is also a wildcard symbol in triggers.</p>
+<h2><a name="___comment">// COMMENT</a></h2>
+<p>The <code>//</code> command is for putting comments into your RiveScript document. The
+C-style multiline comment syntax <code>/* */</code> is also supported.</p>
+<p>Comments on their own line should be ignored by all interpreters. For inline
+comments, only the <code>//</code> format is acceptable. If you want a literal <code>//</code> in
+your RiveScript data, escape at least one of the symbols, i.e. <code>\//</code> or <code>\/\/</code>
+or <code>/\/</code>.</p>
+<p>Examples:</p>
 <pre>
-  Bad:
-  + request # This trigger is tested first
-  Good:
-  + request  # This trigger is tested first (2 spaces before, 1+ space(s) after)
-  + request // This trigger is tested first (only 1 space is needed for // syntax)</pre>
-<p>To explicitely use the characters <code>#</code> or <code>//</code> in a RiveScript command, you must
-escape them with a <code>\</code>. Example: <code>\#</code> or <code>\//</code>.</p>
+  // A single regular comment</pre>
+<pre>
+  /*
+    This comment can span
+    multiple lines
+  */</pre>
+<pre>
+  &gt; begin // The &quot;BEGIN&quot; block
+    + request // This is required
+    - {ok}    // An {ok} means to get a real reply
+  &lt; begin//End the begin block</pre>
 <p>
 </p>
 <hr />
@@ -752,7 +835,7 @@ MD5 or Base64.</p>
 defined above; <code>md5</code> and <code>base64</code> calls on the method name, which is received
 by the object as <code>$method</code>. Finally, <code>@args</code> as received by the object would
 be the value of &lt;star&gt; in this example.</p>
-<p><code>$rs</code> in this example would be a reference to the RiveScript interpreter.</p>
+<p><code>$obj</code> in this example would be a reference to the RiveScript interpreter.</p>
 <p>
 </p>
 <hr />
@@ -1151,7 +1234,8 @@ documents. Here is a full breakdown of the differences:</p>
     - Old way: &gt; object encode
     - New way: &gt; object encode perl
   - The ^CONTINUE command can extend every command.
-  - Most tags can be used with almost every command.</pre>
+  - Most tags can be used with almost every command.
+  - Topics can inherit triggers from other topics now.</pre>
 <pre>
   INCOMPATIBLE CHANGES:</pre>
 <pre>
@@ -1186,20 +1270,28 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.</
 <hr />
 <h1><a name="revisions">REVISIONS</a></h1>
 <pre>
-  Sep 15, 2008
+  Rev 7 - Dec  4, 2008
+  - Topics are able to inherit additional triggers that belong to different
+    topics, in the &quot;&gt; topic alpha inherits beta&quot; syntax.
+  - Added more documentation to the &quot;! array&quot; section of the document. Also
+    check that section for some changes to the way arrays should be processed by
+    the interpreter.
+  - Deprecated the # command for inline comments. Use only // and /* */.</pre>
+<pre>
+  Rev 6 - Sep 15, 2008
   - Updated the section about # for inline comments: when used next to a
     +Trigger, there should be at least 2 spaces before the # symbol and 1 space
     after, to avoid confusion with # as a wildcard character.</pre>
 <pre>
-  Jul 22, 2008
+  Rev 5 - Jul 22, 2008
   - Added two new variants of the wildcard: # will match only numbers and _ will
     match only letters. * will still match anything at all.</pre>
 <pre>
-  Jun 19, 2008
+  Rev 4 - Jun 19, 2008
   - Rearranged tag priorities:
     - &lt;bot&gt; and &lt;env&gt; moved higher up.</pre>
 <pre>
-  Apr  2, 2008
+  Rev 3 - Apr  2, 2008
   - Typo fix: under the !person section, the examples were using !sub
   - Inconsistency fix: under %Previous it was saying the wildcards were
     unmatchable, but this isn't the case (they go into &lt;botstar&gt;).
@@ -1212,13 +1304,13 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.</
     - &lt;env&gt; comes in after &lt;bot&gt;
   - Typo fix: updated the object syntax (&lt;call&gt;) in the priority list.</pre>
 <pre>
-  Feb 18, 2008
+  Rev 2 - Feb 18, 2008
   - Moved {random} to higher tag priority.
   - Change the &amp;object syntax to &lt;call&gt;
   - Added the &lt;env&gt; variable.
   - Added the &lt;botstar&gt; variable.</pre>
 <pre>
-  Jan 15, 2008
+  Rev 1 - Jan 15, 2008
   - Added the {priority} tag to triggers, to increase a trigger's matching
     priority over others, even when another trigger might be a better match
     to the client's message.</pre>

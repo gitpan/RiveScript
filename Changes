@@ -1,5 +1,14 @@
 Revision history for Perl extension RiveScript.
 
+  1.19  Apr 12 2009
+  - Added support for defining custom object handlers for non-Perl programming
+    languages.
+  - All the methods like setGlobal, setVariable, setUservar, etc. will now
+    accept undef or "<undef>" as values - this will delete the variables.
+  - There are no reserved global variable names anymore. Now, if a variable name
+    would conflict with a reserved name, it is put into a "protected" space
+    elsewhere in the object. Still take note of which names are reserved though.
+
   1.18  Dec 31 2008
   - Added support for topics to inherit their triggers from other topics.
     e.g. > topic alpha inherits beta

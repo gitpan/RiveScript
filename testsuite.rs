@@ -512,6 +512,21 @@
 + encode * in base64
 - "<star>" in Base64 is: <call>encode base64 <star></call>
 
+> object testing javascript
+	var w = screen.width;
+	var h = screen.height;
+	var dim = w + "x" + h;
+	return dim;
+< object
+
++ test javascript
+- Testing javascript... <call>testing</call>.
+
+! global topics = hello world
+
++ test global
+- Testing reserved global: topics=<env topics>; users=<env users>; client=<env client>; reserved=<env reserved>.
+
 /******************************************************************************
  * Topic Testing                                                              *
  ******************************************************************************/

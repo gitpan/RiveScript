@@ -3,7 +3,7 @@ package RiveScript;
 use strict;
 use warnings;
 
-our $VERSION = '1.18'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.19'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 our $basedir = (__FILE__ =~ /^(.+?)\.pm$/i ? $1 : '.');
 
@@ -37,13 +37,57 @@ sub new {
 		objects    => {}, # Subroutines
 		syntax     => {}, # Syntax tracking
 		sortlist   => {}, # Sorted lists (i.e. person subs)
+		handlers   => {}, # Object handlers
+		globals    => {}, # Globals that conflict with reserved names go here
+		objlangs   => {}, # Map object names to their programming languages
 		reserved   => [   # Reserved global variable names.
 			qw(topics sorted sortsthat sortedthat thats arrays subs person
-			client bot objects syntax sortlist reserved debugopts frozen)
+			client bot objects syntax sortlist reserved debugopts frozen
+			handlers globals objlangs)
 		],
 		@_,
 	};
 	bless ($self,$class);
+
+	# Set the default object handler for Perl objects.
+	$self->setHandler (perl => sub {
+		my ($rs,$action,$name,$data) = @_;
+
+		# $action will be "load" during the parsing phase, or "call"
+		# when called via <call>.
+
+		# Loading
+		if ($action eq "load") {
+			# Create a dynamic Perl subroutine.
+			my $code = "sub RSOBJ_$name {\n"
+				. $data
+				. "}";
+
+			# Evaluate it.
+			eval ($code);
+			if ($@) {
+				$rs->issue("Perl object $name creation failed: $@");
+			}
+			else {
+				# Load it.
+				$rs->setSubroutine($name => \&{"RSOBJ_$name"});
+			}
+		}
+
+		# Calling
+		elsif ($action eq "call") {
+			# Make sure the object exists.
+			if (exists $rs->{objects}->{$name}) {
+				# Call it.
+				my @args = @{$data};
+				my $return = &{ $rs->{objects}->{$name} } ($rs,@args);
+				return $return;
+			}
+			else {
+				return "[ERR: Object Not Found]";
+			}
+		}
+	});
 
 	# See if any additional debug options were provided.
 	if (exists $self->{verbose}) {
@@ -180,8 +224,9 @@ sub parse {
 	my $lineno  = 0;        # Keep track of line numbers
 	my $comment = 0;        # In a multi-line comment.
 	my $inobj   = 0;        # Trying to parse an object.
-	my $objname = '';       # Object name
-	my $objbuf  = '';       # Object code buffer.
+	my $objname = '';       # Object name.
+	my $objlang = '';       # Object programming language.
+	my $objbuf  = '';       # Object contents buffer.
 	my $ontrig  = '';       # Current trigger.
 	my $repcnt  = 0;        # Reply counter.
 	my $concnt  = 0;        # Condition counter.
@@ -211,17 +256,17 @@ sub parse {
 			if ($line =~ /^<\s*object/i) {
 				# End the object.
 				if (length $objname) {
-					$objbuf .= "\n}";
-					eval ($objbuf);
-					if ($@) {
-						$self->issue ("Object creation failed: $@");
+					# Call this object's handler.
+					if (exists $self->{handlers}->{$objlang}) {
+						$self->{objlangs}->{$objname} = $objlang;
+						&{ $self->{handlers}->{$objlang} } ($self,"load",$objname,$objbuf);
 					}
 					else {
-						# Define the subroutine, too.
-						$self->setSubroutine ($objname, \&{"RSOBJ_$objname"});
+						$self->issue ("Object creation failed: no handler for $objlang!");
 					}
 				}
 				$objname = '';
+				$objlang = '';
 				$objbuf = '';
 			}
 			else {
@@ -381,19 +426,27 @@ sub parse {
 				my $ok = 1;
 				foreach my $res (@{$self->{reserved}}) {
 					if ($var eq $res) {
-						$self->issue ("Can't override global variable $res at $fname line $lineno.");
 						$ok = 0;
 						last;
 					}
 				}
 
 				if ($ok) {
-					# Allow.
+					# Allow in the global name space.
 					if ($value eq '<undef>') {
 						delete $self->{$var};
 					}
 					else {
 						$self->{$var} = $value;
+					}
+				}
+				else {
+					# Allow in the protected name space.
+					if ($value eq '<undef>') {
+						delete $self->{globals}->{$var};
+					}
+					else {
+						$self->{globals}->{$var} = $value;
 					}
 				}
 			}
@@ -523,22 +576,30 @@ sub parse {
 			if ($type eq 'object') {
 				# If a field was provided, it should be the programming language.
 				my $lang = (scalar(@fields) ? $fields[0] : undef);
+				$lang = lc($lang); $lang =~ s/\s+//g;
 
 				# Only try to parse a language we support.
 				$ontrig = '';
 				if (not defined $lang) {
 					$self->issue ("Trying to parse unknown programming language at $fname line $lineno.");
+					$lang = "perl"; # Assume it's Perl.
 				}
-				elsif ($lang !~ /^perl$/i) {
-					$self->debug ("Skipping object of language $lang: not known by interpreter, at $fname line $lineno.");
-					$objname = '';
+
+				# See if we have a defined handler for this language.
+				if (exists $self->{handlers}->{$lang}) {
+					# We have a handler, so load this object's code.
+					$objname = $name;
+					$objlang = $lang;
+					$objbuf  = '';
 					$inobj = 1;
-					next;
 				}
-				$self->debug ("Attempting to parse object named $name.");
-				$objbuf = "sub RSOBJ_$name {\n";
-				$objname = $name;
-				$inobj = 1;
+				else {
+					# We don't have a handler, just ignore this code.
+					$objname = '';
+					$objlang = '';
+					$objbuf  = '';
+					$inobj   = 1;
+				}
 			}
 		}
 		elsif ($cmd eq '<') {
@@ -1053,6 +1114,32 @@ sub _topicTriggers {
 ## Configuration Methods                                                      ##
 ################################################################################
 
+sub setHandler {
+	my ($self,%info) = @_;
+
+	foreach my $lang (keys %info) {
+		my $code = $info{$lang};
+		$lang = lc($lang);
+		$lang =~ s/\s+//g;
+
+		# If the coderef is undef, delete the handler.
+		if (!defined $code) {
+			delete $self->{handlers}->{$lang};
+		}
+		else {
+			# Otherwise it must be a coderef.
+			if (ref($code) eq "CODE") {
+				$self->{handlers}->{$lang} = $code;
+			}
+			else {
+				$self->issue("Handler for language $lang must be a code reference!");
+			}
+		}
+	}
+
+	return 1;
+}
+
 sub setSubroutine {
 	my ($self,$name,$sub) = @_;
 
@@ -1064,12 +1151,32 @@ sub setGlobal {
 	my ($self,%data) = @_;
 
 	foreach my $key (keys %data) {
+		if (!defined $data{$key}) {
+			$data{$key} = "<undef>";
+		}
+
 		foreach my $res (@{$self->{reserved}}) {
+			my $reserved = 0;
 			if ($res eq $key) {
-				$self->issue ("Can't reset global $key: reserved variable name!");
-				next;
+				$reserved = 1;
 			}
-			$self->{$key} = $data{$key};
+
+			if ($reserved) {
+				if ($data{$key} eq "<undef>") {
+					delete $self->{globals}->{$key};
+				}
+				else {
+					$self->{globals}->{$key} = $data{$key};
+				}
+			}
+			else {
+				if ($data{$key} eq "<undef>") {
+					delete $self->{$key};
+				}
+				else {
+					$self->{$key} = $data{$key};
+				}
+			}
 		}
 	}
 
@@ -1080,7 +1187,16 @@ sub setVariable {
 	my ($self,%data) = @_;
 
 	foreach my $key (keys %data) {
-		$self->{bot}->{$key} = $data{$key};
+		if (!defined $data{$key}) {
+			$data{$key} = "<undef>";
+		}
+
+		if ($data{$key} eq "<undef>") {
+			delete $self->{bot}->{$key};
+		}
+		else {
+			$self->{bot}->{$key} = $data{$key};
+		}
 	}
 
 	return 1;
@@ -1090,7 +1206,16 @@ sub setSubstitution {
 	my ($self,%data) = @_;
 
 	foreach my $key (keys %data) {
-		$self->{subs}->{$key} = $data{$key};
+		if (!defined $data{$key}) {
+			$data{$key} = "<undef>";
+		}
+
+		if ($data{$key} eq "<undef>") {
+			delete $self->{subs}->{$key};
+		}
+		else {
+			$self->{subs}->{$key} = $data{$key};
+		}
 	}
 
 	return 1;
@@ -1100,7 +1225,16 @@ sub setPerson {
 	my ($self,%data) = @_;
 
 	foreach my $key (keys %data) {
-		$self->{person}->{$key} = $data{$key};
+		if (!defined $data{$key}) {
+			$data{$key} = "<undef>";
+		}
+
+		if ($data{$key} eq "<undef>") {
+			delete $self->{person}->{$key};
+		}
+		else {
+			$self->{person}->{$key} = $data{$key};
+		}
 	}
 
 	return 1;
@@ -1110,7 +1244,16 @@ sub setUservar {
 	my ($self,$user,%data) = @_;
 
 	foreach my $key (keys %data) {
-		$self->{client}->{$user}->{$key} = $data{$key};
+		if (!defined $data{$key}) {
+			$data{$key} = "<undef>";
+		}
+
+		if ($data{$key} eq "<undef>") {
+			delete $self->{client}->{$user}->{$key};
+		}
+		else {
+			$self->{client}->{$user}->{$key} = $data{$key};
+		}
 	}
 
 	return 1;
@@ -1798,15 +1941,25 @@ sub processTags {
 	while ($reply =~ /<env (.+?)>/i) {
 		my $var = $1;
 		my $val = '';
-		my $reserved = 0;
-		foreach my $res (@{$self->{reserved}}) {
-			if ($res eq $var) {
-				$reserved = 1;
+		if (exists $self->{globals}->{$var}) {
+			$val = $self->{globals}->{$var};
+		}
+		else {
+			my $reserved = 0;
+			foreach my $res (@{$self->{reserved}}) {
+				if ($res eq $var) {
+					$reserved = 1;
+				}
+			}
+
+			if (not $reserved) {
+				$val = (exists $self->{$var} ? $self->{$var} : 'undefined');
+			}
+			else {
+				$val = "(reserved)";
 			}
 		}
-		if (not $reserved) {
-			$val = (exists $self->{$var} ? $self->{$var} : 'undefined');
-		}
+
 		$reply =~ s/<env (.+?)>/$val/i;
 	}
 	while ($reply =~ /\{\!(.+?)\}/i) {
@@ -1911,12 +2064,23 @@ sub processTags {
 	while ($reply =~ /<call>(.+?)<\/call>/i) {
 		my ($obj,@args) = split(/\s+/, $1);
 		my $output = '';
-		if (exists $self->{objects}->{$obj}) {
-			$output = &{$self->{objects}->{$obj}} ($self,@args) || '';
+
+		# What language handles this object?
+		my $lang = exists $self->{objlangs}->{$obj} ? $self->{objlangs}->{$obj} : '';
+		if (length $lang) {
+			# Do we handle this?
+			if (exists $self->{handlers}->{$lang}) {
+				# Ok.
+				$output = &{ $self->{handlers}->{$lang} } ($self,"call",$obj,[@args]);
+			}
+			else {
+				$output = '[ERR: No Object Handler]';
+			}
 		}
 		else {
 			$output = '[ERR: Object Not Found]';
 		}
+
 		$reply =~ s/<call>(.+?)<\/call>/$output/i;
 	}
 
@@ -2072,7 +2236,7 @@ are reserved:
   topics   sorted  sortsthat  sortedthat  thats
   arrays   subs    person     client      bot
   objects  syntax  sortlist   reserved    debugopts
-  frozen
+  frozen   globals handlers   objlangs
 
 Note: the options "verbose" and "debugfile", when provided, are noted and then
 deleted from the root object space, so that if your RiveScript code uses variables
@@ -2116,6 +2280,217 @@ will complain loudly about it.
 
 =over 4
 
+=item setHandler ($LANGUAGE => $CODEREF, ...)
+
+Define some code to handle objects of a particular programming language. If the
+coderef is C<undef>, it will delete the handler.
+
+The code receives the variables C<$rs, $action, $name,> and C<$data>. These
+variables are described here:
+
+  $rs     = Reference to Perl RiveScript object.
+  $action = "load" during the parsing phase when an >object is found.
+            "call" when provoked via a <call> tag for a reply
+  $name   = The name of the object.
+  $data   = The source of the object during the parsing phase, or an array
+            reference of arguments when provoked via a <call> tag.
+
+There is a default handler set up that handles Perl objects. The source code of
+this object is as follows, for your reference:
+
+  $self->setHandler (perl => sub {
+    my ($rs,$action,$name,$data) = @_;
+
+    # $action will be "load" during the parsing phase, or "call"
+    # when called via <call>.
+
+    # Loading
+    if ($action eq "load") {
+      # Create a dynamic Perl subroutine.
+      my $code = "sub RSOBJ_$name {\n"
+        . $data
+        . "}";
+
+      # Evaluate it.
+      eval ($code);
+      if ($@) {
+        $rs->issue("Perl object $name creation failed: $@");
+      }
+      else {
+        # Load it.
+        $rs->setSubroutine($name => \&{"RSOBJ_$name"});
+      }
+    }
+
+    # Calling
+    elsif ($action eq "call") {
+      # Make sure the object exists.
+      if (exists $rs->{objects}->{$name}) {
+        # Call it.
+        my @args = @{$data};
+        my $return = &{ $rs->{objects}->{$name} } ($rs,@args);
+        return $return;
+      }
+      else {
+        return "[ERR: Object Not Found]";
+      }
+    }
+  });
+
+If you want to block Perl objects from being loaded, you can just set it to be
+undef, and its handler will be deleted and Perl objects will be skipped over:
+
+  $rs->setHandler (perl => undef);
+
+The rationale behind this "pluggable" object interface is that it makes
+RiveScript more flexible given certain environments. For instance, if you use
+RiveScript on the web where the user chats with your bot using CGI, you might
+define a handler so that JavaScript objects can be loaded and called. Perl
+itself can't execute JavaScript, but the user's web browser can.
+
+Here's an example of defining a handler for JavaScript objects:
+
+  my $scripts = {}; # Place to store JS code.
+
+  $rs->setHandler (javascript => sub {
+    my ($self,$action,$name,$data) = @_;
+
+    # Loading the object.
+    if ($action eq "load") {
+      # Just store the code.
+      $scripts->{$name} = $data;
+    }
+    else {
+      # Turn the args into a JavaScript array.
+      my $code = "var fields = new Array();\n";
+      for (my $i = 0; $i < scalar @{$data}; $i++) {
+        $code .= "fields[$i] = \"$data->[$i]\";\n";
+      }
+
+      # Come up with code for the web browser.
+      $code .= "function rsobject (args) {\n"
+             . "$scripts->{$name}\n"
+             . "}"
+             . "document.writeln( rsobject(fields) );\n";
+      return "<script type=\"text/javascript\">\n"
+        . $code
+        . "</script>";
+    }
+  });
+
+So, the above example just loads the JavaScript source code into a hash reference
+named $scripts, and then when called it creates some JavaScript code to put the
+call's arguments into an array, creates a function that accepts the args, then
+calls this function in a C<document.writeln>. Here's an example of how this would
+be used in the RiveScript code:
+
+  // Define an object to encode text into rot13 to be executed by the web browser
+  > object rot13 javascript
+    var txt = args.join(" "); // Turn the args array into a string
+    var result = "";
+
+    for (var i = 0; i < txt.length; i++) {
+      var b = txt.charCodeAt(i);
+
+      // 65 = A    97 = a
+      // 77 = M   109 = m
+      // 78 = N   110 = n
+      // 90 = Z   122 = z
+
+      var isLetter = 0;
+
+      if (b >= 65 && b <= 77) {
+        isLetter = 1;
+        b += 13;
+      }
+      else if (b >= 97 && b <= 109) {
+        isLetter = 1;
+        b += 13;
+      }
+      else if (b >= 78 && b <= 90) {
+        isLetter = 1;
+        b -= 13;
+      }
+      else if (b >= 110 && b <= 122) {
+        isLetter = 1;
+        b -= 13;
+      }
+
+      if (isLetter) {
+        result += String.fromCharCode(b);
+      }
+      else {
+        result += String.fromCharCode(b);
+      }
+    }
+
+    return result;
+  < object
+
+  // Use the object
+  + say * in rot13
+  - "<star>" in rot13 is: <call>rot13 <star></call>.
+
+Now, when the user at the web browser provokes this reply, it will get back a
+bunch of JavaScript code as part of the response. It might be like this:
+
+  <b>User:</b> say hello world in rot13<br>
+  <b>Bot:</b> "hello world" in rot13 is: <script type="text/javascript">
+  var fields = new Array();
+  fields[0] = "hello";
+  fields[1] = "world";
+  function rsobject (args) {
+    var txt = args.join(" "); // Turn the args array into a string
+    var result = "";
+
+    for (var i = 0; i < txt.length; i++) {
+      var b = txt.charCodeAt(i);
+
+      // 65 = A    97 = a
+      // 77 = M   109 = m
+      // 78 = N   110 = n
+      // 90 = Z   122 = z
+
+      var isLetter = 0;
+
+      if (b >= 65 && b <= 77) {
+        isLetter = 1;
+        b += 13;
+      }
+      else if (b >= 97 && b <= 109) {
+        isLetter = 1;
+        b += 13;
+      }
+      else if (b >= 78 && b <= 90) {
+        isLetter = 1;
+        b -= 13;
+      }
+      else if (b >= 110 && b <= 122) {
+        isLetter = 1;
+        b -= 13;
+      }
+
+      if (isLetter) {
+        result += String.fromCharCode(b);
+      }
+      else {
+        result += String.fromCharCode(b);
+      }
+    }
+
+    return result;
+  }
+  document.writeln(rsobject(fields));
+  </script>.
+
+And so, the JavaScript gets executed inside the bot's response by the web
+browser.
+
+In this case, Perl itself can't handle JavaScript code, but considering the
+environment the bot is running in (CGI served to a web browser), the web browser
+is capable of executing JavaScript. So, we set up a custom object handler so that
+JavaScript objects are given directly to the browser to be executed there.
+
 =item setSubroutine ($NAME, $CODEREF)
 
 Manually create a RiveScript object (a dynamic bit of Perl code that can be
@@ -2130,6 +2505,9 @@ names and the values are their value. This subroutine will make sure that you
 don't override any reserved global variables, and warn if that happens.
 
 This is equivalent to C<! global> in RiveScript code.
+
+To delete a global, set its value to C<undef> or "C<E<lt>undefE<gt>>". This
+is true for variables, substitutions, person, and uservars.
 
 =item setVariable (%DATA)
 
@@ -2412,6 +2790,15 @@ defines the standards of RiveScript.
 L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
+
+  1.19  Apr 12 2009
+  - Added support for defining custom object handlers for non-Perl programming
+    languages.
+  - All the methods like setGlobal, setVariable, setUservar, etc. will now
+    accept undef or "<undef>" as values - this will delete the variables.
+  - There are no reserved global variable names anymore. Now, if a variable name
+    would conflict with a reserved name, it is put into a "protected" space
+    elsewhere in the object. Still take note of which names are reserved though.
 
   1.18  Dec 31 2008
   - Added support for topics to inherit their triggers from other topics.

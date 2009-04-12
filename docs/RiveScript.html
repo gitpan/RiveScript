@@ -137,7 +137,7 @@ are reserved:</p>
   topics   sorted  sortsthat  sortedthat  thats
   arrays   subs    person     client      bot
   objects  syntax  sortlist   reserved    debugopts
-  frozen</pre>
+  frozen   globals handlers   objlangs</pre>
 </dd>
 <dd>
 <p>Note: the options &quot;verbose&quot; and &quot;debugfile&quot;, when provided, are noted and then
@@ -190,6 +190,280 @@ will complain loudly about it.</p>
 </p>
 <h2><a name="configuration">CONFIGURATION</a></h2>
 <dl>
+<dt><strong><a name="sethandler" class="item">setHandler ($LANGUAGE =&gt; $CODEREF, ...)</a></strong>
+
+<dd>
+<p>Define some code to handle objects of a particular programming language. If the
+coderef is <code>undef</code>, it will delete the handler.</p>
+</dd>
+<dd>
+<p>The code receives the variables <code>$rs, $action, $name,</code> and <code>$data</code>. These
+variables are described here:</p>
+</dd>
+<dd>
+<pre>
+  $rs     = Reference to Perl RiveScript object.
+  $action = &quot;load&quot; during the parsing phase when an &gt;object is found.
+            &quot;call&quot; when provoked via a &lt;call&gt; tag for a reply
+  $name   = The name of the object.
+  $data   = The source of the object during the parsing phase, or an array
+            reference of arguments when provoked via a &lt;call&gt; tag.</pre>
+</dd>
+<dd>
+<p>There is a default handler set up that handles Perl objects. The source code of
+this object is as follows, for your reference:</p>
+</dd>
+<dd>
+<pre>
+  $self-&gt;setHandler (perl =&gt; sub {
+    my ($rs,$action,$name,$data) = @_;</pre>
+</dd>
+<dd>
+<pre>
+    # $action will be &quot;load&quot; during the parsing phase, or &quot;call&quot;
+    # when called via &lt;call&gt;.</pre>
+</dd>
+<dd>
+<pre>
+    # Loading
+    if ($action eq &quot;load&quot;) {
+      # Create a dynamic Perl subroutine.
+      my $code = &quot;sub RSOBJ_$name {\n&quot;
+        . $data
+        . &quot;}&quot;;</pre>
+</dd>
+<dd>
+<pre>
+      # Evaluate it.
+      eval ($code);
+      if ($@) {
+        $rs-&gt;issue(&quot;Perl object $name creation failed: $@&quot;);
+      }
+      else {
+        # Load it.
+        $rs-&gt;setSubroutine($name =&gt; \&amp;{&quot;RSOBJ_$name&quot;});
+      }
+    }</pre>
+</dd>
+<dd>
+<pre>
+    # Calling
+    elsif ($action eq &quot;call&quot;) {
+      # Make sure the object exists.
+      if (exists $rs-&gt;{objects}-&gt;{$name}) {
+        # Call it.
+        my @args = @{$data};
+        my $return = &amp;{ $rs-&gt;{objects}-&gt;{$name} } ($rs,@args);
+        return $return;
+      }
+      else {
+        return &quot;[ERR: Object Not Found]&quot;;
+      }
+    }
+  });</pre>
+</dd>
+<dd>
+<p>If you want to block Perl objects from being loaded, you can just set it to be
+undef, and its handler will be deleted and Perl objects will be skipped over:</p>
+</dd>
+<dd>
+<pre>
+  $rs-&gt;setHandler (perl =&gt; undef);</pre>
+</dd>
+<dd>
+<p>The rationale behind this &quot;pluggable&quot; object interface is that it makes
+RiveScript more flexible given certain environments. For instance, if you use
+RiveScript on the web where the user chats with your bot using CGI, you might
+define a handler so that JavaScript objects can be loaded and called. Perl
+itself can't execute JavaScript, but the user's web browser can.</p>
+</dd>
+<dd>
+<p>Here's an example of defining a handler for JavaScript objects:</p>
+</dd>
+<dd>
+<pre>
+  my $scripts = {}; # Place to store JS code.</pre>
+</dd>
+<dd>
+<pre>
+  $rs-&gt;setHandler (javascript =&gt; sub {
+    my ($self,$action,$name,$data) = @_;</pre>
+</dd>
+<dd>
+<pre>
+    # Loading the object.
+    if ($action eq &quot;load&quot;) {
+      # Just store the code.
+      $scripts-&gt;{$name} = $data;
+    }
+    else {
+      # Turn the args into a JavaScript array.
+      my $code = &quot;var fields = new Array();\n&quot;;
+      for (my $i = 0; $i &lt; scalar @{$data}; $i++) {
+        $code .= &quot;fields[$i] = \&quot;$data-&gt;[$i]\&quot;;\n&quot;;
+      }</pre>
+</dd>
+<dd>
+<pre>
+      # Come up with code for the web browser.
+      $code .= &quot;function rsobject (args) {\n&quot;
+             . &quot;$scripts-&gt;{$name}\n&quot;
+             . &quot;}&quot;
+             . &quot;document.writeln( rsobject(fields) );\n&quot;;
+      return &quot;&lt;script type=\&quot;text/javascript\&quot;&gt;\n&quot;
+        . $code
+        . &quot;&lt;/script&gt;&quot;;
+    }
+  });</pre>
+</dd>
+<dd>
+<p>So, the above example just loads the JavaScript source code into a hash reference
+named $scripts, and then when called it creates some JavaScript code to put the
+call's arguments into an array, creates a function that accepts the args, then
+calls this function in a <code>document.writeln</code>. Here's an example of how this would
+be used in the RiveScript code:</p>
+</dd>
+<dd>
+<pre>
+  // Define an object to encode text into rot13 to be executed by the web browser
+  &gt; object rot13 javascript
+    var txt = args.join(&quot; &quot;); // Turn the args array into a string
+    var result = &quot;&quot;;</pre>
+</dd>
+<dd>
+<pre>
+    for (var i = 0; i &lt; txt.length; i++) {
+      var b = txt.charCodeAt(i);</pre>
+</dd>
+<dd>
+<pre>
+      // 65 = A    97 = a
+      // 77 = M   109 = m
+      // 78 = N   110 = n
+      // 90 = Z   122 = z</pre>
+</dd>
+<dd>
+<pre>
+      var isLetter = 0;</pre>
+</dd>
+<dd>
+<pre>
+      if (b &gt;= 65 &amp;&amp; b &lt;= 77) {
+        isLetter = 1;
+        b += 13;
+      }
+      else if (b &gt;= 97 &amp;&amp; b &lt;= 109) {
+        isLetter = 1;
+        b += 13;
+      }
+      else if (b &gt;= 78 &amp;&amp; b &lt;= 90) {
+        isLetter = 1;
+        b -= 13;
+      }
+      else if (b &gt;= 110 &amp;&amp; b &lt;= 122) {
+        isLetter = 1;
+        b -= 13;
+      }</pre>
+</dd>
+<dd>
+<pre>
+      if (isLetter) {
+        result += String.fromCharCode(b);
+      }
+      else {
+        result += String.fromCharCode(b);
+      }
+    }</pre>
+</dd>
+<dd>
+<pre>
+    return result;
+  &lt; object</pre>
+</dd>
+<dd>
+<pre>
+  // Use the object
+  + say * in rot13
+  - &quot;&lt;star&gt;&quot; in rot13 is: &lt;call&gt;rot13 &lt;star&gt;&lt;/call&gt;.</pre>
+</dd>
+<dd>
+<p>Now, when the user at the web browser provokes this reply, it will get back a
+bunch of JavaScript code as part of the response. It might be like this:</p>
+</dd>
+<dd>
+<pre>
+  &lt;b&gt;User:&lt;/b&gt; say hello world in rot13&lt;br&gt;
+  &lt;b&gt;Bot:&lt;/b&gt; &quot;hello world&quot; in rot13 is: &lt;script type=&quot;text/javascript&quot;&gt;
+  var fields = new Array();
+  fields[0] = &quot;hello&quot;;
+  fields[1] = &quot;world&quot;;
+  function rsobject (args) {
+    var txt = args.join(&quot; &quot;); // Turn the args array into a string
+    var result = &quot;&quot;;</pre>
+</dd>
+<dd>
+<pre>
+    for (var i = 0; i &lt; txt.length; i++) {
+      var b = txt.charCodeAt(i);</pre>
+</dd>
+<dd>
+<pre>
+      // 65 = A    97 = a
+      // 77 = M   109 = m
+      // 78 = N   110 = n
+      // 90 = Z   122 = z</pre>
+</dd>
+<dd>
+<pre>
+      var isLetter = 0;</pre>
+</dd>
+<dd>
+<pre>
+      if (b &gt;= 65 &amp;&amp; b &lt;= 77) {
+        isLetter = 1;
+        b += 13;
+      }
+      else if (b &gt;= 97 &amp;&amp; b &lt;= 109) {
+        isLetter = 1;
+        b += 13;
+      }
+      else if (b &gt;= 78 &amp;&amp; b &lt;= 90) {
+        isLetter = 1;
+        b -= 13;
+      }
+      else if (b &gt;= 110 &amp;&amp; b &lt;= 122) {
+        isLetter = 1;
+        b -= 13;
+      }</pre>
+</dd>
+<dd>
+<pre>
+      if (isLetter) {
+        result += String.fromCharCode(b);
+      }
+      else {
+        result += String.fromCharCode(b);
+      }
+    }</pre>
+</dd>
+<dd>
+<pre>
+    return result;
+  }
+  document.writeln(rsobject(fields));
+  &lt;/script&gt;.</pre>
+</dd>
+<dd>
+<p>And so, the JavaScript gets executed inside the bot's response by the web
+browser.</p>
+</dd>
+<dd>
+<p>In this case, Perl itself can't handle JavaScript code, but considering the
+environment the bot is running in (CGI served to a web browser), the web browser
+is capable of executing JavaScript. So, we set up a custom object handler so that
+JavaScript objects are given directly to the browser to be executed there.</p>
+</dd>
+</li>
 <dt><strong><a name="setsubroutine" class="item">setSubroutine ($NAME, $CODEREF)</a></strong>
 
 <dd>
@@ -208,6 +482,10 @@ don't override any reserved global variables, and warn if that happens.</p>
 </dd>
 <dd>
 <p>This is equivalent to <code>! global</code> in RiveScript code.</p>
+</dd>
+<dd>
+<p>To delete a global, set its value to <code>undef</code> or &quot;<code>&lt;undef&gt;</code>&quot;. This
+is true for variables, substitutions, person, and uservars.</p>
 </dd>
 </li>
 <dt><strong><a name="setvariable" class="item">setVariable (%DATA)</a></strong>
@@ -555,6 +833,15 @@ defines the standards of RiveScript.</p>
 </p>
 <hr />
 <h1><a name="changes">CHANGES</a></h1>
+<pre>
+  1.19  xxx
+  - Added support for defining custom object handlers for non-Perl programming
+    languages.
+  - All the methods like setGlobal, setVariable, setUservar, etc. will now
+    accept undef or &quot;&lt;undef&gt;&quot; as values - this will delete the variables.
+  - There are no reserved global variable names anymore. Now, if a variable name
+    would conflict with a reserved name, it is put into a &quot;protected&quot; space
+    elsewhere in the object. Still take note of which names are reserved though.</pre>
 <pre>
   1.18  Dec 31 2008
   - Added support for topics to inherit their triggers from other topics.

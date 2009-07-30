@@ -1,5 +1,31 @@
 Revision history for Perl extension RiveScript.
 
+  1.20  Jul 30 2009
+  - Added automatic syntax checking when parsing RiveScript code. Also added
+    'strict mode' - if true (default), a syntax error is a fatal error. If false,
+    a syntax error is a warning, and RiveScript aborts processing the file any
+    further.
+  - Changed the behavior of "inherits" a bit: a new type has been added called
+    "includes" which does what the old "inherits" does (mixes the trigger list
+    of both topics together into the same pool). The new "inherits" option though
+    causes the trigger list from the source topic to be higher in matching priority
+    than the trigger list of the inherited topic.
+  - Moving to a new versioning scheme: development releases will have odd
+    version numbers, stable (CPAN) versions will have even numbers.
+  - Fixed the Eliza brain; in many places a <star2> was used when there was only one
+    star in the trigger. Fixes lots of issues with Eliza.
+  - Bugfix: recursion depth limits weren't taken into account when the {@} tag
+    was responsible for a redirection. Fixed.
+  - Bugfix: there was a problem in the regular expression that counts real words
+    while sorting triggers, so that triggers with *'s in them weren't sorted
+    properly and would therefore cause matching issues.
+  - Bugfix: when the internal _getreply is called because of a recursive
+    redirection (@, {@}), the %previous tags should be ignored. They weren't.
+    since "lastreply" is always the same no matter how deeply recursive _getreply
+    is going, it could result in some infinite recursion in rare cases. Fixed.
+  - Bugfix: using a reserved name as a global variable wasn't working properly
+    and would crash RiveScript. Fixed.
+
   1.19  Apr 12 2009
   - Added support for defining custom object handlers for non-Perl programming
     languages.

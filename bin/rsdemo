@@ -25,8 +25,12 @@ if (@ARGV) {
 			push (@opts, 'debugfile', $1);
 			next;
 		}
-		elsif ($v =~ /^\-*?(v|verbose)=(.+?)$/i) {
+		elsif ($v =~ /^\-*?(?:v|verbose)=(.+?)$/i) {
 			push (@opts, 'verbose', $1);
+			next;
+		}
+		elsif ($v =~ /^\-*?(nostrict)$/i) {
+			push (@opts, 'strict', 0);
 			next;
 		}
 		elsif ($v =~ /^\-*?(h|help|\?)$/i) {
@@ -120,6 +124,13 @@ terminal.
 
 If C<debugfile> is provided, all debug information will (also) be printed to the
 debug file.
+
+=item --nostrict
+
+Turn off strict mode when parsing the RiveScript documents. When strict mode
+is enabled (default), a syntax error in the RiveScript code is a fatal error.
+When turned off, it results in a warning, and the rest of the file that caused
+the error is skipped.
 
 =item --help
 

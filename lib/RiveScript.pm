@@ -3,7 +3,7 @@ package RiveScript;
 use strict;
 use warnings;
 
-our $VERSION = '1.19'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.20'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 our $basedir = (__FILE__ =~ /^(.+?)\.pm$/i ? $1 : '.');
 
@@ -22,8 +22,10 @@ sub new {
 			file    => '', # Print to a filename
 		},
 		depth      => 50, # Recursion depth allowed.
+		strict     => 1,  # Strict syntax checking (causes a die)
 		topics     => {}, # Loaded replies under topics
 		lineage    => {}, # Keep track of topics that inherit other topics
+		includes   => {}, # Keep track of topics that include other topics
 		sorted     => {}, # Sorted triggers
 		sortsthat  => {}, # Sorted %previous's.
 		sortedthat => {}, # Sorted triggers that go with %previous's
@@ -279,7 +281,7 @@ sub parse {
 		if ($line =~ /^(\/\/|#)/i) {
 			# The "#" format for comments is deprecated.
 			if ($line =~ /^#/) {
-				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno.");
+				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno (near $line)");
 			}
 			next;
 		}
@@ -309,15 +311,15 @@ sub parse {
 		$line =~ s/\\\/\//\\\/\\\//g; # Turn \// into \/\/
 		if ($cmd eq '+') {
 			$inline_comment_regexp = "(\\s\\s\\#|\\/\\/)";
-			if ($line =~ /\s\s#/) {
+			if ($line =~ /\s\s#\s/) {
 				# Deprecated.
-				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno.");
+				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno (near: $line).");
 			}
 		}
 		else {
-			if ($line =~ /\s#/) {
+			if ($line =~ /\s#\s/) {
 				# Deprecated.
-				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno.");
+				$self->issue ("Using the # symbol for comments is deprecated at $fname line $lineno (near: $line).");
 			}
 		}
 		if ($line =~ /$inline_comment_regexp/) {
@@ -327,6 +329,23 @@ sub parse {
 		}
 
 		$self->debug ("\tCmd: $cmd");
+
+		# Run a syntax check on this line. We put this into a separate function so that
+		# we can have all the syntax logic all in one place.
+		my $syntax_error = $self->checkSyntax($cmd,$line);
+		if ($syntax_error) {
+			# There was a syntax error! Are we enforcing "strict"?
+			$syntax_error = "Syntax error in $fname line $lineno: $syntax_error (near: $cmd $line)";
+			if ($self->{strict}) {
+				# This is fatal then!
+				die $syntax_error;
+			}
+			else {
+				# This is a warning; warn it, and then abort processing this file!
+				warn $syntax_error;
+				return;
+			}
+		}
 
 		# Reset the %previous state if this is a new +Trigger.
 		if ($cmd eq '+') {
@@ -563,13 +582,25 @@ sub parse {
 				$ontrig = '';
 				$topic = $name;
 
-				# Does this topic inherit another one?
-				if (scalar(@fields) >= 2 && $fields[0] =~ /^inherits$/i) {
-					# Inheriting multiple topics and the topics must be separated
-					# by spaces.
-					for (my $i = 1; $i < scalar(@fields); $i++) {
-						my $inherits = $fields[$i];
-						$self->{lineage}->{$name}->{$inherits} = 1;
+				# Does this topic include or inherit another one?
+				my $mode = ''; # or 'inherits' || 'includes'
+				if (scalar(@fields) >= 2) {
+					foreach my $field (@fields) {
+						if ($field eq 'includes') {
+							$mode = 'includes';
+						}
+						elsif ($field eq 'inherits') {
+							$mode = 'inherits';
+						}
+						elsif ($mode ne '') {
+							# This topic is either inherited or included.
+							if ($mode eq 'includes') {
+								$self->{includes}->{$name}->{$field} = 1;
+							}
+							else {
+								$self->{lineage}->{$name}->{$field} = 1;
+							}
+						}
 					}
 				}
 			}
@@ -687,6 +718,100 @@ sub parse {
 	}
 }
 
+sub checkSyntax {
+	my ($self,$cmd,$line) = @_;
+
+	# This function returns undef when no syntax errors are present, otherwise
+	# returns the text of the syntax error.
+
+	# Run syntax checks based on the type of command.
+	if ($cmd eq '!') {
+		# ! Definition
+		#   - Must be formatted like this:
+		#     ! type name = value
+		#     OR
+		#     ! type = value
+		#   - Type options are NOT enforceable, for future compatibility; if RiveScript
+		#     encounters a new type that it can't handle, it can safely warn and skip it.
+		if ($line !~ /^.+(?:\s+.+|)\s*=\s*.+?$/) {
+			return "Invalid format for !Definition line: must be '! type name = value' OR '! type = value'";
+		}
+	}
+	elsif ($cmd eq '>') {
+		# > Label
+		#   - The "begin" label must have only one argument ("begin")
+		#   - "topic" labels must be lowercase but can inherit other topics ([A-Za-z0-9_\s])
+		#   - "object" labels follow the same rules as "topic" labels, but don't need be lowercase
+		if ($line =~ /^begin/ && $line =~ /\s+/) {
+			return "The 'begin' label takes no additional arguments, should be verbatim '> begin'";
+		}
+		elsif ($line =~ /^topic/i && $line =~ /[^a-z0-9_\-\s]/) {
+			return "Topics should be lowercased and contain only numbers and letters!";
+		}
+		elsif ($line =~ /[^A-Za-z0-9_\-\s]/) {
+			return "Objects can only contain numbers and letters!";
+		}
+	}
+	elsif ($cmd eq '+' || $cmd eq '%' || $cmd eq '@') {
+		# + Trigger, % Previous, @ Redirect
+		#   This one is strict. The triggers are to be run through Perl's regular expression
+		#   engine. Therefore it should be acceptable by the regexp engine.
+		#   - Entirely lowercase
+		#   - No symbols except: ( | ) [ ] * _ # @ { } < > =
+		#   - All brackets should be matched
+		my $parens  = 0; # Open parenthesis
+		my $square  = 0; # Open square brackets
+		my $curly   = 0; # Open curly brackets
+		my $chevron = 0; # Open angled brackets
+
+		# Look for obvious errors.
+		if ($line =~ /[^a-z0-9(\|)\[\]*_#\@{}<>=\s]/) {
+			return "Triggers may only contain lowercase letters, numbers, and these symbols: ( | ) [ ] * _ # @ { } < > =";
+		}
+
+		# Count brackets.
+		my @chr = split(//, $line);
+		for (my $i = 0; $i < scalar(@chr); $i++) {
+			my $char = $chr[$i];
+			
+			# Count brackets.
+			$parens++  if $char eq '('; $parens--  if $char eq ')';
+			$square++  if $char eq '['; $square--  if $char eq ']';
+			$curly++   if $char eq '{'; $curly--   if $char eq '}';
+			$chevron++ if $char eq '<'; $chevron-- if $char eq '>';
+		}
+
+		# Any mismatches?
+		if ($parens) {
+			return "Unmatched " . ($parens > 0 ? "left" : "right") . " parenthesis bracket ()";
+		}
+		if ($square) {
+			return "Unmatched " . ($square > 0 ? "left" : "right") . " square bracket []";
+		}
+		if ($curly) {
+			return "Unmatched " . ($curly > 0 ? "left" : "right") . " curly bracket {}";
+		}
+		if ($chevron) {
+			return "Unmatched " . ($chevron > 0 ? "left" : "right" ) . " angled bracket <>";
+		}
+	}
+	elsif ($cmd eq '-' || $cmd eq '^' || $cmd eq '/') {
+		# - Trigger, ^ Continue, / Comment
+		# These commands take verbatim arguments, so their syntax is loose.
+	}
+	elsif ($cmd eq '*') {
+		# * Condition
+		#   Syntax for a conditional is as follows:
+		#   * value symbol value => response
+		if ($line !~ /^.+?\s*(==|eq|!=|ne|<>|<|<=|>|>=)\s*.+?=>.+?$/) {
+			return "Invalid format for !Condition: should be like `* value symbol value => response`";
+		}
+	}
+
+	# All good? Return undef.
+	return undef;
+}
+
 sub sortReplies {
 	my $self = shift;
 	my $thats = shift || 'no';
@@ -707,7 +832,7 @@ sub sortReplies {
 
 	# Loop through all the topics.
 	foreach my $topic (keys %{$triglvl}) {
-		$self->debug ("\tAnalyzing topic $topic");
+		$self->debug ("Analyzing topic $topic");
 
 		# Create a priority map.
 		my $prior = {
@@ -717,7 +842,7 @@ sub sortReplies {
 		# Collect a list of all the triggers we're going to need to
 		# worry about. If this topic inherits another topic, we need to
 		# recursively add those to the list.
-		my @alltrig = $self->_topicTriggers($topic,$triglvl,0);
+		my @alltrig = $self->_topicTriggers($topic,$triglvl,0,0,0);
 		#foreach my $trig (keys %{$triglvl->{$topic}}) {
 		foreach my $trig (@alltrig) {
 			if ($trig =~ /\{weight=(\d+)\}/i) {
@@ -734,6 +859,21 @@ sub sortReplies {
 			}
 		}
 
+		# Keep in mind here that there is a difference between 'includes'
+		# and 'inherits' -- topics that inherit other topics are able to
+		# OVERRIDE triggers that appear in the inherited topic. This means
+		# that if the top topic has a trigger of simply '*', then *NO* triggers
+		# are capable of matching in ANY inherited topic, because even though
+		# * has the lowest sorting priority, it has an automatic priority over
+		# all inherited topics.
+		#
+		# The _topicTriggers method takes this into account. All topics that
+		# inherit other topics will have their triggers prefixed with a fictional
+		# {inherits} tag, which would start at {inherits=0} and increment if the
+		# topic tree has other inheriting topics. So we can use this tag to
+		# make sure topics that inherit things will have their triggers always
+		# be on the top of the stack, from inherits=0 to inherits=n.
+
 		# Keep a running list of sorted triggers for this topic.
 		my @running = ();
 
@@ -741,100 +881,148 @@ sub sortReplies {
 		foreach my $p (sort { $b <=> $a } keys %{$prior}) {
 			$self->debug ("\tSorting triggers with priority $p.");
 
+			# So, some of these triggers may include {inherits} tags, if they
+			# came from a topic which inherits another topic. Lower inherits
+			# values mean higher priority on the stack. Keep this in mind when
+			# keeping track of how to sort these things.
+			my $inherits = -1; # -1 means no {inherits} tag, for flexibility
+			my $highest_inherits = -1; # highest inheritence # we've seen
+
 			# Loop through and categorize these triggers.
 			my $track = {
-				atomic => {}, # Sort by # of whole words
-				option => {}, # Sort optionals by # of words
-				alpha  => {}, # Sort alpha wildcards by # of words
-				number => {}, # Sort numeric wildcards by # of words
-				wild   => {}, # Sort wildcards by # of words
-				pound  => [], # Triggers of just #
-				under  => [], # Triggers of just _
-				star   => [], # Triggers of just *
+				$inherits => {
+					atomic => {}, # Sort by # of whole words
+					option => {}, # Sort optionals by # of words
+					alpha  => {}, # Sort alpha wildcards by # of words
+					number => {}, # Sort numeric wildcards by # of words
+					wild   => {}, # Sort wildcards by # of words
+					pound  => [], # Triggers of just #
+					under  => [], # Triggers of just _
+					star   => [], # Triggers of just *
+				},
 			};
 
 			foreach my $trig (@{$prior->{$p}}) {
+				$self->debug("\t\tLooking at trigger: $trig");
+
+				# See if this trigger has an inherits number.
+				if ($trig =~ /{inherits=(\d+)}/) {
+					$inherits = $1;
+					if ($inherits > $highest_inherits) {
+						$highest_inherits = $inherits;
+					}
+					$self->debug("\t\t\tTrigger belongs to a topic which inherits other topics: level=$inherits");
+					$trig =~ s/{inherits=\d+}//g;
+				}
+				else {
+					$inherits = -1;
+				}
+
+				# If this is the first time we've seen this inheritence priority
+				# level, initialize its structure.
+				if (!exists $track->{$inherits}) {
+					$track->{$inherits} = {
+						atomic => {},
+						option => {},
+						alpha  => {},
+						number => {},
+						wild   => {},
+						pound  => [],
+						under  => [],
+						star   => [],
+					};
+				}
+
 				if ($trig =~ /\_/) {
 					# Alphabetic wildcard included.
 					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
+					$self->debug("\t\tHas a _ wildcard with $cnt words.");
 					if ($cnt > 1) {
-						if (!exists $track->{alpha}->{$cnt}) {
-							$track->{alpha}->{$cnt} = [];
+						if (!exists $track->{$inherits}->{alpha}->{$cnt}) {
+							$track->{$inherits}->{alpha}->{$cnt} = [];
 						}
-						push (@{$track->{alpha}->{$cnt}}, $trig);
+						push (@{$track->{$inherits}->{alpha}->{$cnt}}, $trig);
 					}
 					else {
-						push (@{$track->{under}}, $trig);
+						push (@{$track->{$inherits}->{under}}, $trig);
 					}
 				}
 				elsif ($trig =~ /\#/) {
 					# Numeric wildcard included.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
+					$self->debug("\t\tHas a # wildcard with $cnt words.");
 					if ($cnt > 1) {
-						if (!exists $track->{number}->{$cnt}) {
-							$track->{number}->{$cnt} = [];
+						if (!exists $track->{$inherits}->{number}->{$cnt}) {
+							$track->{$inherits}->{number}->{$cnt} = [];
 						}
-						push (@{$track->{number}->{$cnt}}, $trig);
+						push (@{$track->{$inherits}->{number}->{$cnt}}, $trig);
 					}
 					else {
-						push (@{$track->{pound}}, $trig);
+						push (@{$track->{$inherits}->{pound}}, $trig);
 					}
 				}
 				elsif ($trig =~ /\*/) {
 					# Wildcards included.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
+					$self->debug("Has a * wildcard with $cnt words.");
 					if ($cnt > 1) {
-						if (!exists $track->{wild}->{$cnt}) {
-							$track->{wild}->{$cnt} = [];
+						if (!exists $track->{$inherits}->{wild}->{$cnt}) {
+							$track->{$inherits}->{wild}->{$cnt} = [];
 						}
-						push (@{$track->{wild}->{$cnt}}, $trig);
+						push (@{$track->{$inherits}->{wild}->{$cnt}}, $trig);
 					}
 					else {
-						push (@{$track->{star}}, $trig);
+						push (@{$track->{$inherits}->{star}}, $trig);
 					}
 				}
 				elsif ($trig =~ /\[(.+?)\]/) {
 					# Optionals included.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
-					if (!exists $track->{option}->{$cnt}) {
-						$track->{option}->{$cnt} = [];
+					$self->debug("Has optionals and $cnt words.");
+					if (!exists $track->{$inherits}->{option}->{$cnt}) {
+						$track->{$inherits}->{option}->{$cnt} = [];
 					}
-					push (@{$track->{option}->{$cnt}}, $trig);
+					push (@{$track->{$inherits}->{option}->{$cnt}}, $trig);
 				}
 				else {
 					# Totally atomic.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
-					if (!exists $track->{atomic}->{$cnt}) {
-						$track->{atomic}->{$cnt} = [];
+					$self->debug("Totally atomic and $cnt words.");
+					if (!exists $track->{$inherits}->{atomic}->{$cnt}) {
+						$track->{$inherits}->{atomic}->{$cnt} = [];
 					}
-					push (@{$track->{atomic}->{$cnt}}, $trig);
+					push (@{$track->{$inherits}->{atomic}->{$cnt}}, $trig);
 				}
 			}
 
 			# Add this group to the sort list.
-			foreach my $i (sort { $b <=> $a } keys %{$track->{atomic}}) {
-				push (@running,@{$track->{atomic}->{$i}});
+			$track->{ ($highest_inherits + 1) } = delete $track->{'-1'}; # Move the no-{inherits} group away for a sec
+			foreach my $ip (sort { $a <=> $b } keys %{$track}) {
+				$self->debug("ip=$ip");
+				foreach my $i (sort { $b <=> $a } keys %{$track->{$ip}->{atomic}}) {
+					push (@running,@{$track->{$ip}->{atomic}->{$i}});
+				}
+				foreach my $i (sort { $b <=> $a } keys %{$track->{$ip}->{option}}) {
+					push (@running,@{$track->{$ip}->{option}->{$i}});
+				}
+				foreach my $i (sort { $b <=> $a } keys %{$track->{$ip}->{alpha}}) {
+					push (@running,@{$track->{$ip}->{alpha}->{$i}});
+				}
+				foreach my $i (sort { $b <=> $a } keys %{$track->{$ip}->{number}}) {
+					push (@running,@{$track->{$ip}->{number}->{$i}});
+				}
+				foreach my $i (sort { $b <=> $a } keys %{$track->{$ip}->{wild}}) {
+					push (@running,@{$track->{$ip}->{wild}->{$i}});
+				}
+				push (@running,@{$track->{$ip}->{under}});
+				push (@running,@{$track->{$ip}->{pound}});
+				push (@running,@{$track->{$ip}->{star}});
 			}
-			foreach my $i (sort { $b <=> $a } keys %{$track->{option}}) {
-				push (@running,@{$track->{option}->{$i}});
-			}
-			foreach my $i (sort { $b <=> $a } keys %{$track->{alpha}}) {
-				push (@running,@{$track->{alpha}->{$i}});
-			}
-			foreach my $i (sort { $b <=> $a } keys %{$track->{number}}) {
-				push (@running,@{$track->{number}->{$i}});
-			}
-			foreach my $i (sort { $b <=> $a } keys %{$track->{wild}}) {
-				push (@running,@{$track->{wild}->{$i}});
-			}
-			push (@running,@{$track->{under}});
-			push (@running,@{$track->{pound}});
-			push (@running,@{$track->{star}});
 		}
 
 		# Save this topic's sorted list.
@@ -919,7 +1107,7 @@ sub sortThatTriggers {
 			foreach my $trig (keys %{$self->{thats}->{$topic}->{$that}}) {
 				if ($trig =~ /\_/) {
 					# Alphabetic wildcard included.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{alpha}->{$cnt}) {
@@ -933,7 +1121,7 @@ sub sortThatTriggers {
 				}
 				elsif ($trig =~ /\#/) {
 					# Numeric wildcard included.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{number}->{$cnt}) {
@@ -947,7 +1135,7 @@ sub sortThatTriggers {
 				}
 				elsif ($trig =~ /\*/) {
 					# Wildcards included.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
 					if ($cnt > 1) {
 						if (!exists $track->{wild}->{$cnt}) {
@@ -961,7 +1149,7 @@ sub sortThatTriggers {
 				}
 				elsif ($trig =~ /\[(.+?)\]/) {
 					# Optionals included.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
 					if (!exists $track->{option}->{$cnt}) {
 						$track->{option}->{$cnt} = [];
@@ -970,7 +1158,7 @@ sub sortThatTriggers {
 				}
 				else {
 					# Totally atomic.
-					my @words = split(/[\s\*\#\_]/, $trig);
+					my @words = split(/[\s\*\#\_]+/, $trig);
 					my $cnt = scalar(@words);
 					if (!exists $track->{atomic}->{$cnt}) {
 						$track->{atomic}->{$cnt} = [];
@@ -1060,7 +1248,17 @@ sub _getTopicTree {
 
 	$self->debug ("_getTopicTree depth $depth; topics: @topics");
 
-	# Does this topic inherit others?
+	# Does this topic include others?
+	if (exists $self->{includes}->{$topic}) {
+		# Try each of these.
+		foreach my $includes (sort { $a cmp $b } keys %{$self->{includes}->{$topic}}) {
+			$self->debug ("Topic $topic includes $includes");
+			push (@topics, $self->_getTopicTree($includes,($depth + 1)));
+		}
+		$self->debug ("_getTopicTree depth $depth (b); topics: @topics");
+	}
+
+	# Does the topic inherit others?
 	if (exists $self->{lineage}->{$topic}) {
 		# Try each of these.
 		foreach my $inherits (sort { $a cmp $b } keys %{$self->{lineage}->{$topic}}) {
@@ -1077,7 +1275,7 @@ sub _getTopicTree {
 # Gather an array of all triggers in a topic. If the topic inherits other
 # topics, recursively collect those triggers too. Take care about recursion.
 sub _topicTriggers {
-	my ($self,$topic,$triglvl,$depth) = @_;
+	my ($self,$topic,$triglvl,$depth,$inheritence,$inherited) = @_;
 
 	# Break if we're in too deep.
 	if ($depth > $self->{depth}) {
@@ -1085,7 +1283,19 @@ sub _topicTriggers {
 		return ();
 	}
 
-	$self->debug ("Collecting trigger list for topic $topic");
+	# Important info about the depth vs inheritence params to this function:
+	# depth increments by 1 every time this function recursively calls itself.
+	# inheritence increments by 1 only when this topic inherits another topic.
+	#
+	# This way, `> topic alpha includes beta inherits gamma` will have this effect:
+	#   alpha and beta's triggers are combined together into one matching pool, and then
+	#   these triggers have higher matching priority than gamma's.
+	#
+	# The $inherited option is 1 if this is a recursive call, from a topic that
+	# inherits other topics. This forces the {inherits} tag to be added to the
+	# triggers. This only applies when the top topic "includes" another topic.
+
+	$self->debug ("\tCollecting trigger list for topic $topic (depth=$depth; inheritence=$inheritence; inherited=$inherited)");
 
 	# topic:   the name of the topic
 	# triglvl: either $self->{topics} or $self->{thats}
@@ -1094,17 +1304,37 @@ sub _topicTriggers {
 	# Collect an array of triggers to return.
 	my @triggers = ();
 
+	# Does this topic include others?
+	if (exists $self->{includes}->{$topic}) {
+		# Check every included topic.
+		foreach my $includes (sort { $a cmp $b } keys %{$self->{includes}->{$topic}}) {
+			$self->debug ("\t\tTopic $topic includes $includes");
+			push (@triggers, $self->_topicTriggers($includes,$triglvl,($depth + 1), $inheritence, 1));
+		}
+	}
+
 	# Does this topic inherit others?
 	if (exists $self->{lineage}->{$topic}) {
 		# Check every inherited topic.
 		foreach my $inherits (sort { $a cmp $b } keys %{$self->{lineage}->{$topic}}) {
-			$self->debug ("Topic $topic inherits $inherits");
-			push (@triggers, $self->_topicTriggers($inherits,$triglvl,($depth + 1)));
+			$self->debug ("\t\tTopic $topic inherits $inherits");
+			push (@triggers, $self->_topicTriggers($inherits,$triglvl,($depth + 1), ($inheritence + 1), 0));
 		}
 	}
 
-	# Collect the triggers.
-	push (@triggers, keys %{$triglvl->{$topic}});
+	# Collect the triggers for *this* topic. If this topic inherits any other
+	# topics, it means that this topic's triggers have higher priority than those
+	# in any inherited topics. Enforce this with an {inherits} tag.
+	if (exists $self->{lineage}->{$topic} || $inherited) {
+		my @inThisTopic = keys %{$triglvl->{$topic}};
+		foreach my $trigger (@inThisTopic) {
+			$self->debug ("\t\tPrefixing trigger with {inherits=$inheritence}$trigger");
+			push (@triggers, "{inherits=$inheritence}$trigger");
+		}
+	}
+	else {
+		push (@triggers, keys %{$triglvl->{$topic}});
+	}
 
 	# Return them.
 	return (@triggers);
@@ -1155,27 +1385,28 @@ sub setGlobal {
 			$data{$key} = "<undef>";
 		}
 
+		my $reserved = 0;
 		foreach my $res (@{$self->{reserved}}) {
-			my $reserved = 0;
 			if ($res eq $key) {
 				$reserved = 1;
+				last;
 			}
+		}
 
-			if ($reserved) {
-				if ($data{$key} eq "<undef>") {
-					delete $self->{globals}->{$key};
-				}
-				else {
-					$self->{globals}->{$key} = $data{$key};
-				}
+		if ($reserved) {
+			if ($data{$key} eq "<undef>") {
+				delete $self->{globals}->{$key};
 			}
 			else {
-				if ($data{$key} eq "<undef>") {
-					delete $self->{$key};
-				}
-				else {
-					$self->{$key} = $data{$key};
-				}
+				$self->{globals}->{$key} = $data{$key};
+			}
+		}
+		else {
+			if ($data{$key} eq "<undef>") {
+				delete $self->{$key};
+			}
+			else {
+				$self->{$key} = $data{$key};
 			}
 		}
 	}
@@ -1440,7 +1671,7 @@ sub reply {
 		$reply = $begin;
 
 		# Run more tag substitutions.
-		$reply = $self->processTags ($user,$msg,$reply,[],[]);
+		$reply = $self->processTags ($user,$msg,$reply,[],[],0);
 	}
 	else {
 		# Just continue then.
@@ -1527,53 +1758,65 @@ sub _getreply {
 	my $matchedTrigger = undef;
 	my $foundMatch = 0;
 
-	# See if there are any %previous's in this topic, or any topic related to it.
-	my @allTopics = ($topic);
-	if (exists $self->{lineage}->{$topic}) {
-		(@allTopics) = $self->_getTopicTree ($topic,0);
-	}
-	foreach my $top (@allTopics) {
-		$self->debug ("Checking topic $top for any %previous's.");
-		if (exists $self->{sortsthat}->{$top}) {
-			$self->debug ("There's a %previous in this topic");
+	# See if there are any %previous's in this topic, or any topic related to it. This
+	# should only be done the first time -- not during a recursive @/{@} redirection.
+	# This is because in a redirection, "lastreply" is still gonna be the same as it was
+	# the first time, causing an infinite loop.
+	if ($tags{step} == 0) {
+		my @allTopics = ($topic);
+		if (exists $self->{includes}->{$topic} || exists $self->{lineage}->{$topic}) {
+			(@allTopics) = $self->_getTopicTree ($topic,0);
+		}
+		foreach my $top (@allTopics) {
+			$self->debug ("Checking topic $top for any %previous's.");
+			if (exists $self->{sortsthat}->{$top}) {
+				$self->debug ("There's a %previous in this topic");
 
-			# Do we have history yet?
-			if (scalar @{$self->{client}->{$user}->{__history__}->{reply}} > 0) {
-				my $lastReply = $self->{client}->{$user}->{__history__}->{reply}->[0];
+				# Do we have history yet?
+				if (scalar @{$self->{client}->{$user}->{__history__}->{reply}} > 0) {
+					my $lastReply = $self->{client}->{$user}->{__history__}->{reply}->[0];
 
-				# Format the bot's last reply the same as the human's.
-				$lastReply = $self->_formatMessage ($lastReply);
+					# Format the bot's last reply the same as the human's.
+					$lastReply = $self->_formatMessage ($lastReply);
 
-				$self->debug ("lastReply: $lastReply");
+					$self->debug ("lastReply: $lastReply");
 
-				# See if we find a match.
-				foreach my $trig (@{$self->{sortsthat}->{$top}}) {
-					my $botside = $self->_reply_regexp ($user,$trig);
+					# See if we find a match.
+					foreach my $trig (@{$self->{sortsthat}->{$top}}) {
+						my $botside = $self->_reply_regexp ($user,$trig);
 
-					$self->debug ("Try to match lastReply ($lastReply) to $botside");
+						$self->debug ("Try to match lastReply ($lastReply) to $botside");
 
-					# Look for a match.
-					if ($lastReply =~ /^$botside$/i) {
-						# Found a match! See if our message is correct too.
-						(@thatstars) = ($lastReply =~ /^$botside$/i);
-						foreach my $subtrig (@{$self->{sortedthat}->{$top}->{$trig}}) {
-							my $humanside = $self->_reply_regexp ($user,$subtrig);
+						# Look for a match.
+						if ($lastReply =~ /^$botside$/i) {
+							# Found a match! See if our message is correct too.
+							(@thatstars) = ($lastReply =~ /^$botside$/i);
+							foreach my $subtrig (@{$self->{sortedthat}->{$top}->{$trig}}) {
+								my $humanside = $self->_reply_regexp ($user,$subtrig);
 
-							$self->debug ("Now try to match $msg to $humanside");
+								$self->debug ("Now try to match $msg to $humanside");
 
-							if ($msg =~ /^$humanside$/i) {
-								$matched = $self->{thats}->{$top}->{$trig}->{$subtrig};
-								$matchedTrigger = $top;
-								$foundMatch = 1;
+								if ($msg =~ /^$humanside$/i) {
+									$self->debug ("Found a match!");
+									$matched = $self->{thats}->{$top}->{$trig}->{$subtrig};
+									$matchedTrigger = $top;
+									$foundMatch = 1;
 
-								# Get the stars.
-								(@stars) = ($msg =~ /^$humanside$/i);
-								last;
+									# Get the stars.
+									(@stars) = ($msg =~ /^$humanside$/i);
+									last;
+								}
 							}
 						}
+
+						# Break if we've found a match.
+						last if $foundMatch;
 					}
 				}
 			}
+
+			# Break if we've found a match.
+			last if $foundMatch;
 		}
 	}
 
@@ -1618,7 +1861,7 @@ sub _getreply {
 		if (exists $matched->{redirect}) {
 			$self->debug ("Redirecting us to $matched->{redirect}");
 			my $redirect = $matched->{redirect};
-			$redirect = $self->processTags ($user,$msg,$redirect,[@stars],[@thatstars]);
+			$redirect = $self->processTags ($user,$msg,$redirect,[@stars],[@thatstars],$tags{step});
 			$self->debug ("Pretend user asked: $redirect");
 			$reply = $self->_getreply ($user,$redirect,
 				context => $tags{context},
@@ -1637,8 +1880,8 @@ sub _getreply {
 				$self->debug ("\tLeft: $left; EQ: $eq; Right: $right");
 
 				# Process tags on all of these.
-				$left = $self->processTags ($user,$msg,$left,[@stars],[@thatstars]);
-				$right = $self->processTags ($user,$msg,$right,[@stars],[@thatstars]);
+				$left = $self->processTags ($user,$msg,$left,[@stars],[@thatstars],$tags{step});
+				$right = $self->processTags ($user,$msg,$right,[@stars],[@thatstars],$tags{step});
 
 				# Revert them to undefined values.
 				$left = 'undefined' if $left eq '';
@@ -1738,7 +1981,7 @@ sub _getreply {
 	}
 	else {
 		# Process more tags if not in BEGIN.
-		$reply = $self->processTags($user,$msg,$reply,[@stars],[@thatstars]);
+		$reply = $self->processTags($user,$msg,$reply,[@stars],[@thatstars],$tags{step});
 	}
 
 	return $reply;
@@ -1750,7 +1993,7 @@ sub _findTriggerByInheritence {
 	# This sub was called because the user matched a trigger from the
 	# sorted array, but the trigger doesn't exist under the topic of
 	# which the user currently belongs. It probably was a trigger
-	# inherited from another topic. This subroutine finds that out,
+	# inherited/included from another topic. This subroutine finds that out,
 	# recursively, following the inheritence trail.
 
 	# Take care to prevent infinite recursion.
@@ -1759,10 +2002,10 @@ sub _findTriggerByInheritence {
 		return undef;
 	}
 
-	# See if this topic has an "inherits".
+	# Inheritence is more important than inclusion: triggers in one topic
+	# can override those in an inherited topic.
 	if (exists $self->{lineage}->{$topic}) {
 		foreach my $inherits (sort { $a cmp $b } keys %{$self->{lineage}->{$topic}}) {
-
 			# See if this inherited topic has our trigger.
 			if (exists $self->{topics}->{$inherits}->{$trig}) {
 				# Great!
@@ -1772,6 +2015,28 @@ sub _findTriggerByInheritence {
 				# Check what this topic inherits from.
 				my $match = $self->_findTriggerByInheritence (
 					$inherits, $trig, ($depth + 1),
+				);
+				if (defined $match) {
+					# Finally got a match.
+					return $match;
+				}
+			}
+		}
+	}
+
+	# See if this topic has an "includes".
+	if (exists $self->{includes}->{$topic}) {
+		foreach my $includes (sort { $a cmp $b } keys %{$self->{includes}->{$topic}}) {
+
+			# See if this included topic has our trigger.
+			if (exists $self->{topics}->{$includes}->{$trig}) {
+				# Great!
+				return $self->{topics}->{$includes}->{$trig};
+			}
+			else {
+				# Check what this topic includes from.
+				my $match = $self->_findTriggerByInheritence (
+					$includes, $trig, ($depth + 1),
 				);
 				if (defined $match) {
 					# Finally got a match.
@@ -1873,7 +2138,7 @@ sub _reply_regexp {
 }
 
 sub processTags {
-	my ($self,$user,$msg,$reply,$st,$bst) = @_;
+	my ($self,$user,$msg,$reply,$st,$bst,$depth) = @_;
 	my (@stars) = (@{$st});
 	my (@botstars) = (@{$bst});
 	unshift (@stars,"");
@@ -2057,7 +2322,7 @@ sub processTags {
 		$at =~ s/\s+$//ig;
 		my $subreply = $self->_getreply ($user,$at,
 			context => 'normal',
-			step    => 0,
+			step    => ($depth + 1),
 		);
 		$reply =~ s/\{\@(.+?)\}/$subreply/i;
 	}
@@ -2227,6 +2492,9 @@ in any global variables here. The two standard variables are:
               external file for later review. Default is '' (no file).
   depth     - Determines the recursion depth limit when following a trail of replies
               that point to other replies. Default is 50.
+  strict    - If this has a true value, any syntax errors detected while parsing
+              a RiveScript document will result in a fatal error. Set it to a
+              false value and only a warning will result. Default is 1.
 
 It's recommended that if you set any other global variables that you do so by
 calling C<setGlobal> or defining it within the RiveScript code. This will avoid
@@ -2266,6 +2534,20 @@ RiveScript file. Returns true on success; false otherwise.
 Stream RiveScript code directly into the module. This is for providing RS code
 from within the Perl script instead of from an external file. Returns true on
 success.
+
+=item checkSyntax ($COMMAND, $LINE)
+
+Check the syntax of a line of RiveScript code. This is called automatically
+for each line parsed by the module. C<$COMMAND> is the command part of the
+line, and C<$LINE> is the rest of the line following the command (and
+excluding inline comments).
+
+If there is no problem with the line, this method returns C<undef>. Otherwise
+it returns the text of the syntax error.
+
+If C<strict> mode is enabled in the constructor (which is on by default), a
+syntax error will result in a fatal error. If it's not enabled, the error is
+only sent via C<warn> and the file currently being processed is aborted.
 
 =item sortReplies
 
@@ -2790,6 +3072,32 @@ defines the standards of RiveScript.
 L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
+
+  1.20  Jul 30 2009
+  - Added automatic syntax checking when parsing RiveScript code. Also added
+    'strict mode' - if true (default), a syntax error is a fatal error. If false,
+    a syntax error is a warning, and RiveScript aborts processing the file any
+    further.
+  - Changed the behavior of "inherits" a bit: a new type has been added called
+    "includes" which does what the old "inherits" does (mixes the trigger list
+    of both topics together into the same pool). The new "inherits" option though
+    causes the trigger list from the source topic to be higher in matching priority
+    than the trigger list of the inherited topic.
+  - Moving to a new versioning scheme: development releases will have odd
+    version numbers, stable (CPAN) versions will have even numbers.
+  - Fixed the Eliza brain; in many places a <star2> was used when there was only one
+    star in the trigger. Fixes lots of issues with Eliza.
+  - Bugfix: recursion depth limits weren't taken into account when the {@} tag
+    was responsible for a redirection. Fixed.
+  - Bugfix: there was a problem in the regular expression that counts real words
+    while sorting triggers, so that triggers with *'s in them weren't sorted
+    properly and would therefore cause matching issues.
+  - Bugfix: when the internal _getreply is called because of a recursive
+    redirection (@, {@}), the %previous tags should be ignored. They weren't.
+    since "lastreply" is always the same no matter how deeply recursive _getreply
+    is going, it could result in some infinite recursion in rare cases. Fixed.
+  - Bugfix: using a reserved name as a global variable wasn't working properly
+    and would crash RiveScript. Fixed.
 
   1.19  Apr 12 2009
   - Added support for defining custom object handlers for non-Perl programming

@@ -121,7 +121,7 @@ has some compatibility issues with the old 1.x line (see L<"REVERSE COMPATIBILIT
 Newer RiveScript versions should encourag that RiveScript documents define their
 own version numbers.
 
-  ! version 2.00
+  ! version = 2.00
 
 =head3 global
 
@@ -259,10 +259,7 @@ A topic is a smaller set of responses to which the client will be bound until
 the topic is changed to something else. The default topic is C<random>.
 
 The C<topic> label only requires one additional argument, which is the name of
-the topic. The topic's name should be one word and lowercase. If the topic
-should inherit the triggers that belong in a different topic, the second
-argument should be "C<inherits>" followed by at least one additional argument
-that defines the list of topics to inherit.
+the topic. The topic's name should be one word and lowercase.
 
 Example:
 
@@ -280,63 +277,186 @@ Example:
 
   < topic
 
-A practical example of how topic inheritence works might be when creating a
-kind of text-based roleplaying game: you could have global triggers such as
-"C<help>" and "C<inventory>" that are available regardless of what world or room
-the player is currently in.
+Topics are able to C<include> and C<inherit> triggers that belong to a
+different topic. When a topic C<includes> another topic, it means that the
+triggers in another topic are made available in the topic that did the
+inclusion (hereby called the "source topic", which includes triggers from
+the "included topic").
 
-  > topic rpg_global
-    + help
-    - <call>help</call>
+When a topic inherits another topic, it means that the entire collection
+of triggers of the source topic I<and> any included topics, will have a
+higher matching priority than the inherited topics.
 
-    + inventory
-    - <call>inventory</call>
+See L<"Sorting +Triggers"> to see how triggers are sorted internally. The
+following example shows how includes and inheritence works:
 
-    + quit
-    - {topic=random}Game ended.
+  // This is in the default "random" topic and catches all non-matching
+  // triggers.
+  + *
+  - I'm afraid I don't know how to reply to that!
 
-    + _ [*]
-    - You don't need to use the word "<star>" in this game.
+  > topic alpha
+    + alpha trigger
+    - Alpha's response.
   < topic
 
-  > topic rpg_earth inherits rpg_global
-    + equip astronaut suit
-    - There is breathable oxygen here, so that isn't necessary.
+  > topic beta
+    + beta trigger
+    - Beta's response.
+  <
+
+  > topic gamma
+    + gamma trigger
+	- Gamma's response.
   < topic
 
-  > topic room1 inherits rpg_earth
-    + north
-    - {topic=room2}{@look}
+  > topic delta
+    + delta trigger
+    - Delta's response.
 
-    + east
-    - {topic=room3}{@look}
-
-    + look
-    - You're in the first room. Exits are north and east.
+    + *
+    - You can't access any other triggers! Haha!
   < topic
 
-  > topic room2 inherits rpg_earth
-    + south
-    - {topic=room1}{@look}
+These are all normal topics. Alpha, beta, and gamma all have a single
+trigger corresponding to their topic names. If the user were put into
+one of these topics, this is the only trigger available. Anything else
+would give them a "NO REPLY" error message. They are unable to match the
+C<*> trigger at the top, because that trigger belongs to the "C<random>"
+topic, and they're not in that topic.
 
-    + look
-    - You're in the second room. Only exit is south.
+Now let's see how we can pair these topics up with includes and
+inheritence.
+
+  > topic ab includes alpha
+    + hello bot
+    - Hello human!
   < topic
 
-  // etc...
+  // Matching order:
+  alpha trigger
+  hello bot
 
-Here, all the rooms inherit triggers from the "C<rpg_earth>" topic. The
-C<rpg_earth> topic in turn inherits triggers from C<rpg_global>. So commands
-like "help" and "inventory" are also available in every other topic that
-inherits it.
+If the user were put into topic "C<ab>", they could match the trigger
+C<hello bot> as well as the trigger C<alpha trigger>, as if they were
+both in the same topic.
 
-For a topic to inherit triggers from more than one topic, it only needs to list
-all of the topics to inherit from as follows:
+Note that in the matching order, "alpha trigger" is at the top: this
+is because it is the longest trigger. If the user types "alpha trigger",
+the interpreter knows that "alpha trigger" does not belong to the topic
+"ab", but since "ab" includes triggers from "alpha", the interpreter
+searches there and finds the trigger. Then it gives the user the
+correct reply of "Alpha's response."
 
-  > topic alpha inherits beta delta gamma
+  > topic abc includes alpha beta
+    + how are you
+    - Good, how are you?
+  < topic
 
-Here, the topic C<alpha> inherits the triggers present in the topics named
-C<beta>, C<delta>, and C<gamma>.
+  // Matching order:
+  how are you
+  alpha trigger
+  beta trigger
+
+In this case, "how are you" is on the top of the matching list because
+it has three words, then "alpha trigger" and "beta trigger" -- "alpha
+trigger" is first because it is longer than "beta trigger", even though
+they both have 2 words.
+
+Now consider this example:
+
+  > topic abc includes alpha beta
+    + how are you
+    - Good, how are you?
+
+    + *
+    - You matched my star trigger!
+  < topic
+
+  // Matching order:
+  how are you
+  alpha trigger
+  beta trigger
+  *
+
+Notice what happened here: we had a trigger of simply C<*> in the "abc"
+topic - C<*> is the fallback trigger which matches anything that wasn't
+matched by a better trigger. But this trigger is at the end of our matching
+list! This is because the triggers available in the "alpha" and "beta" topics
+are included in the "abc" topic, meaning they all share the same "space"
+when the triggers are sorted. Since C<*> has the lowest sort priority,
+it ends up at the very end of the collective list.
+
+What if we want C<*>, or any other short trigger, to match in our current
+topic before anything in an included topic? We need to C<inherit> another
+topic. Consider this:
+
+  > topic abc inherits alpha beta
+    + how are you
+    - Good, how are you?
+
+    + *
+    - You matched my star trigger!
+  < topic
+
+  // Matching order:
+  how are you
+  *
+  alpha trigger
+  beta trigger
+
+Now the C<*> trigger is the second on the matching list. Because "abc"
+I<inherits> alpha and beta, it means that the collection of triggers
+inside "abc" are sorted independently, and I<then> the triggers of alpha
+and beta are sorted. So this way every trigger in "abc" inherits, or
+I<overrides>, all triggers in the inherited topics.
+
+Of course, using a C<*> trigger in a topic that inherits other topics is
+useless, because you could just leave the topic as it is. However it might
+be helpful in the case that a trigger in your topic is very short or has
+very few words, and you want to make sure that this trigger will have a
+good chance of matching before anything that appears in a different topic.
+
+You can combine inherited and included topics together, too.
+
+  > topic abc includes alpha beta delta inherits gamma
+    + how are you
+    - Good, how are you?
+  < topic
+
+  // Matching order:
+  how are you
+  alpha trigger
+  delta trigger
+  beta trigger
+  *
+  gamma trigger
+
+In this example, the combined triggers from abc, alpha, beta, and delta
+are all merged together in one pool and sorted amongst themselves, and
+then triggers from gamma are placed after them in the sort list.
+
+This effectively means you can combine the triggers from multiple
+topics together, and have ALL of those triggers override triggers
+from an inherited topic.
+
+You can use as many "includes" and "inherits" keywords as you want, but
+the order you specify them has no effect. So the following two formats
+are identical:
+
+  > topic alpha includes beta inherits gamma
+  > topic alpha inherits gamma includes beta
+
+In both cases, alpha and beta's triggers are pooled and have higher
+priority than gamma's. If gamma wants to include beta and have alpha's
+triggers be higher priority than gamma's and beta's, gamma will need
+to include beta first.
+
+  > topic gamma includes beta
+  > topic alpha inherits gamma
+
+In this case the triggers in "alpha" are higher priority than the
+combined triggers in gamma and beta.
 
 =head3 object
 
@@ -1211,6 +1331,12 @@ Or perhaps there will just be a converter tool created that would go through cod
 that it already assumes will be RiveScript 1.x and update it to 2.x standards.
 
 =head1 REVISIONS
+
+  Rev 8 - xxx
+  - The proper format for the `! version` line is to be `! version = 2.00`,
+    and not `! version 2.00`
+  - Included the "includes" option for triggers and changed how "inherits"
+    works.
 
   Rev 7 - Dec  4, 2008
   - Topics are able to inherit additional triggers that belong to different

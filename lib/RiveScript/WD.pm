@@ -1,6 +1,6 @@
 package RiveScript::WD;
 
-our $VERSION = '1.18';
+our $VERSION = '1.21';
 
 # This is not a real module; it's only a current copy of the RiveScript
 # Working Draft. See the latest version at
@@ -9,7 +9,7 @@ our $VERSION = '1.18';
 
 =head1 NAME
 
-RiveScript::WD - RiveScript 2.00 Working Draft (2008/12/04)
+RiveScript::WD - RiveScript 2.00 Working Draft (2009/07/30)
 
 =head1 DESCRIPTION
 
@@ -24,7 +24,7 @@ http://www.rivescript.com/wd/RiveScript.html
 =head1 INTRODUCTION
 
 RiveScript is an interpreted scripting language for giving responses to
-chatterbots and other intelligent chatting entities in a complex trigger/reply
+chatterbots and other intelligent chatting entities in a simple trigger/reply
 format. The scripting language is intended to be simplistic and easy to learn
 and manage.
 
@@ -118,7 +118,7 @@ The variable types supported are detailed as follows:
 It's highly recommended practice that new RiveScript documents explicitely
 define the version of RiveScript that they are following. RiveScript 2.00
 has some compatibility issues with the old 1.x line (see L<"REVERSE COMPATIBILITY">).
-Newer RiveScript versions should encourag that RiveScript documents define their
+Newer RiveScript versions should encourage that RiveScript documents define their
 own version numbers.
 
   ! version = 2.00
@@ -253,6 +253,77 @@ Here's a full example of the Begin Statement.
 
   < begin
 
+In the C<BEGIN block>, the trigger named "C<request>" is called by the
+interpreter, and it should return the tag "C<{ok}>" to tell the interpreter
+that it's OK to get a real reply. This way the bot could have a "maintenance
+mode," or could filter the results of your trigger based on a variable.
+
+Here's a maintenance mode example:
+
+  > begin
+
+    + request
+    * <id> eq <bot master> => {ok} // Always let the bot master get a reply
+    * <env maint> eq true  => Sorry, I'm not available for chat right now!
+    - {ok}
+
+  < begin
+
+  // Allow the owner to change the maintenance mode
+  + activate maintenance mode
+  * <id> eq <bot master> => {!global maint=true}Maintenance mode activated.
+  - You're not my master! You can't tell me what to do!
+
+  + deactivate maintenance mode
+  * <id> eq <bot master> => {!global maint=false}Maintenance mode deactivated.
+  - Only my master can deactivate maintenance mode!
+
+With this example, if the global variable "maint" is set to "true", the bot
+will always reply "Sorry, I'm not available for chat right now!" when a user
+sends it a message -- unless the user is the bot's owner.
+
+Here is another example that will modify the response formatting based on a
+bot variable called "mood," to simulate humanoid moods for the bot:
+
+  > begin
+
+    + request
+    * <get mood> == happy => {ok} :-)
+    * <get mood> == sad   => {lowercase}{ok}{/lowercase}
+    * <get mood> == angry => {uppercase}{ok}{/uppercase}
+    - {ok}
+
+  < begin
+
+In this example the bot will use smiley faces when it's happy, reply in all
+lowercase when it's sad, or all uppercase when it's angry. If its mood doesn't
+fall into any of those categories, it replies normally.
+
+Here is one last example: say you want your bot to interview its users when
+they first talk to it, by asking them for their name:
+
+  > begin
+
+    + request
+    * <get name> == undefined => {topic=newuser}{ok}
+    - {ok}
+
+  < begin
+
+  > topic newuser
+    + *
+    - Hello! My name is <bot name>! I'm a robot. What's your name?
+
+    + _
+    % * what is your name
+    - <set name=<formal>>Nice to meet you, <get name>!{topic=random}
+  < topic
+
+Begin blocks are B<optional!> They are not required. You only need to manually
+define them if you need to do any "pre-processing" or "post-processing" on the
+user's message or the bot's response. Having no begin block is the same as
+having a super basic begin block, which always returns C<{ok}>.
+
 =head3 topic
 
 A topic is a smaller set of responses to which the client will be bound until
@@ -307,7 +378,7 @@ following example shows how includes and inheritence works:
 
   > topic gamma
     + gamma trigger
-	- Gamma's response.
+    - Gamma's response.
   < topic
 
   > topic delta
@@ -495,7 +566,7 @@ a response.
 
 The trigger's text should be entirely lowercase and not contain any symbols
 (except those used for matching complicated messages). That is, a trigger that
-wants to match "C<what's your name>" shoudldn't be used; you should use a
+wants to match "C<what's your name>" shouldn't be used; you should use a
 L<"sub">stitution to convert C<what's> into C<what is> ahead of time.
 
 Example:
@@ -1332,7 +1403,12 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.
 
 =head1 REVISIONS
 
-  Rev 8 - xxx
+  Rev 9 - Jul 31, 2009
+  - Added more explicit details on the usage of the BEGIN block, under the
+    section on >Labels / "begin"
+  - Revised the WD, fixing some typos.
+
+  Rev 8 - Jul 30, 2009
   - The proper format for the `! version` line is to be `! version = 2.00`,
     and not `! version 2.00`
   - Included the "includes" option for triggers and changed how "inherits"

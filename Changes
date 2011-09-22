@@ -1,5 +1,15 @@
 Revision history for Perl extension RiveScript.
 
+  1.22  Sep 22 2011
+  - Cleaned up the documentation of RiveScript; moved the JavaScript object
+    example to a separate document in the `docs' directory.
+  - Obsoleted the `rsdemo` command that used to ship with the distribution. In
+    its place is `rivescript`, which can also be used non-interactively so that a
+    third party, non-Perl application could still make use of RiveScript.
+  - RiveScript.pm is now dual licensed. It uses the GPLv2 for open source
+    applications as before, but you can contact the author for details if you
+    want to use RiveScript.pm in a closed source commercial application.
+
   1.20  Jul 30 2009
   - Added automatic syntax checking when parsing RiveScript code. Also added
     'strict mode' - if true (default), a syntax error is a fatal error. If false,

@@ -3,7 +3,7 @@ package RiveScript;
 use strict;
 use warnings;
 
-our $VERSION = '1.20'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.22'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 our $basedir = (__FILE__ =~ /^(.+?)\.pm$/i ? $1 : '.');
 
@@ -2577,47 +2577,7 @@ variables are described here:
   $data   = The source of the object during the parsing phase, or an array
             reference of arguments when provoked via a <call> tag.
 
-There is a default handler set up that handles Perl objects. The source code of
-this object is as follows, for your reference:
-
-  $self->setHandler (perl => sub {
-    my ($rs,$action,$name,$data) = @_;
-
-    # $action will be "load" during the parsing phase, or "call"
-    # when called via <call>.
-
-    # Loading
-    if ($action eq "load") {
-      # Create a dynamic Perl subroutine.
-      my $code = "sub RSOBJ_$name {\n"
-        . $data
-        . "}";
-
-      # Evaluate it.
-      eval ($code);
-      if ($@) {
-        $rs->issue("Perl object $name creation failed: $@");
-      }
-      else {
-        # Load it.
-        $rs->setSubroutine($name => \&{"RSOBJ_$name"});
-      }
-    }
-
-    # Calling
-    elsif ($action eq "call") {
-      # Make sure the object exists.
-      if (exists $rs->{objects}->{$name}) {
-        # Call it.
-        my @args = @{$data};
-        my $return = &{ $rs->{objects}->{$name} } ($rs,@args);
-        return $return;
-      }
-      else {
-        return "[ERR: Object Not Found]";
-      }
-    }
-  });
+There is a default handler set up that handles Perl objects.
 
 If you want to block Perl objects from being loaded, you can just set it to be
 undef, and its handler will be deleted and Perl objects will be skipped over:
@@ -2630,148 +2590,7 @@ RiveScript on the web where the user chats with your bot using CGI, you might
 define a handler so that JavaScript objects can be loaded and called. Perl
 itself can't execute JavaScript, but the user's web browser can.
 
-Here's an example of defining a handler for JavaScript objects:
-
-  my $scripts = {}; # Place to store JS code.
-
-  $rs->setHandler (javascript => sub {
-    my ($self,$action,$name,$data) = @_;
-
-    # Loading the object.
-    if ($action eq "load") {
-      # Just store the code.
-      $scripts->{$name} = $data;
-    }
-    else {
-      # Turn the args into a JavaScript array.
-      my $code = "var fields = new Array();\n";
-      for (my $i = 0; $i < scalar @{$data}; $i++) {
-        $code .= "fields[$i] = \"$data->[$i]\";\n";
-      }
-
-      # Come up with code for the web browser.
-      $code .= "function rsobject (args) {\n"
-             . "$scripts->{$name}\n"
-             . "}"
-             . "document.writeln( rsobject(fields) );\n";
-      return "<script type=\"text/javascript\">\n"
-        . $code
-        . "</script>";
-    }
-  });
-
-So, the above example just loads the JavaScript source code into a hash reference
-named $scripts, and then when called it creates some JavaScript code to put the
-call's arguments into an array, creates a function that accepts the args, then
-calls this function in a C<document.writeln>. Here's an example of how this would
-be used in the RiveScript code:
-
-  // Define an object to encode text into rot13 to be executed by the web browser
-  > object rot13 javascript
-    var txt = args.join(" "); // Turn the args array into a string
-    var result = "";
-
-    for (var i = 0; i < txt.length; i++) {
-      var b = txt.charCodeAt(i);
-
-      // 65 = A    97 = a
-      // 77 = M   109 = m
-      // 78 = N   110 = n
-      // 90 = Z   122 = z
-
-      var isLetter = 0;
-
-      if (b >= 65 && b <= 77) {
-        isLetter = 1;
-        b += 13;
-      }
-      else if (b >= 97 && b <= 109) {
-        isLetter = 1;
-        b += 13;
-      }
-      else if (b >= 78 && b <= 90) {
-        isLetter = 1;
-        b -= 13;
-      }
-      else if (b >= 110 && b <= 122) {
-        isLetter = 1;
-        b -= 13;
-      }
-
-      if (isLetter) {
-        result += String.fromCharCode(b);
-      }
-      else {
-        result += String.fromCharCode(b);
-      }
-    }
-
-    return result;
-  < object
-
-  // Use the object
-  + say * in rot13
-  - "<star>" in rot13 is: <call>rot13 <star></call>.
-
-Now, when the user at the web browser provokes this reply, it will get back a
-bunch of JavaScript code as part of the response. It might be like this:
-
-  <b>User:</b> say hello world in rot13<br>
-  <b>Bot:</b> "hello world" in rot13 is: <script type="text/javascript">
-  var fields = new Array();
-  fields[0] = "hello";
-  fields[1] = "world";
-  function rsobject (args) {
-    var txt = args.join(" "); // Turn the args array into a string
-    var result = "";
-
-    for (var i = 0; i < txt.length; i++) {
-      var b = txt.charCodeAt(i);
-
-      // 65 = A    97 = a
-      // 77 = M   109 = m
-      // 78 = N   110 = n
-      // 90 = Z   122 = z
-
-      var isLetter = 0;
-
-      if (b >= 65 && b <= 77) {
-        isLetter = 1;
-        b += 13;
-      }
-      else if (b >= 97 && b <= 109) {
-        isLetter = 1;
-        b += 13;
-      }
-      else if (b >= 78 && b <= 90) {
-        isLetter = 1;
-        b -= 13;
-      }
-      else if (b >= 110 && b <= 122) {
-        isLetter = 1;
-        b -= 13;
-      }
-
-      if (isLetter) {
-        result += String.fromCharCode(b);
-      }
-      else {
-        result += String.fromCharCode(b);
-      }
-    }
-
-    return result;
-  }
-  document.writeln(rsobject(fields));
-  </script>.
-
-And so, the JavaScript gets executed inside the bot's response by the web
-browser.
-
-In this case, Perl itself can't handle JavaScript code, but considering the
-environment the bot is running in (CGI served to a web browser), the web browser
-is capable of executing JavaScript. So, we set up a custom object handler so that
-JavaScript objects are given directly to the browser to be executed there.
+See the JavaScript example in the C<docs> directory in this distribution.
 
 =item setSubroutine ($NAME, $CODEREF)
 
@@ -3073,6 +2892,16 @@ L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
 
+  1.22  Sep 22 2011
+  - Cleaned up the documentation of RiveScript; moved the JavaScript object
+    example to a separate document in the `docs' directory.
+  - Obsoleted the `rsdemo` command that used to ship with the distribution. In
+    its place is `rivescript`, which can also be used non-interactively so that a
+    third party, non-Perl application could still make use of RiveScript.
+  - RiveScript.pm is now dual licensed. It uses the GPLv2 for open source
+    applications as before, but you can contact the author for details if you
+    want to use RiveScript.pm in a closed source commercial application.
+
   1.20  Jul 30 2009
   - Added automatic syntax checking when parsing RiveScript code. Also added
     'strict mode' - if true (default), a syntax error is a fatal error. If false,
@@ -3199,7 +3028,7 @@ L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 AUTHOR
 
-  Casey Kirsle, http://www.cuvou.com/
+  Noah Petherbridge, http://www.kirsle.net
 
 =head1 KEYWORDS
 
@@ -3207,8 +3036,13 @@ bot, chatbot, chatterbot, chatter bot, reply, replies, script, aiml, alpha
 
 =head1 COPYRIGHT AND LICENSE
 
+The Perl RiveScript interpreter is dual licensed as of version 1.22.
+For open source applications the module is using the GNU General Public
+License. If you'd like to use the RiveScript module in a closed source or
+commercial application, contact the author for more information.
+
   RiveScript - Rendering Intelligence Very Easily
-  Copyright (C) 2008  Casey Kirsle
+  Copyright (C) 2011 Noah Petherbridge
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

@@ -135,7 +135,7 @@
 <p>
 </p>
 <h1><a name="name">NAME</a></h1>
-<p>RiveScript::WD - RiveScript 2.00 Working Draft (2008/12/04)</p>
+<p>RiveScript::WD - RiveScript 2.00 Working Draft (2009/07/30)</p>
 <p>
 </p>
 <hr />
@@ -151,7 +151,7 @@ RiveScript language itself.</p>
 <hr />
 <h1><a name="introduction">INTRODUCTION</a></h1>
 <p>RiveScript is an interpreted scripting language for giving responses to
-chatterbots and other intelligent chatting entities in a complex trigger/reply
+chatterbots and other intelligent chatting entities in a simple trigger/reply
 format. The scripting language is intended to be simplistic and easy to learn
 and manage.</p>
 <p>
@@ -159,26 +159,23 @@ and manage.</p>
 <hr />
 <h1><a name="vocabulary">VOCABULARY</a></h1>
 <dl>
-<dt><strong><a name="rivescript" class="item">RiveScript</a></strong>
+<dt><strong><a name="rivescript" class="item">RiveScript</a></strong></dt>
 
 <dd>
 <p>RiveScript is the name of the scripting language that this document explains.</p>
 </dd>
-</li>
-<dt><strong><a name="interpreter" class="item">Interpreter</a></strong>
+<dt><strong><a name="interpreter" class="item">Interpreter</a></strong></dt>
 
 <dd>
 <p>The RiveScript interpreter is a program or library in another programming
 language that loads and parses a RiveScript document.</p>
 </dd>
-</li>
-<dt><strong><a name="rivescript_document" class="item">RiveScript Document</a></strong>
+<dt><strong><a name="rivescript_document" class="item">RiveScript Document</a></strong></dt>
 
 <dd>
 <p>A RiveScript Document is a text file containing RiveScript code.</p>
 </dd>
-</li>
-<dt><strong><a name="bot" class="item">Bot</a></strong>
+<dt><strong><a name="bot" class="item">Bot</a></strong></dt>
 
 <dd>
 <p>A Bot (short for robot) is the artificial entity that is represented by an
@@ -186,22 +183,19 @@ instance of a RiveScript Interpreter object. That is, when you create a new
 Interpreter object and load a set of RiveScript Documents, that becomes the
 &quot;brain&quot; of the bot.</p>
 </dd>
-</li>
-<dt><strong><a name="bot_variable" class="item">Bot Variable</a></strong>
+<dt><strong><a name="bot_variable" class="item">Bot Variable</a></strong></dt>
 
 <dd>
 <p>A variable that describes the bot, such as its name, age, or other details
 you want to define for the bot.</p>
 </dd>
-</li>
-<dt><strong><a name="client_variable" class="item">Client Variable</a></strong>
+<dt><strong><a name="client_variable" class="item">Client Variable</a></strong></dt>
 
 <dd>
 <p>A variable that the bot keeps about a specific client, or user of the bot.
 Usually as the client tells the bot information about itself, the bot could
 save this information into Client Variables and recite it later.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
@@ -254,10 +248,10 @@ or uninitializing it, depending on the implementation).</p>
 <p>It's highly recommended practice that new RiveScript documents explicitely
 define the version of RiveScript that they are following. RiveScript 2.00
 has some compatibility issues with the old 1.x line (see <a href="#reverse_compatibility">REVERSE COMPATIBILITY</a>).
-Newer RiveScript versions should encourag that RiveScript documents define their
+Newer RiveScript versions should encourage that RiveScript documents define their
 own version numbers.</p>
 <pre>
-  ! version 2.00</pre>
+  ! version = 2.00</pre>
 <p>
 </p>
 <h3><a name="global">global</a></h3>
@@ -374,16 +368,77 @@ response in there determines whether or not to get an actual reply.</p>
     - {ok}</pre>
 <pre>
   &lt; begin</pre>
+<p>In the <code>BEGIN block</code>, the trigger named &quot;<code>request</code>&quot; is called by the
+interpreter, and it should return the tag &quot;<code>{ok}</code>&quot; to tell the interpreter
+that it's OK to get a real reply. This way the bot could have a &quot;maintenance
+mode,&quot; or could filter the results of your trigger based on a variable.</p>
+<p>Here's a maintenance mode example:</p>
+<pre>
+  &gt; begin</pre>
+<pre>
+    + request
+    * &lt;id&gt; eq &lt;bot master&gt; =&gt; {ok} // Always let the bot master get a reply
+    * &lt;env maint&gt; eq true  =&gt; Sorry, I'm not available for chat right now!
+    - {ok}</pre>
+<pre>
+  &lt; begin</pre>
+<pre>
+  // Allow the owner to change the maintenance mode
+  + activate maintenance mode
+  * &lt;id&gt; eq &lt;bot master&gt; =&gt; {!global maint=true}Maintenance mode activated.
+  - You're not my master! You can't tell me what to do!</pre>
+<pre>
+  + deactivate maintenance mode
+  * &lt;id&gt; eq &lt;bot master&gt; =&gt; {!global maint=false}Maintenance mode deactivated.
+  - Only my master can deactivate maintenance mode!</pre>
+<p>With this example, if the global variable &quot;maint&quot; is set to &quot;true&quot;, the bot
+will always reply &quot;Sorry, I'm not available for chat right now!&quot; when a user
+sends it a message -- unless the user is the bot's owner.</p>
+<p>Here is another example that will modify the response formatting based on a
+bot variable called &quot;mood,&quot; to simulate humanoid moods for the bot:</p>
+<pre>
+  &gt; begin</pre>
+<pre>
+    + request
+    * &lt;get mood&gt; == happy =&gt; {ok} :-)
+    * &lt;get mood&gt; == sad   =&gt; {lowercase}{ok}{/lowercase}
+    * &lt;get mood&gt; == angry =&gt; {uppercase}{ok}{/uppercase}
+    - {ok}</pre>
+<pre>
+  &lt; begin</pre>
+<p>In this example the bot will use smiley faces when it's happy, reply in all
+lowercase when it's sad, or all uppercase when it's angry. If its mood doesn't
+fall into any of those categories, it replies normally.</p>
+<p>Here is one last example: say you want your bot to interview its users when
+they first talk to it, by asking them for their name:</p>
+<pre>
+  &gt; begin</pre>
+<pre>
+    + request
+    * &lt;get name&gt; == undefined =&gt; {topic=newuser}{ok}
+    - {ok}</pre>
+<pre>
+  &lt; begin</pre>
+<pre>
+  &gt; topic newuser
+    + *
+    - Hello! My name is &lt;bot name&gt;! I'm a robot. What's your name?</pre>
+<pre>
+    + _
+    % * what is your name
+    - &lt;set name=&lt;formal&gt;&gt;Nice to meet you, &lt;get name&gt;!{topic=random}
+  &lt; topic</pre>
+<p>Begin blocks are <strong>optional!</strong> They are not required. You only need to manually
+define them if you need to do any &quot;pre-processing&quot; or &quot;post-processing&quot; on the
+user's message or the bot's response. Having no begin block is the same as
+having a super basic begin block, which always returns <code>{ok}</code>.</p>
 <p>
 </p>
 <h3><a name="topic">topic</a></h3>
 <p>A topic is a smaller set of responses to which the client will be bound until
 the topic is changed to something else. The default topic is <code>random</code>.</p>
 <p>The <code>topic</code> label only requires one additional argument, which is the name of
-the topic. The topic's name should be one word and lowercase. If the topic
-should inherit the triggers that belong in a different topic, the second
-argument should be &quot;<code>inherits</code>&quot; followed by at least one additional argument
-that defines the list of topics to inherit.</p>
+the topic. The topic's name should be one word and lowercase.</p>
 <p>Example:</p>
 <pre>
   + i hate you
@@ -399,60 +454,168 @@ that defines the list of topics to inherit.</p>
     - Okay. I guess I'll forgive you then.{topic=random}</pre>
 <pre>
   &lt; topic</pre>
-<p>A practical example of how topic inheritence works might be when creating a
-kind of text-based roleplaying game: you could have global triggers such as
-&quot;<code>help</code>&quot; and &quot;<code>inventory</code>&quot; that are available regardless of what world or room
-the player is currently in.</p>
+<p>Topics are able to <code>include</code> and <code>inherit</code> triggers that belong to a
+different topic. When a topic <code>includes</code> another topic, it means that the
+triggers in another topic are made available in the topic that did the
+inclusion (hereby called the &quot;source topic&quot;, which includes triggers from
+the &quot;included topic&quot;).</p>
+<p>When a topic inherits another topic, it means that the entire collection
+of triggers of the source topic <em>and</em> any included topics, will have a
+higher matching priority than the inherited topics.</p>
+<p>See <a href="#sorting__triggers">Sorting +Triggers</a> to see how triggers are sorted internally. The
+following example shows how includes and inheritence works:</p>
 <pre>
-  &gt; topic rpg_global
-    + help
-    - &lt;call&gt;help&lt;/call&gt;</pre>
+  // This is in the default &quot;random&quot; topic and catches all non-matching
+  // triggers.
+  + *
+  - I'm afraid I don't know how to reply to that!</pre>
 <pre>
-    + inventory
-    - &lt;call&gt;inventory&lt;/call&gt;</pre>
-<pre>
-    + quit
-    - {topic=random}Game ended.</pre>
-<pre>
-    + _ [*]
-    - You don't need to use the word &quot;&lt;star&gt;&quot; in this game.
+  &gt; topic alpha
+    + alpha trigger
+    - Alpha's response.
   &lt; topic</pre>
 <pre>
-  &gt; topic rpg_earth inherits rpg_global
-    + equip astronaut suit
-    - There is breathable oxygen here, so that isn't necessary.
+  &gt; topic beta
+    + beta trigger
+    - Beta's response.
+  &lt;</pre>
+<pre>
+  &gt; topic gamma
+    + gamma trigger
+    - Gamma's response.
   &lt; topic</pre>
 <pre>
-  &gt; topic room1 inherits rpg_earth
-    + north
-    - {topic=room2}{@look}</pre>
+  &gt; topic delta
+    + delta trigger
+    - Delta's response.</pre>
 <pre>
-    + east
-    - {topic=room3}{@look}</pre>
+    + *
+    - You can't access any other triggers! Haha!
+  &lt; topic</pre>
+<p>These are all normal topics. Alpha, beta, and gamma all have a single
+trigger corresponding to their topic names. If the user were put into
+one of these topics, this is the only trigger available. Anything else
+would give them a &quot;NO REPLY&quot; error message. They are unable to match the
+<code>*</code> trigger at the top, because that trigger belongs to the &quot;<code>random</code>&quot;
+topic, and they're not in that topic.</p>
+<p>Now let's see how we can pair these topics up with includes and
+inheritence.</p>
 <pre>
-    + look
-    - You're in the first room. Exits are north and east.
+  &gt; topic ab includes alpha
+    + hello bot
+    - Hello human!
   &lt; topic</pre>
 <pre>
-  &gt; topic room2 inherits rpg_earth
-    + south
-    - {topic=room1}{@look}</pre>
+  // Matching order:
+  alpha trigger
+  hello bot</pre>
+<p>If the user were put into topic &quot;<code>ab</code>&quot;, they could match the trigger
+<code>hello bot</code> as well as the trigger <code>alpha trigger</code>, as if they were
+both in the same topic.</p>
+<p>Note that in the matching order, &quot;alpha trigger&quot; is at the top: this
+is because it is the longest trigger. If the user types &quot;alpha trigger&quot;,
+the interpreter knows that &quot;alpha trigger&quot; does not belong to the topic
+&quot;ab&quot;, but since &quot;ab&quot; includes triggers from &quot;alpha&quot;, the interpreter
+searches there and finds the trigger. Then it gives the user the
+correct reply of &quot;Alpha's response.&quot;</p>
 <pre>
-    + look
-    - You're in the second room. Only exit is south.
+  &gt; topic abc includes alpha beta
+    + how are you
+    - Good, how are you?
   &lt; topic</pre>
 <pre>
-  // etc...</pre>
-<p>Here, all the rooms inherit triggers from the &quot;<code>rpg_earth</code>&quot; topic. The
-<code>rpg_earth</code> topic in turn inherits triggers from <code>rpg_global</code>. So commands
-like &quot;help&quot; and &quot;inventory&quot; are also available in every other topic that
-inherits it.</p>
-<p>For a topic to inherit triggers from more than one topic, it only needs to list
-all of the topics to inherit from as follows:</p>
+  // Matching order:
+  how are you
+  alpha trigger
+  beta trigger</pre>
+<p>In this case, &quot;how are you&quot; is on the top of the matching list because
+it has three words, then &quot;alpha trigger&quot; and &quot;beta trigger&quot; -- &quot;alpha
+trigger&quot; is first because it is longer than &quot;beta trigger&quot;, even though
+they both have 2 words.</p>
+<p>Now consider this example:</p>
 <pre>
-  &gt; topic alpha inherits beta delta gamma</pre>
-<p>Here, the topic <code>alpha</code> inherits the triggers present in the topics named
-<code>beta</code>, <code>delta</code>, and <code>gamma</code>.</p>
+  &gt; topic abc includes alpha beta
+    + how are you
+    - Good, how are you?</pre>
+<pre>
+    + *
+    - You matched my star trigger!
+  &lt; topic</pre>
+<pre>
+  // Matching order:
+  how are you
+  alpha trigger
+  beta trigger
+  *</pre>
+<p>Notice what happened here: we had a trigger of simply <code>*</code> in the &quot;abc&quot;
+topic - <code>*</code> is the fallback trigger which matches anything that wasn't
+matched by a better trigger. But this trigger is at the end of our matching
+list! This is because the triggers available in the &quot;alpha&quot; and &quot;beta&quot; topics
+are included in the &quot;abc&quot; topic, meaning they all share the same &quot;space&quot;
+when the triggers are sorted. Since <code>*</code> has the lowest sort priority,
+it ends up at the very end of the collective list.</p>
+<p>What if we want <code>*</code>, or any other short trigger, to match in our current
+topic before anything in an included topic? We need to <code>inherit</code> another
+topic. Consider this:</p>
+<pre>
+  &gt; topic abc inherits alpha beta
+    + how are you
+    - Good, how are you?</pre>
+<pre>
+    + *
+    - You matched my star trigger!
+  &lt; topic</pre>
+<pre>
+  // Matching order:
+  how are you
+  *
+  alpha trigger
+  beta trigger</pre>
+<p>Now the <code>*</code> trigger is the second on the matching list. Because &quot;abc&quot;
+<em>inherits</em> alpha and beta, it means that the collection of triggers
+inside &quot;abc&quot; are sorted independently, and <em>then</em> the triggers of alpha
+and beta are sorted. So this way every trigger in &quot;abc&quot; inherits, or
+<em>overrides</em>, all triggers in the inherited topics.</p>
+<p>Of course, using a <code>*</code> trigger in a topic that inherits other topics is
+useless, because you could just leave the topic as it is. However it might
+be helpful in the case that a trigger in your topic is very short or has
+very few words, and you want to make sure that this trigger will have a
+good chance of matching before anything that appears in a different topic.</p>
+<p>You can combine inherited and included topics together, too.</p>
+<pre>
+  &gt; topic abc includes alpha beta delta inherits gamma
+    + how are you
+    - Good, how are you?
+  &lt; topic</pre>
+<pre>
+  // Matching order:
+  how are you
+  alpha trigger
+  delta trigger
+  beta trigger
+  *
+  gamma trigger</pre>
+<p>In this example, the combined triggers from abc, alpha, beta, and delta
+are all merged together in one pool and sorted amongst themselves, and
+then triggers from gamma are placed after them in the sort list.</p>
+<p>This effectively means you can combine the triggers from multiple
+topics together, and have ALL of those triggers override triggers
+from an inherited topic.</p>
+<p>You can use as many &quot;includes&quot; and &quot;inherits&quot; keywords as you want, but
+the order you specify them has no effect. So the following two formats
+are identical:</p>
+<pre>
+  &gt; topic alpha includes beta inherits gamma
+  &gt; topic alpha inherits gamma includes beta</pre>
+<p>In both cases, alpha and beta's triggers are pooled and have higher
+priority than gamma's. If gamma wants to include beta and have alpha's
+triggers be higher priority than gamma's and beta's, gamma will need
+to include beta first.</p>
+<pre>
+  &gt; topic gamma includes beta
+  &gt; topic alpha inherits gamma</pre>
+<p>In this case the triggers in &quot;alpha&quot; are higher priority than the
+combined triggers in gamma and beta.</p>
 <p>
 </p>
 <h3><a name="object">object</a></h3>
@@ -487,7 +650,7 @@ RiveScript document. The trigger command is what matches the user's message to
 a response.</p>
 <p>The trigger's text should be entirely lowercase and not contain any symbols
 (except those used for matching complicated messages). That is, a trigger that
-wants to match &quot;<code>what's your name</code>&quot; shoudldn't be used; you should use a
+wants to match &quot;<code>what's your name</code>&quot; shouldn't be used; you should use a
 <a href="#sub">sub</a>stitution to convert <code>what's</code> into <code>what is</code> ahead of time.</p>
 <p>Example:</p>
 <pre>
@@ -1269,6 +1432,17 @@ that it already assumes will be RiveScript 1.x and update it to 2.x standards.</
 </p>
 <hr />
 <h1><a name="revisions">REVISIONS</a></h1>
+<pre>
+  Rev 9 - Jul 31, 2009
+  - Added more explicit details on the usage of the BEGIN block, under the
+    section on &gt;Labels / &quot;begin&quot;
+  - Revised the WD, fixing some typos.</pre>
+<pre>
+  Rev 8 - Jul 30, 2009
+  - The proper format for the `! version` line is to be `! version = 2.00`,
+    and not `! version 2.00`
+  - Included the &quot;includes&quot; option for triggers and changed how &quot;inherits&quot;
+    works.</pre>
 <pre>
   Rev 7 - Dec  4, 2008
   - Topics are able to inherit additional triggers that belong to different

@@ -4,13 +4,14 @@ MANIFEST
 README
 LICENSE
 testsuite.rs
+rpmbuild
 bin/rivescript
-bin/rsup
 docs/rivescript.css
 docs/RiveScript.html
 docs/RiveScript-WD.html
+docs/rivescript.html
+docs/JavaScript.pod
 docs/bin-rivescript.html
-docs/rsup.html
 t/RiveScript.t
 lib/RiveScript.pm
 lib/RiveScript/WD.pm

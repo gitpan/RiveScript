@@ -1,21 +1,12 @@
 --- #YAML:1.0
-name:               RiveScript
-version:            1.24
-abstract:           Rendering Intelligence Very Easily
-author:
-    - Noah Petherbridge <kirsle@cpan.org>
-license:            unknown
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
-build_requires:
-    ExtUtils::MakeMaker:  0
-requires:  {}
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.57_05
+name:                RiveScript
+version:             1.22
+abstract:            Rendering Intelligence Very Easily
+license:             ~
+author:              Noah Petherbridge <kirsle@cpan.org>
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

@@ -20,3 +20,4 @@ lib/RiveScript/demo/clients.rs
 lib/RiveScript/demo/eliza.rs
 lib/RiveScript/demo/myself.rs
 META.yml                                 Module meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

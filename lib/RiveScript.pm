@@ -3,7 +3,7 @@ package RiveScript;
 use strict;
 use warnings;
 
-our $VERSION = '1.28'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.30'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 our $basedir = (__FILE__ =~ /^(.+?)\.pm$/i ? $1 : '.');
 
@@ -34,7 +34,7 @@ RiveScript - Rendering Intelligence Very Easily
   $rs->loadDirectory ("./replies");
 
   # Load another file.
-  $rs->loadFile ("./more_replies.rs");
+  $rs->loadFile ("./more_replies.rive");
 
   # Stream in some RiveScript code.
   $rs->stream (q~
@@ -86,6 +86,8 @@ in any global variables here. The two standard variables are:
               to this file name. Since debug mode prints such a large amount of
               data, it is often more practical to have the output go to an
               external file for later review. Default is '' (no file).
+  utf8      - Enable UTF-8 support for the RiveScript code. See the section on
+              UTF-8 support for details.
   depth     - Determines the recursion depth limit when following a trail of replies
               that point to other replies. Default is 50.
   strict    - If this has a true value, any syntax errors detected while parsing
@@ -120,6 +122,7 @@ sub new {
 			verbose => 1,  # Print to the terminal
 			file    => '', # Print to a filename
 		},
+		utf8       => 0,  # UTF-8 support
 		depth      => 50, # Recursion depth allowed.
 		strict     => 1,  # Strict syntax checking (causes a die)
 		topics     => {}, # Loaded replies under topics
@@ -144,8 +147,9 @@ sub new {
 		reserved   => [   # Reserved global variable names.
 			qw(topics sorted sortsthat sortedthat thats arrays subs person
 			client bot objects syntax sortlist reserved debugopts frozen
-			handlers globals objlangs)
+			handlers globals objlangs current_user)
 		],
+		current_user => undef, # The user ID of the current chatter
 		@_,
 	};
 	bless ($self,$class);
@@ -245,7 +249,7 @@ sub issue {
 
 Load a directory full of RiveScript documents. C<$PATH> must be a path to a
 directory. C<@EXTS> is optionally an array containing file extensions, including
-the dot. By default C<@EXTS> is C<('.rs')>.
+the dot. By default C<@EXTS> is C<('.rive', '.rs')>.
 
 Returns true on success, false on failure.
 
@@ -254,39 +258,33 @@ Returns true on success, false on failure.
 sub loadDirectory {
 	my $self = shift;
 	my $dir = shift || '.';
-	my (@exts) = @_ || ('.rs');
+	my (@exts) = @_ || ('.rive', '.rs');
 
 	if (!-d $dir) {
 		$self->issue ("loadDirectory failed: $dir is not a directory!");
 		return 0;
 	}
 
-	$self->debug ("loadDirectory: Open $dir");
+	$self->debug ("loadDirectory: Open $dir - extensions: @exts");
 
-	# If a begin.rs file exists, load it first.
-	if (-f "$dir/begin.rs") {
-		$self->debug ("loadDirectory: Read begin.rs");
-		$self->loadFile ("$dir/begin.rs");
-	}
 
-	opendir (DIR, $dir);
-	foreach my $file (sort { $a cmp $b } readdir(DIR)) {
+	opendir (my $dh, $dir);
+	foreach my $file (sort { $a cmp $b } readdir($dh)) {
 		next if $file eq '.';
 		next if $file eq '..';
 		next if $file =~ /\~$/i; # Skip backup files
-		next if $file eq 'begin.rs';
-		my $badExt = 0;
+		my $goodExt = 0;
 		foreach (@exts) {
 			my $re = quotemeta($_);
-			$badExt = 1 unless $file =~ /$re$/;
+			$goodExt = 1 if $file =~ /$re$/;
 		}
-		next if $badExt;
+		next unless $goodExt;
 
 		$self->debug ("loadDirectory: Read $file");
 
 		$self->loadFile ("$dir/$file");
 	}
-	closedir (DIR);
+	closedir ($dh);
 
 	return 1;
 }
@@ -312,9 +310,9 @@ sub loadFile {
 		return 0;
 	}
 
-	open (READ, $file);
-	my @code = <READ>;
-	close (READ);
+	open (my $fh, "<:utf8", $file);
+	my @code = <$fh>;
+	close ($fh);
 	chomp @code;
 
 	# Parse the file.
@@ -743,12 +741,12 @@ sub parse {
 			}
 			if ($type eq 'object') {
 				# If a field was provided, it should be the programming language.
-				my $lang = (scalar(@fields) ? $fields[0] : undef);
+				my $lang = (scalar(@fields) ? $fields[0] : '');
 				$lang = lc($lang); $lang =~ s/\s+//g;
 
 				# Only try to parse a language we support.
 				$ontrig = '';
-				if (not defined $lang) {
+				if (not length $lang) {
 					$self->issue ("Trying to parse unknown programming language at $fname line $lineno.");
 					$lang = "perl"; # Assume it's Perl.
 				}
@@ -919,8 +917,16 @@ sub checkSyntax {
 		my $chevron = 0; # Open angled brackets
 
 		# Look for obvious errors.
-		if ($line =~ /[^a-z0-9(\|)\[\]*_#\@{}<>=\s]/) {
-			return "Triggers may only contain lowercase letters, numbers, and these symbols: ( | ) [ ] * _ # @ { } < > =";
+		if ($self->{utf8}) {
+			# UTF-8 only restricts certain meta characters.
+			if ($line =~ /[A-Z\\.]/) {
+				return "Triggers can't contain uppercase letters, backslashes or dots in UTF-8 mode.";
+			}
+		} else {
+			# Only simple ASCIIs allowed.
+			if ($line =~ /[^a-z0-9(\|)\[\]*_#\@{}<>=\s]/) {
+				return "Triggers may only contain lowercase letters, numbers, and these symbols: ( | ) [ ] * _ # @ { } < > =";
+			}
 		}
 
 		# Count brackets.
@@ -2325,8 +2331,6 @@ raw text of the trigger that the user has matched with their reply. This functio
 may return undef in the event that the user B<did not> match any trigger at all
 (likely the last reply was "C<ERR: No Reply Matched>" as well).
 
-=back
-
 =cut
 
 sub lastMatch {
@@ -2339,6 +2343,30 @@ sub lastMatch {
 	}
 
 	return undef;
+}
+
+=item string currentUser ()
+
+Get the user ID of the current user chatting with the bot. This is mostly useful
+inside of a Perl object macro in RiveScript to get the user ID of the person who
+invoked the object macro (e.g., to get/set variables for them using the
+C<$rs> instance).
+
+This will return C<undef> if used outside the context of a reply (the value is
+unset at the end of the C<reply()> method).
+
+=back
+
+=cut
+
+sub currentUser {
+	my $self = shift;
+
+	if (!defined $self->{current_user}) {
+		$self->issue("currentUser() is meant to be used from within a Perl object macro!");
+	}
+
+	return $self->{current_user};
 }
 
 ################################################################################
@@ -2364,6 +2392,9 @@ sub reply {
 	my ($self,$user,$msg) = @_;
 
 	$self->debug ("Get reply to [$user] $msg");
+
+	# Store the current user's ID.
+	$self->{current_user} = $user;
 
 	# Format their message.
 	$msg = $self->_formatMessage ($msg);
@@ -2410,6 +2441,9 @@ sub reply {
 	while (scalar @{$self->{client}->{$user}->{__history__}->{reply}} > 9) {
 		pop (@{$self->{client}->{$user}->{__history__}->{reply}});
 	}
+
+	# Unset the current user's ID.
+	$self->{current_user} = undef;
 
 	return $reply;
 }
@@ -2801,6 +2835,9 @@ sub _reply_regexp {
 		$regexp =~ s/\s*\[(.+?)\]\s*/$rep/i;
 	}
 
+    # _ wildcards can't match numbers!
+    $regexp =~ s/\\w/[A-Za-z]/g;
+
 	# Filter in arrays.
 	while ($regexp =~ /\@(.+?)\b/) {
 		my $name = $1;
@@ -3105,24 +3142,48 @@ sub _formatMessage {
 	# Lowercase it.
 	$string = lc($string);
 
+	# Make placeholders each time we substitute something.
+	my @ph = ();
+	my $i = 0;
+
 	# Run substitutions on it.
 	foreach my $pattern (@{$self->{sortlist}->{subs}}) {
 		my $result = $self->{subs}->{$pattern};
-		$result =~ tr/A-Za-z/N-ZA-Mn-za-m/;
+
+		# Make a placeholder.
+		push (@ph, $result);
+		my $placeholder = "\x00$i\x00";
+		$i++;
+
 		my $qm = quotemeta($pattern);
-		$string =~ s/^$qm$/<rot13sub>$result<bus31tor>/ig;
-		$string =~ s/^$qm(\W+)/<rot13sub>$result<bus31tor>$1/ig;
-		$string =~ s/(\W+)$qm(\W+)/$1<rot13sub>$result<bus31tor>$2/ig;
-		$string =~ s/(\W+)$qm$/$1<rot13sub>$result<bus31tor>/ig;
+		$string =~ s/^$qm$/$placeholder/ig;
+		$string =~ s/^$qm(\W+)/$placeholder$1/ig;
+		$string =~ s/(\W+)$qm(\W+)/$1$placeholder$2/ig;
+		$string =~ s/(\W+)$qm$/$1$placeholder/ig;
 	}
-	while ($string =~ /<rot13sub>(.+?)<bus31tor>/i) {
-		my $rot13 = $1;
-		$rot13 =~ tr/A-Za-z/N-ZA-Mn-za-m/;
-		$string =~ s/<rot13sub>(.+?)<bus31tor>/$rot13/i;
+	while ($string =~ /\x00(\d+)\x00/i) {
+		my $id = $1;
+		my $result = $ph[$id];
+		$string =~ s/\x00$id\x00/$result/i;
 	}
 
-	# Format punctuation.
-	$string =~ s/[^A-Za-z0-9 ]//g;
+	# In UTF-8 mode, only strip meta characters.
+	if ($self->{utf8}) {
+		# Backslashes and HTML tags
+		$string =~ s/[\\<>]//g;
+	} else {
+		$string =~ s/[^A-Za-z0-9 ]//g;
+	}
+
+	# In UTF-8 mode, only strip meta characters.
+	if ($self->{utf8}) {
+		# Backslashes and HTML tags
+		$string =~ s/[\\<>]//g;
+	} else {
+		$string =~ s/[^A-Za-z0-9 ]//g;
+	}
+
+	# Remove excess whitespace.
 	$string =~ s/^\s+//g;
 	$string =~ s/\s+$//g;
 
@@ -3151,23 +3212,31 @@ sub _stringUtil {
 sub _personSub {
 	my ($self,$string) = @_;
 
+	# Make placeholders each time we substitute something.
+	my @ph = ();
+	my $i = 0;
+
 	# Substitute each of the sorted person sub arrays in order,
 	# using a one-way substitution algorithm (read: base13).
 	foreach my $pattern (@{$self->{sortlist}->{person}}) {
 		my $result = $self->{person}->{$pattern};
-		$result =~ tr/A-Za-z/N-ZA-Mn-za-m/;
+
+		# Make a placeholder.
+		push (@ph, $result);
+		my $placeholder = "\x00$i\x00";
+		$i++;
+
 		my $qm = quotemeta($pattern);
-		$string =~ s/^$qm$/<rot13sub>$result<bus31tor>/ig;
-		$string =~ s/^$qm(\W+)/<rot13sub>$result<bus31tor>$1/ig;
-		$string =~ s/(\W+)$qm(\W+)/$1<rot13sub>$result<bus31tor>$2/ig;
-		$string =~ s/(\W+)$qm$/$1<rot13sub>$result<bus31tor>/ig;
+		$string =~ s/^$qm$/$placeholder/ig;
+		$string =~ s/^$qm(\W+)/$placeholder$1/ig;
+		$string =~ s/(\W+)$qm(\W+)/$1$placeholder$2/ig;
+		$string =~ s/(\W+)$qm$/$1$placeholder/ig;
 	}
 
-	# Now rot13-decode what's left.
-	while ($string =~ /<rot13sub>(.+?)<bus31tor>/i) {
-		my $rot13 = $1;
-		$rot13 =~ tr/A-Za-z/N-ZA-Mn-za-m/;
-		$string =~ s/<rot13sub>(.+?)<bus31tor>/$rot13/i;
+	while ($string =~ /\x00(\d+)\x00/i) {
+		my $id = $1;
+		my $result = $ph[$id];
+		$string =~ s/\x00$id\x00/$result/i;
 	}
 
 	return $string;
@@ -3181,6 +3250,27 @@ __END__
 This interpreter tries its best to follow RiveScript standards. Currently it
 supports RiveScript 2.0 documents. A current copy of the RiveScript working
 draft is included with this package: see L<RiveScript::WD>.
+
+=head1 UTF-8 SUPPORT
+
+Version 1.29+ adds experimental support for UTF-8 in RiveScript. It is not
+enabled by default. Enable it by passing a true value for the C<utf8> option
+in the constructor, or by using the C<--utf8> argument to the C<rivescript>
+application.
+
+By default (without UTF-8 mode on), triggers may only contain basic ASCII
+characters (no foreign characters), and the user's message is stripped of
+all characters except letters and spaces. This means that, for example, you
+can't capture a user's e-mail address in a RiveScript reply, because of the
+@ and . characters.
+
+When UTF-8 mode is enabled, these restrictions are lifted. Triggers are only
+limited to not contain certain metacharacters like the backslash, and the
+user's message is only stripped of backslashes and HTML angled brackets (to
+prevent obvious XSS if you use RiveScript in a web application). The
+C<E<lt>starE<gt>> tags in RiveScript will capture the user's "raw" input,
+so you can write replies to get the user's e-mail address or store foreign
+characters in their name.
 
 =head1 CONSTANTS
 
@@ -3222,6 +3312,18 @@ defines the standards of RiveScript.
 L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
+
+  1.30  Nov 25 2013
+  - Added "TCP Mode" to the `rivescript` command so that it can listen on a
+    socket instead of using standard input and output.
+  - Added a "--data" option to the `rivescript` command for providing JSON
+    input as a command line argument instead of standard input.
+  - Added experimental UTF-8 support.
+  - Bugfix: don't use hacky ROT13-encoded placeholders for message
+    substitutions... use a null character method instead. ;)
+  - Make .rive the default preferred file extension for RiveScript documents
+    instead of .rs (which conflicts with the Rust programming language).
+    Backwards compatibility remains to load .rs files, though.
 
   1.28  Aug 14 2012
   - FIXED: Typos in RiveScript::WD (Bug #77618)

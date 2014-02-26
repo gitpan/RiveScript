@@ -2,6 +2,7 @@ Changes
 Makefile.PL
 MANIFEST
 README.md
+INSTALL.md
 LICENSE
 testsuite.rive
 rpmbuild
@@ -20,3 +21,4 @@ lib/RiveScript/demo/clients.rive
 lib/RiveScript/demo/eliza.rive
 lib/RiveScript/demo/myself.rive
 META.yml                                 Module meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

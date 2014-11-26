@@ -3,7 +3,7 @@ package RiveScript;
 use strict;
 use warnings;
 
-our $VERSION = '1.34'; # Version of the Perl RiveScript interpreter.
+our $VERSION = '1.36'; # Version of the Perl RiveScript interpreter.
 our $SUPPORT = '2.0';  # Which RS standard we support.
 our $basedir = (__FILE__ =~ /^(.+?)\.pm$/i ? $1 : '.');
 
@@ -933,7 +933,7 @@ sub checkSyntax {
 		my @chr = split(//, $line);
 		for (my $i = 0; $i < scalar(@chr); $i++) {
 			my $char = $chr[$i];
-			
+
 			# Count brackets.
 			$parens++  if $char eq '('; $parens--  if $char eq ')';
 			$square++  if $char eq '['; $square--  if $char eq ']';
@@ -1597,8 +1597,10 @@ sub deparse {
 			person   => {},
 			array    => {},
 			triggers => {},
+			that     => {},
 		},
 		topic   => {},
+		that    => {},
 		inherit => {},
 		include => {},
 	};
@@ -1647,14 +1649,14 @@ sub deparse {
 
 		if ($topic eq "__begin__") {
 			# Begin block.
-			$dest = $deparse->{begin}->{triggers};
+			$dest = $deparse->{begin}->{that};
 		}
 		else {
 			# Normal topic.
-			if (!exists $deparse->{topic}->{$topic}) {
-				$deparse->{topic}->{$topic} = {};
+			if (!exists $deparse->{that}->{$topic}) {
+				$deparse->{that}->{$topic} = {};
 			}
-			$dest = $deparse->{topic}->{$topic};
+			$dest = $deparse->{that}->{$topic};
 		}
 
 		# The "that" structure is backwards: bot reply, then trigger, then info.
@@ -1755,12 +1757,29 @@ sub write {
 	foreach my $sort (qw/global var sub person array/) {
 		next unless scalar keys %{$deparse->{begin}->{$sort}} > 0;
 		foreach my $var (sort keys %{$deparse->{begin}->{$sort}}) {
-			my $value = ref($deparse->{begin}->{$sort}->{$var}) ?
-				join("|", @{$deparse->{begin}->{$sort}->{$var}}) :
-				$deparse->{begin}->{$sort}->{$var};
+			# Array types need to be separated by either spaces or pipes.
+			my $data = $deparse->{begin}->{$sort}->{$var};
+			if (ref($data) eq "ARRAY") {
+				my $needs_pipes = 0;
+				foreach my $test (@{$data}) {
+					if ($test =~ /\s+/) {
+						$needs_pipes = 1;
+						last;
+					}
+				}
 
-			print {$fh} "! $sort $var = " . $self->_write_wrapped($value,
-				$sort eq "array" ? "|" : " ") . "\n";
+				# Word-wrap the result, target width is 78 chars minus the
+				# sort, var, and spaces and equals sign.
+				my $width = 78 - length($sort) - length($var) - 4;
+
+				if ($needs_pipes) {
+					$data = $self->_write_wrapped(join("|", @{$data}), "|", undef, $width);
+				} else {
+					$data = join(" ", @{$data});
+				}
+			}
+
+			print {$fh} "! $sort $var = $data\n";
 		}
 		print {$fh} "\n";
 	}
@@ -1797,6 +1816,11 @@ sub write {
 		}
 
 		$self->_write_triggers($fh, $deparse->{topic}->{$topic}, $tagged ? "indent" : 0);
+
+		# Any %Previous's?
+		if (exists $deparse->{that}->{$topic}) {
+			$self->_write_triggers($fh, $deparse->{that}->{$topic}, $tagged ? "indent" : 0);
+		}
 
 		if ($tagged) {
 			print {$fh} "< topic\n\n";
@@ -1840,7 +1864,8 @@ sub _write_triggers {
 }
 
 sub _write_wrapped {
-	my ($self, $line, $sep, $indent) = @_;
+	my ($self, $line, $sep, $indent, $width) = @_;
+	$width ||= 78;
 
 	my $id = $indent ? "\t" : "";
 
@@ -1858,7 +1883,7 @@ sub _write_wrapped {
 	while (scalar(@words)) {
 		push (@buf, shift(@words));
 		$line = join($sep, @buf);
-		if (length $line > 78) {
+		if (length $line > $width) {
 			# Need to word wrap.
 			unshift(@words, pop(@buf)); # Undo
 			push (@lines, join($sep,@buf));
@@ -2530,7 +2555,7 @@ sub _getreply {
 					my $lastReply = $self->{client}->{$user}->{__history__}->{reply}->[0];
 
 					# Format the bot's last reply the same as the human's.
-					$lastReply = $self->_formatMessage ($lastReply);
+					$lastReply = $self->_formatMessage ($lastReply, "lastReply");
 
 					$self->debug ("lastReply: $lastReply");
 
@@ -2873,23 +2898,29 @@ sub _reply_regexp {
 	}
 
 	# Filter input tags.
-	$regexp =~ s/<input>/$self->{client}->{$user}->{__history__}->{input}->[0]/ig;
-	$regexp =~ s/<reply>/$self->{client}->{$user}->{__history__}->{reply}->[0]/ig;
-	while ($regexp =~ /<input([0-9])>/i) {
-		my $index = $1;
-		my (@arrInput) = @{$self->{client}->{$user}->{__history__}->{input}};
-		unshift (@arrInput,'');
-		my $line = $arrInput[$index];
-		$line = $self->_formatMessage ($line);
-		$regexp =~ s/<input$index>/$line/ig;
+	if ($regexp =~ /<input/i) {
+		my $firstInput = $self->_formatMessage($self->{client}->{$user}->{__history__}->{input}->[0] || "undefined", "botReply");
+		$regexp =~ s/<input>/$firstInput/ig;
+		while ($regexp =~ /<input([1-9])>/i) {
+			my $index = $1;
+			my (@arrInput) = @{$self->{client}->{$user}->{__history__}->{input}};
+			unshift (@arrInput,'');
+			my $line = $arrInput[$index];
+			$line = $self->_formatMessage ($line, "botReply");
+			$regexp =~ s/<input$index>/$line/ig;
+		}
 	}
-	while ($regexp =~ /<reply([0-9])>/i) {
-		my $index = $1;
-		my (@arrReply) = @{$self->{client}->{$user}->{__history__}->{reply}};
-		unshift (@arrReply,'');
-		my $line = $arrReply[$index];
-		$line = $self->_formatMessage ($line);
-		$regexp =~ s/<reply$index>/$line/ig;
+	if ($regexp =~ /<reply/i) {
+		my $firstReply = $self->_formatMessage($self->{client}->{$user}->{__history__}->{reply}->[0] || "undefined", "botReply");
+		$regexp =~ s/<reply>/$firstReply/ig;
+		while ($regexp =~ /<reply([1-9])>/i) {
+			my $index = $1;
+			my (@arrReply) = @{$self->{client}->{$user}->{__history__}->{reply}};
+			unshift (@arrReply,'');
+			my $line = $arrReply[$index];
+			$line = $self->_formatMessage ($line, "botReply");
+			$regexp =~ s/<reply$index>/$line/ig;
+		}
 	}
 
 	return $regexp;
@@ -3137,7 +3168,7 @@ sub processTags {
 }
 
 sub _formatMessage {
-	my ($self,$string) = @_;
+	my ($self,$string, $botReply) = @_;
 
 	# Lowercase it.
 	$string = lc($string);
@@ -3171,6 +3202,11 @@ sub _formatMessage {
 	if ($self->{utf8}) {
 		# Backslashes and HTML tags
 		$string =~ s/[\\<>]//g;
+
+		# If formatting the bot's last reply for %Previous, also remove punctuation.
+		if ($botReply) {
+			$string =~ s/[.?,!;:@#$%^&*()\-+]//g;
+		}
 	} else {
 		$string =~ s/[^A-Za-z0-9 ]//g;
 	}
@@ -3313,6 +3349,13 @@ L<http://www.rivescript.com/> - The official homepage of RiveScript.
 
 =head1 CHANGES
 
+  1.36
+  - Relicense under the MIT License.
+  - Strip punctuation from the bot's responses in UTF-8 mode to
+    support compatibility with %Previous.
+  - Bugfix in deparse(): If you had two matching triggers, one with a %Previous
+    and one without, you'd lose the data for one of them in the output.
+
   1.34  Feb 26 2014
   - Update README.md to include module documentation for github.
   - Fixes to META.yml
@@ -3441,26 +3484,26 @@ bot, chatbot, chatterbot, chatter bot, reply, replies, script, aiml, alpha
 
 =head1 COPYRIGHT AND LICENSE
 
-The Perl RiveScript interpreter is dual licensed as of version 1.22.
-For open source applications the module is using the GNU General Public
-License. If you'd like to use the RiveScript module in a closed source or
-commercial application, contact the author for more information.
+  The MIT License (MIT)
 
-  RiveScript - Rendering Intelligence Very Easily
-  Copyright (C) 2014 Noah Petherbridge
+  Copyright (c) 2014 Noah Petherbridge
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 
 =cut
